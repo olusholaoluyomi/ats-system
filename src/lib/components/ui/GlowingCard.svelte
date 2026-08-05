@@ -61,7 +61,7 @@
 	}
 
 	.glowing-card:hover {
-		border-color: rgba(6, 182, 212, 0.15);
+		border-color: var(--accent-border);
 	}
 
 	.glow-overlay {
@@ -84,7 +84,7 @@
 		opacity: var(--glow-opacity);
 		background: radial-gradient(
 			400px circle at var(--glow-x) var(--glow-y),
-			rgba(6, 182, 212, 0.12),
+			var(--accent-tint),
 			transparent 50%
 		);
 		transition: opacity 0.3s ease;

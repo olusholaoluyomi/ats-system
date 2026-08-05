@@ -216,7 +216,7 @@
 		position: absolute;
 		transform: translate(-50%, calc(-100% - 12px));
 		padding: 0.5rem 0.75rem;
-		background: rgba(10, 10, 26, 0.96);
+		background: var(--glass-bg);
 		border: 1px solid var(--glass-border);
 		border-radius: var(--radius-md);
 		pointer-events: none;

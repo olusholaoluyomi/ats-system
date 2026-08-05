@@ -401,7 +401,7 @@
 		display: flex;
 		gap: 0.25rem;
 		padding: 0.2rem;
-		background: rgba(255, 255, 255, 0.03);
+		background: var(--tint-weak);
 		border: 1px solid var(--glass-border);
 		border-radius: var(--radius-md);
 		margin-bottom: 1.5rem;
@@ -424,7 +424,7 @@
 	}
 
 	.mode-tab.active {
-		background: rgba(6, 182, 212, 0.1);
+		background: var(--accent-tint);
 		color: var(--accent-cyan);
 	}
 
@@ -436,7 +436,7 @@
 		justify-content: center;
 		gap: 0.6rem;
 		padding: 0.75rem;
-		background: rgba(255, 255, 255, 0.05);
+		background: var(--tint);
 		border: 1px solid var(--glass-border);
 		border-radius: var(--radius-md);
 		font-size: 0.88rem;
@@ -450,8 +450,8 @@
 	}
 
 	.google-btn:hover:not(:disabled) {
-		background: rgba(255, 255, 255, 0.08);
-		border-color: rgba(255, 255, 255, 0.15);
+		background: var(--tint-hover);
+		border-color: var(--tint-strong);
 	}
 
 	.google-btn:disabled {
@@ -504,7 +504,7 @@
 	.field-input {
 		width: 100%;
 		padding: 0.7rem 0.85rem;
-		background: rgba(255, 255, 255, 0.03);
+		background: var(--tint-weak);
 		border: 1px solid var(--glass-border);
 		border-radius: var(--radius-md);
 		font-size: 0.88rem;
@@ -525,7 +525,7 @@
 	   border alone was below WCAG 2.4.7 visibility for many users). */
 	.field-input:focus {
 		border-color: var(--accent-cyan);
-		box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.15);
+		box-shadow: 0 0 0 3px var(--accent-border);
 	}
 
 	.forgot-btn {
@@ -548,7 +548,7 @@
 		width: 100%;
 		padding: 0.75rem;
 		background: var(--gradient-primary);
-		color: var(--color-bg-primary);
+		color: var(--ink);
 		border: none;
 		border-radius: var(--radius-md);
 		font-size: 0.92rem;
@@ -568,7 +568,7 @@
 	.submit-btn:hover:not(:disabled) {
 		transform: translateY(-2px);
 		box-shadow:
-			0 0 24px rgba(6, 182, 212, 0.3),
+			0 0 24px var(--accent-border-hover),
 			0 0 48px rgba(59, 130, 246, 0.1);
 	}
 

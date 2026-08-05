@@ -456,7 +456,7 @@
 	.orb-1 {
 		width: 500px;
 		height: 500px;
-		background: rgba(6, 182, 212, 0.06);
+		background: var(--accent-tint);
 		top: 5%;
 		right: -10%;
 	}
@@ -527,7 +527,7 @@
 	.paste-block {
 		margin-top: 1rem;
 		background: transparent;
-		border: 1px dashed rgba(6, 182, 212, 0.25);
+		border: 1px dashed var(--accent-border);
 		border-radius: var(--radius-md, 10px);
 		overflow: hidden;
 		transition:
@@ -537,8 +537,8 @@
 
 	.paste-block:hover,
 	.paste-block[open] {
-		border-color: rgba(6, 182, 212, 0.5);
-		background: rgba(6, 182, 212, 0.04);
+		border-color: var(--accent-border-hover);
+		background: var(--accent-tint);
 	}
 
 	.paste-toggle {
@@ -579,7 +579,7 @@
 		width: 100%;
 		min-height: 220px;
 		padding: 0.85rem 1rem;
-		background: rgba(0, 0, 0, 0.2);
+		background: var(--color-bg-secondary);
 		border: none;
 		border-top: 1px solid var(--glass-border);
 		color: var(--text-primary);
@@ -612,7 +612,7 @@
 	.paste-btn {
 		padding: 0.45rem 0.9rem;
 		background: var(--accent-cyan);
-		color: #0a0a1a;
+		color: var(--ink);
 		border: none;
 		border-radius: var(--radius-md, 8px);
 		font-weight: 600;
@@ -662,7 +662,7 @@
 		padding: 0.9rem 2.25rem;
 		font-size: 1rem;
 		font-weight: 600;
-		color: var(--color-bg-primary);
+		color: var(--ink);
 		background: var(--gradient-primary);
 		border: none;
 		border-radius: var(--radius-lg);
@@ -676,7 +676,7 @@
 	.btn-scan:hover:not(:disabled) {
 		transform: translateY(-2px);
 		box-shadow:
-			0 0 30px rgba(6, 182, 212, 0.3),
+			0 0 30px var(--accent-border-hover),
 			0 0 60px rgba(59, 130, 246, 0.15);
 	}
 
@@ -712,8 +712,8 @@
 	.spinner-inline {
 		width: 16px;
 		height: 16px;
-		border: 2px solid rgba(0, 0, 0, 0.2);
-		border-top-color: var(--color-bg-primary);
+		border: 2px solid var(--glass-border);
+		border-top-color: var(--accent-cyan);
 		border-radius: 50%;
 		animation: spin 0.6s linear infinite;
 	}
@@ -794,7 +794,7 @@
 	}
 
 	.step-dot.active {
-		border-color: rgba(6, 182, 212, 0.4);
+		border-color: var(--accent-border-hover);
 	}
 
 	.step-dot.done {
@@ -826,7 +826,7 @@
 	}
 
 	.step-line.done {
-		background: linear-gradient(90deg, rgba(34, 197, 94, 0.5), rgba(6, 182, 212, 0.3));
+		background: linear-gradient(90deg, rgba(34, 197, 94, 0.5), var(--accent-border-hover));
 	}
 
 	.steps-labels {
@@ -892,7 +892,7 @@
 		padding: 0.65rem 1.75rem;
 		font-size: 0.9rem;
 		font-weight: 600;
-		color: var(--color-bg-primary);
+		color: var(--ink);
 		background: var(--gradient-primary);
 		border-radius: var(--radius-full);
 		text-decoration: none;
@@ -903,7 +903,7 @@
 
 	.auth-gate-btn:hover {
 		transform: translateY(-1px);
-		box-shadow: 0 0 20px rgba(6, 182, 212, 0.3);
+		box-shadow: 0 0 20px var(--accent-border-hover);
 	}
 
 	.spinner-lg {

@@ -188,7 +188,7 @@
 		position: relative;
 		padding: 3rem 2rem 1.5rem;
 		border-top: 1px solid var(--glass-border);
-		background: linear-gradient(180deg, transparent, rgba(6, 182, 212, 0.02));
+		background: linear-gradient(180deg, transparent, var(--accent-tint));
 	}
 
 	.footer-inner {
@@ -241,8 +241,8 @@
 
 	.social-link:hover {
 		color: var(--accent-cyan);
-		border-color: rgba(6, 182, 212, 0.3);
-		background: rgba(6, 182, 212, 0.05);
+		border-color: var(--accent-border-hover);
+		background: var(--accent-tint);
 	}
 
 	.footer-pill {

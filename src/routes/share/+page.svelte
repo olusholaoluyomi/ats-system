@@ -162,7 +162,7 @@
 	.orb-1 {
 		width: 480px;
 		height: 480px;
-		background: rgba(6, 182, 212, 0.08);
+		background: var(--accent-tint);
 		top: -10%;
 		right: -10%;
 	}
@@ -261,7 +261,7 @@
 		padding: 0.9rem 1.85rem;
 		font-size: 1rem;
 		font-weight: 600;
-		color: var(--color-bg-primary);
+		color: var(--ink);
 		background: var(--gradient-primary);
 		border-radius: var(--radius-full);
 		text-decoration: none;
@@ -272,7 +272,7 @@
 
 	.cta-btn:hover {
 		transform: translateY(-1px);
-		box-shadow: 0 0 24px rgba(6, 182, 212, 0.3);
+		box-shadow: 0 0 24px var(--accent-border-hover);
 	}
 
 	.share-actions {
@@ -303,8 +303,8 @@
 
 	.share-action-btn:hover {
 		color: var(--accent-cyan);
-		border-color: rgba(6, 182, 212, 0.3);
-		background: rgba(6, 182, 212, 0.05);
+		border-color: var(--accent-border-hover);
+		background: var(--accent-tint);
 	}
 
 	.footnote {

@@ -24,8 +24,8 @@
 	}
 
 	.auth-btn:hover {
-		border-color: rgba(6, 182, 212, 0.3);
+		border-color: var(--accent-border-hover);
 		color: var(--accent-cyan);
-		background: rgba(6, 182, 212, 0.05);
+		background: var(--accent-tint);
 	}
 </style>

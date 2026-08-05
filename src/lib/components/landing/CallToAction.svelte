@@ -72,7 +72,7 @@
 	.cta-orb-1 {
 		width: 500px;
 		height: 500px;
-		background: rgba(6, 182, 212, 0.08);
+		background: var(--accent-tint);
 		top: 50%;
 		left: 50%;
 		transform: translate(-50%, -50%);
@@ -135,7 +135,7 @@
 		padding: 1.1rem 2.5rem;
 		font-size: 1.05rem;
 		font-weight: 600;
-		color: var(--color-bg-primary);
+		color: var(--ink);
 		background: var(--gradient-primary);
 		border-radius: var(--radius-lg);
 		text-decoration: none;
@@ -148,9 +148,9 @@
 	.cta-button:hover {
 		transform: translateY(-3px);
 		box-shadow:
-			0 0 40px rgba(6, 182, 212, 0.35),
+			0 0 40px var(--accent-border-hover),
 			0 0 80px rgba(59, 130, 246, 0.15);
-		color: var(--color-bg-primary);
+		color: var(--ink);
 	}
 
 	.btn-shimmer {
@@ -188,7 +188,7 @@
 	}
 
 	.cta-secondary:hover {
-		border-color: rgba(255, 255, 255, 0.15);
+		border-color: var(--tint-strong);
 		color: var(--text-primary);
 	}
 

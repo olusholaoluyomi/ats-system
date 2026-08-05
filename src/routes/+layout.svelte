@@ -78,7 +78,7 @@
 		left: 0;
 		padding: 0.75rem 1.25rem;
 		background: var(--accent-cyan, #06b6d4);
-		color: #0a0a1a;
+		color: var(--ink);
 		font-weight: 600;
 		text-decoration: none;
 		border-radius: 0 0 8px 0;
@@ -90,7 +90,7 @@
 	.skip-link:focus,
 	.skip-link:focus-visible {
 		transform: translateY(0);
-		outline: 2px solid #0a0a1a;
+		outline: 2px solid var(--ink);
 		outline-offset: -4px;
 	}
 

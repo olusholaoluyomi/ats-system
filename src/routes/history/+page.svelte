@@ -324,7 +324,7 @@
 	.cta-btn {
 		padding: 0.6rem 1.5rem;
 		background: var(--gradient-primary);
-		color: var(--color-bg-primary);
+		color: var(--ink);
 		border-radius: var(--radius-full);
 		text-decoration: none;
 		font-size: 0.85rem;
@@ -438,8 +438,8 @@
 	}
 
 	.history-card:hover {
-		border-color: rgba(6, 182, 212, 0.25);
-		background: rgba(6, 182, 212, 0.03);
+		border-color: var(--accent-border);
+		background: var(--accent-tint);
 	}
 
 	.card-score {
@@ -547,7 +547,7 @@
 	.viewing-mode {
 		text-transform: capitalize;
 		padding: 0.15rem 0.5rem;
-		background: rgba(6, 182, 212, 0.08);
+		background: var(--accent-tint);
 		border-radius: var(--radius-sm);
 		color: var(--accent-cyan);
 		font-size: 0.72rem;

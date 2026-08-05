@@ -890,7 +890,7 @@
 	.mini-bar-track {
 		flex: 1;
 		height: 4px;
-		background: rgba(255, 255, 255, 0.05);
+		background: var(--tint);
 		border-radius: 2px;
 		overflow: hidden;
 	}
@@ -939,8 +939,8 @@
 		align-items: center;
 		gap: 0.4rem;
 		padding: 0.3rem 0.85rem;
-		background: rgba(6, 182, 212, 0.08);
-		border: 1px solid rgba(6, 182, 212, 0.2);
+		background: var(--accent-tint);
+		border: 1px solid var(--accent-border);
 		border-radius: 999px;
 		font-size: 0.75rem;
 		font-weight: 600;
@@ -1043,7 +1043,7 @@
 	}
 
 	.comparison-band.flat {
-		border-color: rgba(255, 255, 255, 0.08);
+		border-color: var(--tint-hover);
 	}
 
 	.comparison-headline {
@@ -1103,8 +1103,8 @@
 		font-size: 0.74rem;
 		color: var(--text-tertiary);
 		border-radius: var(--radius-full);
-		background: rgba(255, 255, 255, 0.04);
-		border: 1px solid rgba(255, 255, 255, 0.06);
+		background: var(--tint-weak);
+		border: 1px solid var(--tint);
 		font-variant-numeric: tabular-nums;
 	}
 
@@ -1129,8 +1129,8 @@
 		font-weight: 600;
 		font-family: inherit;
 		color: var(--text-primary);
-		background: rgba(255, 255, 255, 0.08);
-		border: 1px solid rgba(255, 255, 255, 0.12);
+		background: var(--tint-hover);
+		border: 1px solid var(--tint-strong);
 		border-radius: var(--radius-full);
 		cursor: pointer;
 		transition:
@@ -1208,8 +1208,8 @@
 		margin-bottom: 1.5rem;
 		padding: 1.1rem 1.25rem;
 		background:
-			linear-gradient(135deg, rgba(6, 182, 212, 0.04), rgba(139, 92, 246, 0.03)), var(--glass-bg);
-		border: 1px solid rgba(6, 182, 212, 0.18);
+			linear-gradient(135deg, var(--accent-tint), rgba(139, 92, 246, 0.03)), var(--glass-bg);
+		border: 1px solid var(--accent-border);
 		border-radius: var(--radius-lg, 14px);
 	}
 
@@ -1252,8 +1252,8 @@
 		align-items: center;
 		gap: 0.75rem;
 		padding: 0.55rem 0.75rem;
-		background: rgba(255, 255, 255, 0.02);
-		border: 1px solid rgba(255, 255, 255, 0.05);
+		background: var(--tint-weak);
+		border: 1px solid var(--tint);
 		border-radius: var(--radius-md, 8px);
 	}
 
@@ -1267,8 +1267,8 @@
 		font-size: 0.72rem;
 		font-weight: 700;
 		color: var(--accent-cyan);
-		background: rgba(6, 182, 212, 0.1);
-		border: 1px solid rgba(6, 182, 212, 0.25);
+		background: var(--accent-tint);
+		border: 1px solid var(--accent-border);
 		border-radius: 50%;
 	}
 
@@ -1320,9 +1320,9 @@
 	}
 
 	.toolbar-btn:hover:not(:disabled) {
-		border-color: rgba(6, 182, 212, 0.3);
+		border-color: var(--accent-border-hover);
 		color: var(--accent-cyan);
-		background: rgba(6, 182, 212, 0.05);
+		background: var(--accent-tint);
 	}
 
 	.toolbar-btn:disabled {
@@ -1377,9 +1377,9 @@
 	}
 
 	.toggle-btn.active {
-		background: rgba(6, 182, 212, 0.1);
+		background: var(--accent-tint);
 		color: var(--accent-cyan);
-		border: 1px solid rgba(6, 182, 212, 0.2);
+		border: 1px solid var(--accent-border);
 	}
 
 	.scores-grid {
@@ -1441,7 +1441,7 @@
 		width: 100%;
 		text-align: left;
 		padding: 0;
-		background: rgba(255, 255, 255, 0.02);
+		background: var(--tint-weak);
 		border: 1px solid var(--glass-border);
 		border-radius: var(--radius-lg);
 		cursor: pointer;
@@ -1453,12 +1453,12 @@
 	}
 
 	.suggestion-card:hover {
-		border-color: rgba(6, 182, 212, 0.25);
-		background: rgba(6, 182, 212, 0.03);
+		border-color: var(--accent-border);
+		background: var(--accent-tint);
 	}
 
 	.suggestion-card.expanded {
-		border-color: rgba(6, 182, 212, 0.3);
+		border-color: var(--accent-border-hover);
 	}
 
 	.suggestion-card-header {
@@ -1512,8 +1512,8 @@
 		font-weight: 600;
 		text-transform: uppercase;
 		letter-spacing: 0.04em;
-		background: rgba(6, 182, 212, 0.08);
-		border: 1px solid rgba(6, 182, 212, 0.2);
+		background: var(--accent-tint);
+		border: 1px solid var(--accent-border);
 		border-radius: 999px;
 		color: var(--accent-cyan);
 		white-space: nowrap;
@@ -1587,7 +1587,7 @@
 	.suggestion-example {
 		margin-top: 1rem;
 		padding: 0.85rem 1rem 0.95rem;
-		background: rgba(255, 255, 255, 0.02);
+		background: var(--tint-weak);
 		border: 1px solid var(--glass-border);
 		border-radius: var(--radius-md);
 	}
@@ -1647,8 +1647,8 @@
 		font-size: 0.66rem;
 		font-weight: 600;
 		color: var(--text-tertiary);
-		background: rgba(255, 255, 255, 0.04);
-		border: 1px solid rgba(255, 255, 255, 0.08);
+		background: var(--tint-weak);
+		border: 1px solid var(--tint-hover);
 		border-radius: var(--radius-full);
 		cursor: pointer;
 		transition:
@@ -1659,8 +1659,8 @@
 	}
 
 	.copy-btn:hover {
-		background: rgba(255, 255, 255, 0.08);
-		border-color: rgba(255, 255, 255, 0.16);
+		background: var(--tint-hover);
+		border-color: var(--tint-strong);
 		color: var(--text-secondary);
 	}
 

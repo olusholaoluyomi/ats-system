@@ -713,6 +713,18 @@
 	}
 
 	.badge-dialog {
+		/* the dialog is a fixed dark "stage" for the dark exported badge,
+		   so pin its tokens to the light-on-dark scheme in both themes */
+		--text-primary: #f4f6f8;
+		--text-secondary: rgba(244, 246, 248, 0.8);
+		--text-tertiary: rgba(244, 246, 248, 0.6);
+		--tint-weak: rgba(255, 255, 255, 0.05);
+		--tint: rgba(255, 255, 255, 0.08);
+		--tint-hover: rgba(255, 255, 255, 0.12);
+		--tint-strong: rgba(255, 255, 255, 0.16);
+		--accent-tint: rgba(198, 255, 0, 0.1);
+		--accent-border: rgba(198, 255, 0, 0.3);
+		--accent-border-hover: rgba(198, 255, 0, 0.55);
 		position: relative;
 		width: 100%;
 		max-width: 520px;
@@ -724,8 +736,8 @@
 		overflow-y: auto;
 		-webkit-overflow-scrolling: touch;
 		background: rgba(18, 18, 30, 0.98);
-		border: 1px solid rgba(255, 255, 255, 0.08);
-		border-radius: 24px;
+		border: 1px solid var(--tint-hover);
+		border-radius: var(--radius-lg);
 		backdrop-filter: blur(24px);
 		box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5);
 		animation: dialogIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
@@ -746,8 +758,8 @@
 		position: absolute;
 		top: 1rem;
 		right: 1rem;
-		background: rgba(255, 255, 255, 0.05);
-		border: 1px solid rgba(255, 255, 255, 0.08);
+		background: var(--tint);
+		border: 1px solid var(--tint-hover);
 		border-radius: 50%;
 		width: 32px;
 		height: 32px;
@@ -764,7 +776,7 @@
 
 	.close-btn:hover {
 		color: var(--text-primary);
-		background: rgba(255, 255, 255, 0.1);
+		background: var(--tint-strong);
 	}
 
 	.badge-content {
@@ -789,9 +801,9 @@
 		justify-content: center;
 		margin-bottom: 1.5rem;
 		padding: 1rem;
-		background: rgba(255, 255, 255, 0.02);
-		border: 1px solid rgba(255, 255, 255, 0.06);
-		border-radius: 16px;
+		background: var(--tint-weak);
+		border: 1px solid var(--tint);
+		border-radius: var(--radius-lg);
 	}
 
 	.badge-svg {
@@ -812,7 +824,7 @@
 		justify-content: center;
 		gap: 0.5rem;
 		padding: 0.7rem 1rem;
-		border-radius: 12px;
+		border-radius: var(--radius-md);
 		font-size: 0.85rem;
 		font-weight: 600;
 		cursor: pointer;
@@ -822,15 +834,15 @@
 	}
 
 	.action-btn.primary {
-		background: rgba(6, 182, 212, 0.12);
-		border-color: rgba(6, 182, 212, 0.25);
-		color: #06b6d4;
+		background: var(--accent-cyan);
+		border-color: var(--accent-border-hover);
+		color: var(--ink);
 	}
 
 	.action-btn.primary:hover {
-		background: rgba(6, 182, 212, 0.2);
-		border-color: rgba(6, 182, 212, 0.4);
-		box-shadow: 0 0 20px rgba(6, 182, 212, 0.1);
+		background: var(--accent-lime);
+		border-color: var(--accent-border-hover);
+		box-shadow: 0 0 20px var(--accent-tint);
 	}
 
 	.action-btn.linkedin {
@@ -846,26 +858,26 @@
 	}
 
 	.action-btn.twitter {
-		background: rgba(255, 255, 255, 0.06);
-		border-color: rgba(255, 255, 255, 0.14);
+		background: var(--tint);
+		border-color: var(--tint-strong);
 		color: var(--text-primary);
 	}
 
 	.action-btn.twitter:hover {
-		background: rgba(255, 255, 255, 0.1);
-		border-color: rgba(255, 255, 255, 0.22);
-		box-shadow: 0 0 18px rgba(255, 255, 255, 0.05);
+		background: var(--tint-strong);
+		border-color: var(--tint-strong);
+		box-shadow: 0 0 18px var(--tint);
 	}
 
 	.action-btn.secondary {
-		background: rgba(255, 255, 255, 0.04);
-		border-color: rgba(255, 255, 255, 0.08);
+		background: var(--tint-weak);
+		border-color: var(--tint-hover);
 		color: var(--text-secondary);
 	}
 
 	.action-btn.secondary:hover {
-		background: rgba(255, 255, 255, 0.08);
-		border-color: rgba(255, 255, 255, 0.15);
+		background: var(--tint-hover);
+		border-color: var(--tint-strong);
 	}
 
 	/* scrollbar styling for the dialog */
@@ -878,7 +890,7 @@
 	}
 
 	.badge-dialog::-webkit-scrollbar-thumb {
-		background: rgba(255, 255, 255, 0.1);
+		background: var(--tint-strong);
 		border-radius: 2px;
 	}
 
@@ -889,7 +901,7 @@
 
 		.badge-dialog {
 			max-width: none;
-			border-radius: 20px;
+			border-radius: var(--radius-lg);
 		}
 
 		.badge-content {

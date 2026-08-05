@@ -74,14 +74,14 @@
 
 	/* primary variant */
 	.shimmer-btn.primary {
-		color: var(--color-bg-primary, #0a0a14);
+		color: var(--ink);
 		background: var(--gradient-primary);
 	}
 
 	.shimmer-btn.primary:hover:not(:disabled) {
 		transform: translateY(-2px);
 		box-shadow:
-			0 0 30px rgba(6, 182, 212, 0.35),
+			0 0 30px var(--accent-border-hover),
 			0 0 60px rgba(59, 130, 246, 0.15);
 	}
 
@@ -95,8 +95,8 @@
 
 	.shimmer-btn.secondary:hover:not(:disabled) {
 		transform: translateY(-1px);
-		border-color: rgba(6, 182, 212, 0.3);
-		box-shadow: 0 0 20px rgba(6, 182, 212, 0.1);
+		border-color: var(--accent-border-hover);
+		box-shadow: 0 0 20px var(--accent-tint);
 	}
 
 	.shimmer-btn:disabled {
@@ -117,7 +117,7 @@
 		background: linear-gradient(
 			110deg,
 			transparent 25%,
-			rgba(255, 255, 255, 0.15) 50%,
+			var(--tint-strong) 50%,
 			transparent 75%
 		);
 		background-size: 200% 100%;
@@ -128,7 +128,7 @@
 		background: linear-gradient(
 			110deg,
 			transparent 25%,
-			rgba(6, 182, 212, 0.06) 50%,
+			var(--accent-tint) 50%,
 			transparent 75%
 		);
 		background-size: 200% 100%;

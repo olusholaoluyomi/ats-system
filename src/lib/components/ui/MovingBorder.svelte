@@ -40,7 +40,7 @@
 		background: conic-gradient(
 			from 0deg,
 			transparent 60%,
-			rgba(6, 182, 212, 0.4) 80%,
+			var(--accent-border-hover) 80%,
 			rgba(59, 130, 246, 0.3) 90%,
 			transparent 100%
 		);

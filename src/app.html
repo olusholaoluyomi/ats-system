@@ -3,18 +3,32 @@
 	<head>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
-		<meta name="theme-color" content="#0a0a1a" />
+		<meta name="theme-color" content="#0a0e14" />
 		<meta name="author" content="Sunny Patel" />
 		<!-- safe-search categorization: tells filters this site is suitable
 		     for general audiences (no adult content). -->
 		<meta name="rating" content="general" />
 		<!-- windows pinned-tile color (matches our dark theme + manifest) -->
-		<meta name="msapplication-TileColor" content="#0a0a1a" />
+		<meta name="msapplication-TileColor" content="#0a0e14" />
 		<meta name="msapplication-config" content="none" />
-		<!-- the app is dark-only. tells the browser to render native form controls
-		     (autocomplete dropdowns, scrollbars, date pickers, autofill yellow,
-		     etc.) in dark mode so they do not flash light against the dark UI. -->
-		<meta name="color-scheme" content="dark" />
+		<!-- both themes are supported; native form controls follow data-theme
+		     via the color-scheme CSS property on :root / [data-theme=light]. -->
+		<meta name="color-scheme" content="light dark" />
+		<!-- apply the saved (or OS-preferred) theme before first paint so the
+		     page never flashes the wrong theme. kept inline + synchronous. -->
+		<script>
+			(function () {
+				try {
+					var t = localStorage.getItem('ats_theme');
+					if (t !== 'light' && t !== 'dark') {
+						t = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+					}
+					document.documentElement.setAttribute('data-theme', t);
+				} catch (e) {
+					document.documentElement.setAttribute('data-theme', 'dark');
+				}
+			})();
+		</script>
 		<!-- prevents mobile browsers from auto-linking numeric strings as phone
 		     numbers (e.g. "10+ years" misread, scan scores misread). -->
 		<meta name="format-detection" content="telephone=no" />
@@ -51,17 +65,17 @@
 		     fonts.gstatic.com connection and downloads the @font-face rules
 		     as early as possible, reducing LCP font-swap jank. the stylesheet
 		     already includes display=swap so the browser renders a system
-		     fallback immediately and swaps to Geist when it arrives. -->
+		     fallback immediately and swaps when it arrives. -->
 		<link
 			rel="preload"
 			as="style"
-			href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap"
+			href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Archivo:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap"
 		/>
 		<!-- firebase-auth dns-prefetch hints are emitted from the root layout,
 		     gated on firebase being the active auth mode, so a self-host without
 		     firebase never resolves google / firebase DNS (see +layout.svelte). -->
 		<link
-			href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap"
+			href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Archivo:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap"
 			rel="stylesheet"
 		/>
 		%sveltekit.head%

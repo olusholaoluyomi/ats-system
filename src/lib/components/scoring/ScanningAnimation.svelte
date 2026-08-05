@@ -172,7 +172,7 @@
 		background: conic-gradient(
 			from var(--border-angle, 0deg),
 			transparent 40%,
-			rgba(6, 182, 212, 0.6),
+			var(--accent-border-hover),
 			rgba(59, 130, 246, 0.4),
 			rgba(139, 92, 246, 0.3),
 			transparent 80%
@@ -216,7 +216,7 @@
 	.orbit-ring {
 		position: absolute;
 		inset: 0;
-		border: 1px solid rgba(6, 182, 212, 0.2);
+		border: 1px solid var(--accent-border);
 		border-radius: 50%;
 		animation: spin 4s linear infinite;
 	}
@@ -230,7 +230,7 @@
 		height: 6px;
 		border-radius: 50%;
 		background: var(--accent-cyan);
-		box-shadow: 0 0 10px rgba(6, 182, 212, 0.6);
+		box-shadow: 0 0 10px var(--accent-border-hover);
 	}
 
 	.center-icon {
@@ -300,7 +300,7 @@
 		gap: 0.4rem;
 		padding: 0.5rem 0.6rem;
 		border-radius: var(--radius-md);
-		background: rgba(255, 255, 255, 0.02);
+		background: var(--tint-weak);
 		border: 1px solid var(--glass-border);
 		min-width: 68px;
 		overflow: hidden;

@@ -118,8 +118,8 @@
 	}
 
 	.avatar-btn:hover {
-		border-color: rgba(6, 182, 212, 0.4);
-		box-shadow: 0 0 12px rgba(6, 182, 212, 0.15);
+		border-color: var(--accent-border-hover);
+		box-shadow: 0 0 12px var(--accent-border);
 	}
 
 	.avatar-img {
@@ -140,7 +140,7 @@
 		top: calc(100% + 8px);
 		right: 0;
 		min-width: 220px;
-		background: rgba(15, 15, 30, 0.95);
+		background: var(--glass-bg);
 		border: 1px solid var(--glass-border);
 		border-radius: var(--radius-lg);
 		backdrop-filter: blur(20px);
@@ -223,7 +223,7 @@
 	}
 
 	.dropdown-item:hover {
-		background: rgba(6, 182, 212, 0.06);
+		background: var(--accent-tint);
 		color: var(--text-primary);
 	}
 </style>

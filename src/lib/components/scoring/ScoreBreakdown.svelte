@@ -234,7 +234,7 @@
 	}
 
 	.breakdown.expanded {
-		border-color: rgba(6, 182, 212, 0.2);
+		border-color: var(--accent-border);
 	}
 
 	.breakdown-toggle {
@@ -250,7 +250,7 @@
 	}
 
 	.breakdown-toggle:hover {
-		background: rgba(255, 255, 255, 0.02);
+		background: var(--tint-weak);
 	}
 
 	.toggle-left {

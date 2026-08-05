@@ -201,8 +201,8 @@
 	.uploader:hover,
 	.uploader.dragging {
 		border-color: var(--accent-cyan);
-		background: rgba(6, 182, 212, 0.03);
-		box-shadow: 0 0 30px rgba(6, 182, 212, 0.08);
+		background: var(--accent-tint);
+		box-shadow: 0 0 30px var(--accent-tint);
 	}
 
 	.uploader.has-file {
@@ -230,8 +230,8 @@
 		justify-content: center;
 		margin: 0 auto 1.25rem;
 		border-radius: var(--radius-lg);
-		background: rgba(6, 182, 212, 0.08);
-		border: 1px solid rgba(6, 182, 212, 0.15);
+		background: var(--accent-tint);
+		border: 1px solid var(--accent-border);
 		color: var(--accent-cyan);
 	}
 
@@ -259,7 +259,7 @@
 		font-size: 0.7rem;
 		font-weight: 600;
 		color: var(--text-tertiary);
-		background: rgba(255, 255, 255, 0.03);
+		background: var(--tint-weak);
 		border: 1px solid var(--glass-border);
 		border-radius: var(--radius-md);
 		letter-spacing: 0.05em;

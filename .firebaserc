@@ -1,5 +1,8 @@
 {
   "projects": {
-    "default": "ats-screener-app"
-  }
+    "default": "ats-screener-app",
+    "production": "ats-system-729c8"
+  },
+  "targets": {},
+  "etags": {}
 }

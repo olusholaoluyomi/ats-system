@@ -273,7 +273,7 @@
 	}
 
 	.feature-card:hover {
-		border-color: rgba(6, 182, 212, 0.25);
+		border-color: var(--accent-border);
 		transform: translateY(-4px);
 		box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
 	}
@@ -303,7 +303,7 @@
 		inset: 0;
 		background: radial-gradient(
 			350px circle at var(--spotlight-x) var(--spotlight-y),
-			rgba(6, 182, 212, 0.07),
+			var(--accent-tint),
 			transparent 60%
 		);
 		pointer-events: none;

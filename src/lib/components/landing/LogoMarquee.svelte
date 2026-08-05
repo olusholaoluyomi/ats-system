@@ -171,7 +171,7 @@
 	}
 
 	.cap-chip:hover {
-		border-color: rgba(6, 182, 212, 0.25);
+		border-color: var(--accent-border);
 		color: var(--text-secondary);
 	}
 

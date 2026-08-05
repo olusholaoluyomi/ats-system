@@ -342,7 +342,7 @@
 		flex-direction: column;
 		align-items: center;
 		padding: 0.75rem;
-		background: rgba(255, 255, 255, 0.02);
+		background: var(--tint-weak);
 		border: 1px solid var(--glass-border);
 		border-radius: var(--radius-md);
 	}
@@ -399,16 +399,16 @@
 
 	.skill-chip {
 		padding: 0.2rem 0.6rem;
-		background: rgba(6, 182, 212, 0.08);
+		background: var(--accent-tint);
 		color: var(--accent-cyan);
-		border: 1px solid rgba(6, 182, 212, 0.15);
+		border: 1px solid var(--accent-border);
 		border-radius: var(--radius-full);
 		font-size: 0.72rem;
 		font-weight: 500;
 	}
 
 	.skill-chip.more {
-		background: rgba(255, 255, 255, 0.03);
+		background: var(--tint-weak);
 		color: var(--text-tertiary);
 		border-color: var(--glass-border);
 		cursor: pointer;
@@ -419,7 +419,7 @@
 	}
 
 	.skill-chip.more:hover {
-		border-color: rgba(6, 182, 212, 0.3);
+		border-color: var(--accent-border-hover);
 		color: var(--accent-cyan);
 	}
 

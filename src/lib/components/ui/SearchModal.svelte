@@ -180,7 +180,7 @@
 		width: 100%;
 		max-width: 580px;
 		margin: 0 1rem;
-		background: rgba(18, 18, 30, 0.98);
+		background: var(--glass-bg);
 		border: 1px solid var(--glass-border);
 		border-radius: var(--radius-xl);
 		backdrop-filter: blur(24px);
@@ -228,7 +228,7 @@
 	.esc-hint {
 		font-size: 0.6rem;
 		color: var(--text-tertiary);
-		background: rgba(255, 255, 255, 0.06);
+		background: var(--tint);
 		border: 1px solid var(--glass-border);
 		border-radius: 4px;
 		padding: 0.15rem 0.4rem;
@@ -262,7 +262,7 @@
 	}
 
 	.search-result:hover {
-		background: rgba(255, 255, 255, 0.05);
+		background: var(--tint);
 	}
 
 	.result-title {
@@ -288,7 +288,7 @@
 
 	/* highlight matching terms from pagefind */
 	.result-excerpt :global(mark) {
-		background: rgba(6, 182, 212, 0.2);
+		background: var(--accent-border);
 		color: var(--accent-cyan);
 		border-radius: 2px;
 		padding: 0 2px;
@@ -313,7 +313,7 @@
 
 	.footer-hint kbd {
 		font-size: 0.6rem;
-		background: rgba(255, 255, 255, 0.06);
+		background: var(--tint);
 		border: 1px solid var(--glass-border);
 		border-radius: 3px;
 		padding: 0.1rem 0.35rem;

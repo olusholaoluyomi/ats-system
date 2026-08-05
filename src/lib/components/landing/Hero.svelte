@@ -308,7 +308,7 @@
 	.orb-1 {
 		width: 600px;
 		height: 600px;
-		background: rgba(6, 182, 212, 0.12);
+		background: var(--accent-tint);
 		top: -10%;
 		left: -10%;
 		animation-delay: 0s;
@@ -360,7 +360,7 @@
 		width: 3px;
 		height: 3px;
 		border-radius: 50%;
-		background: rgba(6, 182, 212, 0.3);
+		background: var(--accent-border-hover);
 		animation: particle-float 15s ease-in-out infinite;
 		animation-delay: calc(var(--i) * -2.5s);
 		left: calc(15% + var(--i) * 12%);
@@ -390,8 +390,8 @@
 		position: absolute;
 		inset: 0;
 		background-image:
-			linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
-			linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+			linear-gradient(var(--tint-weak) 1px, transparent 1px),
+			linear-gradient(90deg, var(--tint-weak) 1px, transparent 1px);
 		background-size: 60px 60px;
 		mask-image: radial-gradient(ellipse 80% 60% at 50% 40%, black, transparent);
 		pointer-events: none;
@@ -402,7 +402,7 @@
 		inset: 0;
 		background: radial-gradient(
 			800px circle at var(--mx, 50%) var(--my, 50%),
-			rgba(6, 182, 212, 0.06),
+			var(--accent-tint),
 			transparent 50%
 		);
 		transition: background 0.3s ease;
@@ -535,7 +535,7 @@
 		padding: 1rem 2.25rem;
 		font-size: 1.05rem;
 		font-weight: 600;
-		color: var(--color-bg-primary);
+		color: var(--ink);
 		background: var(--gradient-primary);
 		border: none;
 		border-radius: var(--radius-lg);
@@ -550,9 +550,9 @@
 	.btn-primary:hover {
 		transform: translateY(-3px);
 		box-shadow:
-			0 0 40px rgba(6, 182, 212, 0.35),
+			0 0 40px var(--accent-border-hover),
 			0 0 80px rgba(59, 130, 246, 0.15);
-		color: var(--color-bg-primary);
+		color: var(--ink);
 	}
 
 	.btn-shimmer {

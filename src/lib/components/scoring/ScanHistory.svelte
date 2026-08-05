@@ -214,7 +214,7 @@
 		height: 18px;
 		padding: 0 5px;
 		border-radius: var(--radius-full);
-		background: rgba(6, 182, 212, 0.1);
+		background: var(--accent-tint);
 		color: var(--accent-cyan);
 		font-size: 0.65rem;
 		font-weight: 700;
@@ -260,7 +260,7 @@
 	}
 
 	.history-entry:hover {
-		background: rgba(6, 182, 212, 0.04);
+		background: var(--accent-tint);
 	}
 
 	.entry-score-block {

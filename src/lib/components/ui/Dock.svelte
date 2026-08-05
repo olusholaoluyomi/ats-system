@@ -89,8 +89,8 @@
 		align-items: center;
 		justify-content: center;
 		border-radius: 12px;
-		background: rgba(255, 255, 255, 0.05);
-		border: 1px solid rgba(255, 255, 255, 0.08);
+		background: var(--tint);
+		border: 1px solid var(--tint-hover);
 		cursor: pointer;
 		transition:
 			width 0.15s ease-out,
@@ -102,8 +102,8 @@
 	}
 
 	.dock-item:hover {
-		background: rgba(6, 182, 212, 0.1);
-		border-color: rgba(6, 182, 212, 0.2);
+		background: var(--accent-tint);
+		border-color: var(--accent-border);
 	}
 
 	.dock-icon {

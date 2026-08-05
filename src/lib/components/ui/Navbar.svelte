@@ -6,6 +6,7 @@
 	import AuthButton from './AuthButton.svelte';
 	import SearchModal from './SearchModal.svelte';
 	import { authStore } from '$stores/auth.svelte';
+	import { themeStore } from '$stores/theme.svelte';
 
 	// controls the mobile menu visibility
 	let mobileOpen = $state(false);
@@ -38,6 +39,25 @@
 <nav class="navbar">
 	<div class="nav-inner">
 		<Logo size="sm" />
+
+		<button
+			class="theme-toggle"
+			onclick={() => themeStore.toggle()}
+			aria-label={themeStore.theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
+		>
+			{#if themeStore.theme === 'dark'}
+				<!-- sun icon -->
+				<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+					<circle cx="12" cy="12" r="4" />
+					<path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32 1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
+				</svg>
+			{:else}
+				<!-- moon icon -->
+				<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+					<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+				</svg>
+			{/if}
+		</button>
 
 		{#if !isOnDocs}
 			<button class="search-bar" onclick={handleSearchClick} aria-label="Search documentation">
@@ -135,7 +155,7 @@
 		right: 0;
 		z-index: 100;
 		padding: 0.875rem 2rem;
-		background: rgba(10, 10, 20, 0.85);
+		background: color-mix(in srgb, var(--color-bg-primary) 85%, transparent);
 		backdrop-filter: blur(24px);
 		border-bottom: 1px solid var(--glass-border);
 	}
@@ -145,7 +165,33 @@
 		margin: 0 auto;
 		display: flex;
 		align-items: center;
+		gap: 1rem;
 		justify-content: space-between;
+	}
+
+	/* theme toggle */
+	.theme-toggle {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		min-width: 32px;
+		min-height: 32px;
+		padding: 0.4rem;
+		color: var(--text-secondary);
+		background: var(--tint);
+		border: 1px solid var(--glass-border);
+		border-radius: var(--radius-sm);
+		cursor: pointer;
+		transition:
+			color 0.2s ease,
+			border-color 0.2s ease,
+			background 0.2s ease;
+	}
+
+	.theme-toggle:hover {
+		color: var(--accent-cyan);
+		border-color: var(--glass-border-hover);
+		background: var(--tint-hover);
 	}
 
 	/* search bar */
@@ -154,9 +200,9 @@
 		align-items: center;
 		gap: 0.5rem;
 		padding: 0.4rem 0.75rem;
-		background: rgba(255, 255, 255, 0.04);
+		background: var(--tint);
 		border: 1px solid var(--glass-border);
-		border-radius: var(--radius-md);
+		border-radius: var(--radius-sm);
 		cursor: pointer;
 		transition:
 			border-color 0.2s ease,
@@ -165,8 +211,8 @@
 	}
 
 	.search-bar:hover {
-		border-color: rgba(255, 255, 255, 0.15);
-		background: rgba(255, 255, 255, 0.06);
+		border-color: var(--glass-border-hover);
+		background: var(--tint-hover);
 	}
 
 	.search-icon {
@@ -183,11 +229,11 @@
 
 	.search-kbd {
 		font-size: 0.65rem;
-		font-family: inherit;
+		font-family: var(--font-mono);
 		color: var(--text-tertiary);
-		background: rgba(255, 255, 255, 0.06);
+		background: var(--tint);
 		border: 1px solid var(--glass-border);
-		border-radius: 4px;
+		border-radius: var(--radius-sm);
 		padding: 0.15rem 0.4rem;
 		line-height: 1;
 		white-space: nowrap;
@@ -215,14 +261,24 @@
 		color: var(--text-primary);
 	}
 
+	/* active nav item: accent color + 2px left border + subtle tint */
+	.nav-link.active {
+		color: var(--accent-cyan);
+		border-left: 2px solid var(--accent-cyan);
+		padding-left: 0.6rem;
+		background: rgba(255, 43, 127, 0.05);
+	}
+
 	/* CTA button in navbar */
 	.nav-cta {
 		padding: 0.5rem 1.25rem;
-		font-size: 0.85rem;
-		font-weight: 600;
-		color: var(--color-bg-primary);
+		font-family: var(--font-display);
+		font-size: 0.75rem;
+		text-transform: uppercase;
+		letter-spacing: 0.06em;
+		color: var(--ink);
 		background: var(--gradient-primary);
-		border-radius: var(--radius-full);
+		border-radius: var(--radius-sm);
 		text-decoration: none;
 		transition:
 			transform 0.2s ease,
@@ -231,8 +287,8 @@
 
 	.nav-cta:hover {
 		transform: translateY(-1px);
-		box-shadow: 0 0 20px rgba(6, 182, 212, 0.3);
-		color: var(--color-bg-primary);
+		box-shadow: var(--glow-accent);
+		color: var(--ink);
 	}
 
 	.nav-toggle {
@@ -249,7 +305,7 @@
 		padding: 12px;
 		align-items: center;
 		justify-content: center;
-		border-radius: var(--radius-md);
+		border-radius: var(--radius-sm);
 	}
 
 	.bar {
@@ -298,7 +354,7 @@
 			right: 0;
 			flex-direction: column;
 			padding: 1.5rem 2rem;
-			background: rgba(10, 10, 20, 0.98);
+			background: color-mix(in srgb, var(--color-bg-primary) 98%, transparent);
 			backdrop-filter: blur(24px);
 			border-bottom: 1px solid var(--glass-border);
 			gap: 1rem;

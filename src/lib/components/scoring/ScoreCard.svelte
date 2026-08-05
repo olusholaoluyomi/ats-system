@@ -192,7 +192,7 @@
 		inset: 0;
 		background: radial-gradient(
 			280px circle at var(--spotlight-x) var(--spotlight-y),
-			rgba(6, 182, 212, 0.06),
+			var(--accent-tint),
 			transparent 60%
 		);
 		pointer-events: none;
@@ -342,7 +342,7 @@
 	.breakdown-bar {
 		flex: 1;
 		height: 5px;
-		background: rgba(255, 255, 255, 0.05);
+		background: var(--tint);
 		border-radius: 3px;
 		overflow: hidden;
 	}

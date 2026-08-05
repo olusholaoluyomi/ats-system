@@ -206,7 +206,7 @@
 
 	.rate-bar {
 		height: 6px;
-		background: rgba(255, 255, 255, 0.05);
+		background: var(--tint);
 		border-radius: 3px;
 		overflow: hidden;
 		margin-bottom: 1.5rem;
@@ -260,7 +260,7 @@
 		overflow-y: auto;
 		transition: max-height 0.3s ease;
 		scrollbar-width: thin;
-		scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+		scrollbar-color: var(--tint-strong) transparent;
 	}
 
 	.chips-container.collapsed {

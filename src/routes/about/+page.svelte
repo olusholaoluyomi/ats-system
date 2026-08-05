@@ -379,7 +379,7 @@
 	.orb-1 {
 		width: 500px;
 		height: 500px;
-		background: rgba(6, 182, 212, 0.06);
+		background: var(--accent-tint);
 		top: 5%;
 		left: -10%;
 	}
@@ -452,8 +452,8 @@
 	.section-badge {
 		display: inline-block;
 		padding: 0.3rem 0.85rem;
-		background: rgba(6, 182, 212, 0.08);
-		border: 1px solid rgba(6, 182, 212, 0.15);
+		background: var(--accent-tint);
+		border: 1px solid var(--accent-border);
 		border-radius: var(--radius-full);
 		font-size: 0.75rem;
 		font-weight: 600;
@@ -535,7 +535,7 @@
 	}
 
 	.approach-item:hover {
-		border-color: rgba(6, 182, 212, 0.2);
+		border-color: var(--accent-border);
 	}
 
 	.approach-number {
@@ -628,7 +628,7 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		background: rgba(255, 255, 255, 0.05);
+		background: var(--tint);
 		border-radius: 50%;
 		margin: 0 auto 1.25rem;
 		color: var(--text-primary);
@@ -671,14 +671,14 @@
 	}
 
 	.os-btn.primary {
-		color: var(--color-bg-primary);
+		color: var(--ink);
 		background: var(--gradient-primary);
 	}
 
 	.os-btn.primary:hover {
 		transform: translateY(-2px);
-		box-shadow: 0 0 20px rgba(6, 182, 212, 0.3);
-		color: var(--color-bg-primary);
+		box-shadow: 0 0 20px var(--accent-border-hover);
+		color: var(--ink);
 	}
 
 	.os-btn.secondary {

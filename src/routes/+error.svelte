@@ -279,7 +279,7 @@
 	.orb-cyan {
 		width: 520px;
 		height: 520px;
-		background: rgba(6, 182, 212, 0.1);
+		background: var(--accent-tint);
 		top: -8%;
 		left: -8%;
 	}
@@ -304,8 +304,8 @@
 		position: absolute;
 		inset: 0;
 		background-image:
-			linear-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px),
-			linear-gradient(90deg, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
+			linear-gradient(var(--tint-weak) 1px, transparent 1px),
+			linear-gradient(90deg, var(--tint-weak) 1px, transparent 1px);
 		background-size: 56px 56px;
 		mask-image: radial-gradient(ellipse 80% 70% at 50% 40%, black, transparent);
 		pointer-events: none;
@@ -393,25 +393,25 @@
 	@keyframes glitch-jitter {
 		0% {
 			text-shadow:
-				2px 0 rgba(6, 182, 212, 0.5),
+				2px 0 var(--accent-border-hover),
 				-2px 0 rgba(167, 139, 250, 0.5);
 			transform: translateX(0);
 		}
 		25% {
 			text-shadow:
-				-3px 0 rgba(6, 182, 212, 0.6),
+				-3px 0 var(--accent-border-hover),
 				3px 0 rgba(167, 139, 250, 0.4);
 			transform: translateX(2px);
 		}
 		50% {
 			text-shadow:
-				3px 0 rgba(6, 182, 212, 0.4),
+				3px 0 var(--accent-border-hover),
 				-1px 0 rgba(167, 139, 250, 0.6);
 			transform: translateX(-1px);
 		}
 		75% {
 			text-shadow:
-				-2px 0 rgba(6, 182, 212, 0.5),
+				-2px 0 var(--accent-border-hover),
 				2px 0 rgba(167, 139, 250, 0.5);
 			transform: translateX(1px);
 		}
@@ -482,7 +482,7 @@
 		color: var(--text-primary);
 		border-color: var(--accent-cyan);
 		transform: translateY(-2px);
-		box-shadow: 0 0 16px rgba(6, 182, 212, 0.2);
+		box-shadow: 0 0 16px var(--accent-border);
 		outline: none;
 	}
 
@@ -597,13 +597,13 @@
 	}
 
 	.btn-primary {
-		color: var(--color-bg-primary);
+		color: var(--ink);
 		background: var(--gradient-primary);
 	}
 
 	.btn-primary:hover {
 		transform: translateY(-1px);
-		box-shadow: 0 0 20px rgba(6, 182, 212, 0.3);
+		box-shadow: 0 0 20px var(--accent-border-hover);
 	}
 
 	.btn-secondary {

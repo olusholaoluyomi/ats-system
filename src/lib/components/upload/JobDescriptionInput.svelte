@@ -371,7 +371,7 @@
 	.jd-textarea:focus {
 		outline: none;
 		border-color: var(--accent-cyan);
-		box-shadow: 0 0 20px rgba(6, 182, 212, 0.08);
+		box-shadow: 0 0 20px var(--accent-tint);
 	}
 
 	.jd-textarea::placeholder {
@@ -390,9 +390,9 @@
 		display: inline-flex;
 		align-items: center;
 		padding: 0.4rem 0.85rem;
-		background: rgba(6, 182, 212, 0.06);
+		background: var(--accent-tint);
 		color: var(--accent-cyan);
-		border: 1px solid rgba(6, 182, 212, 0.2);
+		border: 1px solid var(--accent-border);
 		border-radius: var(--radius-md);
 		font-size: 0.8rem;
 		font-weight: 500;
@@ -403,8 +403,8 @@
 	}
 
 	.jd-sample-btn:hover {
-		background: rgba(6, 182, 212, 0.12);
-		border-color: rgba(6, 182, 212, 0.35);
+		background: var(--accent-tint);
+		border-color: var(--accent-border-hover);
 	}
 
 	.jd-status {
@@ -415,8 +415,8 @@
 		font-size: 0.85rem;
 		color: var(--accent-cyan);
 		padding: 0.5rem 0.75rem;
-		background: rgba(6, 182, 212, 0.05);
-		border: 1px solid rgba(6, 182, 212, 0.15);
+		background: var(--accent-tint);
+		border: 1px solid var(--accent-border);
 		border-radius: var(--radius-md);
 	}
 
@@ -424,7 +424,7 @@
 	.jd-preview {
 		margin-top: 0.85rem;
 		padding: 0.85rem 1rem 1rem;
-		background: rgba(255, 255, 255, 0.02);
+		background: var(--tint-weak);
 		border: 1px solid var(--glass-border);
 		border-radius: var(--radius-md);
 		animation: previewIn 0.25s ease;
@@ -481,8 +481,8 @@
 		font-weight: 500;
 		text-transform: capitalize;
 		color: var(--text-tertiary);
-		background: rgba(255, 255, 255, 0.04);
-		border: 1px solid rgba(255, 255, 255, 0.06);
+		background: var(--tint-weak);
+		border: 1px solid var(--tint);
 		border-radius: var(--radius-full);
 	}
 
@@ -500,8 +500,8 @@
 		font-size: 0.74rem;
 		font-weight: 500;
 		color: var(--text-secondary);
-		background: rgba(6, 182, 212, 0.06);
-		border: 1px solid rgba(6, 182, 212, 0.15);
+		background: var(--accent-tint);
+		border: 1px solid var(--accent-border);
 		border-radius: var(--radius-full);
 	}
 
@@ -533,9 +533,9 @@
 		align-items: center;
 		gap: 0.35rem;
 		padding: 0.4rem 0.85rem;
-		background: rgba(6, 182, 212, 0.06);
+		background: var(--accent-tint);
 		color: var(--accent-cyan);
-		border: 1px solid rgba(6, 182, 212, 0.2);
+		border: 1px solid var(--accent-border);
 		border-radius: var(--radius-md);
 		font-size: 0.8rem;
 		font-weight: 500;
@@ -547,8 +547,8 @@
 	}
 
 	.jd-save-btn:hover:not(:disabled) {
-		background: rgba(6, 182, 212, 0.12);
-		border-color: rgba(6, 182, 212, 0.35);
+		background: var(--accent-tint);
+		border-color: var(--accent-border-hover);
 	}
 
 	.jd-save-btn:disabled {
@@ -566,7 +566,7 @@
 		align-items: center;
 		gap: 0.35rem;
 		padding: 0.4rem 0.85rem;
-		background: rgba(255, 255, 255, 0.04);
+		background: var(--tint-weak);
 		color: var(--text-secondary);
 		border: 1px solid var(--glass-border);
 		border-radius: var(--radius-md);
@@ -581,8 +581,8 @@
 
 	.jd-library-btn:hover,
 	.jd-library-btn[aria-expanded='true'] {
-		background: rgba(255, 255, 255, 0.07);
-		border-color: rgba(255, 255, 255, 0.15);
+		background: var(--tint);
+		border-color: var(--tint-strong);
 		color: var(--text-primary);
 	}
 
@@ -609,7 +609,7 @@
 	.jd-library-item {
 		display: flex;
 		align-items: center;
-		border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+		border-bottom: 1px solid var(--tint-weak);
 	}
 
 	.jd-library-item:last-child {
@@ -631,7 +631,7 @@
 	}
 
 	.jd-library-load:hover {
-		background: rgba(6, 182, 212, 0.06);
+		background: var(--accent-tint);
 	}
 
 	.jd-library-label {

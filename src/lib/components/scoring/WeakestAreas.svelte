@@ -244,7 +244,7 @@
 		gap: 1rem;
 		padding: 0.75rem 1rem;
 		border-radius: var(--radius-md);
-		background: rgba(255, 255, 255, 0.015);
+		background: var(--tint-weak);
 		border: 1px solid transparent;
 		transition:
 			background 0.15s ease,
@@ -312,7 +312,7 @@
 		font-size: 0.72rem;
 		color: var(--text-tertiary);
 		padding: 0.1rem 0.5rem;
-		background: rgba(255, 255, 255, 0.03);
+		background: var(--tint-weak);
 		border-radius: var(--radius-full);
 		border: 1px solid var(--glass-border);
 	}
@@ -330,7 +330,7 @@
 
 	.area-bar-bg {
 		height: 4px;
-		background: rgba(255, 255, 255, 0.05);
+		background: var(--tint);
 		border-radius: 2px;
 		overflow: hidden;
 	}
