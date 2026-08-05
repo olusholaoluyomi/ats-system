@@ -1,4 +1,6 @@
 import { ImageResponse } from '@vercel/og';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { clamp, parseInt0 } from '$lib/clamp';
 import type { RequestHandler } from './$types';
 
@@ -10,6 +12,18 @@ export const config = { maxDuration: 30 };
 
 const WIDTH = 1200;
 const HEIGHT = 630;
+
+// design tokens mirror src/lib/styles/tokens.css (dark theme) so the share
+// card matches the platform's current look: ink background, lime/cyan accents,
+// Archivo Black display type + JetBrains Mono labels, sharp 2-6px corners.
+const INK = '#0a0e14';
+const SURFACE = '#111820';
+const BORDER = 'rgba(255, 255, 255, 0.08)';
+const LIME = '#c6ff00';
+const CYAN = '#00e0ff';
+const TEXT_PRIMARY = '#e8edf5';
+const TEXT_SECONDARY = '#9aa3b8';
+const TEXT_TERTIARY = '#818fa0';
 
 // score-tier colors mirror src/lib/engine/scorer/classification.ts
 function tierColor(score: number): string {
@@ -24,6 +38,73 @@ function tierLabel(score: number): string {
 	if (score >= 60) return 'GOOD';
 	if (score >= 40) return 'NEEDS WORK';
 	return 'POOR';
+}
+
+// font files live in static/fonts (same trick as the docs route: node runtime
+// resolves them via process.cwd() on Vercel). loaded lazily once per cold
+// start; a missing font silently falls back to satori's bundled font so the
+// endpoint never 500s over a font.
+type FontWeight = 400 | 500 | 600 | 700;
+
+interface FontFace {
+	name: string;
+	data: ArrayBuffer;
+	weight: FontWeight;
+	style: 'normal';
+}
+
+let fontFaces: FontFace[] | null = null;
+
+// static (non-variable) font files only - @vercel/og's bundled opentype parser
+// throws on the `fvar` table of variable fonts. weights map to the exact file
+// served per weight, so a missing weight just isn't registered and satori falls
+// back to the nearest registered one.
+function pushFaces(
+	faces: FontFace[],
+	dir: string,
+	name: string,
+	files: [FontWeight, string][]
+): void {
+	for (const [weight, file] of files) {
+		try {
+			const buf = readFileSync(resolve(dir, file));
+			faces.push({
+				name,
+				data: buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength) as ArrayBuffer,
+				weight,
+				style: 'normal'
+			});
+		} catch {
+			// font missing or unreadable -> skip
+		}
+	}
+}
+
+function loadFontFaces(): FontFace[] {
+	if (fontFaces) return fontFaces;
+	const dir = resolve(process.cwd(), 'static', 'fonts');
+	const faces: FontFace[] = [];
+	pushFaces(faces, dir, 'ArchivoBlack', [[400, 'ArchivoBlack-Regular.ttf']]);
+	pushFaces(
+		faces,
+		dir,
+		'Archivo',
+		[400, 500, 600, 700].map((weight) => [weight, `Archivo-${weight}.woff`]) as [
+			FontWeight,
+			string
+		][]
+	);
+	pushFaces(
+		faces,
+		dir,
+		'JetBrainsMono',
+		[400, 500, 700].map((weight) => [weight, `JetBrainsMono-${weight}.ttf`]) as [
+			FontWeight,
+			string
+		][]
+	);
+	fontFaces = faces;
+	return faces;
 }
 
 // function-level LRU memo of rendered PNG bytes. the vercel cdn cache
@@ -77,8 +158,10 @@ export const GET: RequestHandler = async ({ url }) => {
 	const color = tierColor(score);
 	const label = tierLabel(score);
 
-	// React-element tree built as plain objects so we don't need JSX in the project.
-	// satori (under @vercel/og) accepts this shape directly.
+	// hero-section-style card: badge pill, Archivo Black headline, giant score,
+	// a stats strip mirroring the landing hero, and a mono footer.
+	// React-element tree built as plain objects so we don't need JSX in the
+	// project. satori (under @vercel/og) accepts this shape directly.
 	const tree = {
 		type: 'div',
 		props: {
@@ -88,72 +171,134 @@ export const GET: RequestHandler = async ({ url }) => {
 				display: 'flex',
 				flexDirection: 'column',
 				justifyContent: 'space-between',
-				background: 'linear-gradient(135deg, #0a0a1a 0%, #0d0d24 50%, #12122e 100%)',
-				color: '#e4e4e7',
-				padding: '64px 72px',
-				fontFamily: 'Inter, system-ui, sans-serif'
+				// ink background + two soft "mesh orb" radial glows (lime/cyan)
+				background:
+					`radial-gradient(circle at 18% 8%, rgba(198, 255, 0, 0.1), transparent 42%), radial-gradient(circle at 84% 92%, rgba(0, 224, 255, 0.12), transparent 45%), ${INK}`,
+				color: TEXT_PRIMARY,
+				padding: '52px 64px 48px',
+				fontFamily: 'Archivo, system-ui, sans-serif'
 			},
 			children: [
-				// header strip
+				// header strip: brand left, hero trust badge right
 				{
 					type: 'div',
 					props: {
 						style: {
 							display: 'flex',
 							alignItems: 'center',
-							gap: '16px',
-							fontSize: '22px',
-							fontWeight: 600,
-							color: '#a1a1aa',
-							letterSpacing: '0.06em',
-							textTransform: 'uppercase'
+							justifyContent: 'space-between',
+							gap: '24px'
 						},
 						children: [
 							{
 								type: 'div',
 								props: {
 									style: {
-										width: '12px',
-										height: '12px',
-										borderRadius: '50%',
-										background: color
-									}
+										fontFamily: 'ArchivoBlack, Archivo, sans-serif',
+										fontSize: '26px',
+										letterSpacing: '0.06em',
+										textTransform: 'uppercase',
+										color: LIME
+									},
+									children: 'ATS Screener'
 								}
 							},
-							'ATS SCREENER'
-						]
-					}
-				},
-				// center: score + verdict
-				{
-					type: 'div',
-					props: {
-						style: {
-							display: 'flex',
-							flexDirection: 'column',
-							gap: '10px'
-						},
-						children: [
 							{
 								type: 'div',
 								props: {
 									style: {
 										display: 'flex',
-										alignItems: 'baseline',
-										gap: '24px'
+										alignItems: 'center',
+										gap: '12px',
+										padding: '10px 18px',
+										border: `1px solid rgba(198, 255, 0, 0.4)`,
+										background: 'rgba(198, 255, 0, 0.08)',
+										borderRadius: '4px',
+										fontFamily: 'JetBrainsMono, monospace',
+										fontSize: '17px',
+										color: TEXT_SECONDARY,
+										letterSpacing: '0.04em'
 									},
 									children: [
 										{
 											type: 'div',
 											props: {
 												style: {
-													fontSize: '260px',
-													fontWeight: 800,
-													color,
+													width: '11px',
+													height: '11px',
+													borderRadius: '50%',
+													background: LIME
+												}
+											}
+										},
+										'Free For Now · No Card · Try Before Pricing'
+									]
+								}
+							}
+						]
+					}
+				},
+				// center: hero headline + score
+				{
+					type: 'div',
+					props: {
+						style: {
+							display: 'flex',
+							flexDirection: 'column',
+							gap: '18px'
+						},
+						children: [
+							// "Your Resume vs. Real ATS Systems" in Archivo Black
+							{
+								type: 'div',
+								props: {
+								style: {
+									display: 'flex',
+									flexDirection: 'column',
+									fontFamily: 'ArchivoBlack, Archivo, sans-serif',
+									fontSize: '44px',
+									lineHeight: 1.12,
+									letterSpacing: '-0.02em',
+									color: TEXT_PRIMARY
+								},
+									children: [
+										'Your Resume vs.',
+										{ type: 'div', props: { style: { color: LIME }, children: 'Real ATS Systems' } }
+									]
+								}
+							},
+							// giant score + delta chip
+							{
+								type: 'div',
+								props: {
+									style: {
+										display: 'flex',
+										alignItems: 'baseline',
+										gap: '20px'
+									},
+									children: [
+										{
+											type: 'div',
+											props: {
+												style: {
+													fontFamily: 'ArchivoBlack, Archivo, sans-serif',
+													fontSize: '150px',
 													lineHeight: 1,
-													letterSpacing: '-0.04em'
+													letterSpacing: '-0.04em',
+													color: LIME
 												},
 												children: String(score)
+											}
+										},
+										{
+											type: 'div',
+											props: {
+												style: {
+													fontSize: '34px',
+													fontWeight: 600,
+													color: TEXT_SECONDARY
+												},
+												children: '/100'
 											}
 										},
 										delta !== null && delta > 0
@@ -163,11 +308,12 @@ export const GET: RequestHandler = async ({ url }) => {
 														style: {
 															display: 'flex',
 															alignItems: 'center',
-															padding: '10px 22px',
-															background: 'rgba(34, 197, 94, 0.18)',
-															color: '#22c55e',
-															borderRadius: '999px',
-															fontSize: '40px',
+															padding: '8px 18px',
+															background: 'rgba(0, 230, 118, 0.16)',
+															color: '#00e676',
+															borderRadius: '4px',
+															fontFamily: 'JetBrainsMono, monospace',
+															fontSize: '28px',
 															fontWeight: 700
 														},
 														children: `+${delta}`
@@ -181,11 +327,12 @@ export const GET: RequestHandler = async ({ url }) => {
 														style: {
 															display: 'flex',
 															alignItems: 'center',
-															padding: '10px 22px',
-															background: 'rgba(239, 68, 68, 0.18)',
-															color: '#ef4444',
-															borderRadius: '999px',
-															fontSize: '40px',
+															padding: '8px 18px',
+															background: 'rgba(255, 82, 82, 0.16)',
+															color: '#ff5252',
+															borderRadius: '4px',
+															fontFamily: 'JetBrainsMono, monospace',
+															fontSize: '28px',
 															fontWeight: 700
 														},
 														children: String(delta)
@@ -195,27 +342,165 @@ export const GET: RequestHandler = async ({ url }) => {
 									].filter(Boolean)
 								}
 							},
+							// tier + pass line
 							{
 								type: 'div',
 								props: {
 									style: {
-										fontSize: '40px',
-										fontWeight: 700,
-										color,
-										letterSpacing: '0.04em'
+										display: 'flex',
+										alignItems: 'center',
+										gap: '18px',
+										fontFamily: 'JetBrainsMono, monospace'
 									},
-									children: label
+									children: [
+										{
+											type: 'div',
+											props: {
+												style: {
+													fontSize: '24px',
+													fontWeight: 700,
+													color,
+													letterSpacing: '0.14em'
+												},
+												children: label
+											}
+										},
+										{
+											type: 'div',
+											props: {
+												style: { fontSize: '20px', color: TEXT_SECONDARY },
+												children: `${pass} of ${total} ATS systems passed`
+											}
+										}
+									]
+								}
+							}
+						]
+					}
+				},
+				// stats strip mirroring the landing hero
+				{
+					type: 'div',
+					props: {
+						style: {
+							display: 'flex',
+							alignItems: 'center',
+							justifyContent: 'space-around',
+							padding: '16px 28px',
+							background: SURFACE,
+							border: `1px solid ${BORDER}`,
+							borderRadius: '6px'
+						},
+						children: [
+							{
+								type: 'div',
+								props: {
+									style: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' },
+									children: [
+										{
+											type: 'div',
+											props: {
+												style: {
+													fontFamily: 'ArchivoBlack, Archivo, sans-serif',
+													fontSize: '34px',
+													color: LIME,
+													lineHeight: 1.1
+												},
+												children: '6'
+											}
+										},
+										{
+											type: 'div',
+											props: {
+												style: {
+													fontFamily: 'JetBrainsMono, monospace',
+													fontSize: '15px',
+													color: TEXT_TERTIARY,
+													letterSpacing: '0.08em',
+													textTransform: 'uppercase'
+												},
+												children: 'ATS Platforms'
+											}
+										}
+									]
 								}
 							},
 							{
 								type: 'div',
 								props: {
-									style: {
-										fontSize: '28px',
-										color: '#a1a1aa',
-										marginTop: '8px'
-									},
-									children: `${pass} of ${total} ATS systems passed`
+									style: { width: '1px', height: '52px', background: BORDER }
+								}
+							},
+							{
+								type: 'div',
+								props: {
+									style: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' },
+									children: [
+										{
+											type: 'div',
+											props: {
+												style: {
+													fontFamily: 'ArchivoBlack, Archivo, sans-serif',
+													fontSize: '34px',
+													color: CYAN,
+													lineHeight: 1.1
+												},
+												children: `${pass}/${total}`
+											}
+										},
+										{
+											type: 'div',
+											props: {
+												style: {
+													fontFamily: 'JetBrainsMono, monospace',
+													fontSize: '15px',
+													color: TEXT_TERTIARY,
+													letterSpacing: '0.08em',
+													textTransform: 'uppercase'
+												},
+												children: 'Systems Passed'
+											}
+										}
+									]
+								}
+							},
+							{
+								type: 'div',
+								props: {
+									style: { width: '1px', height: '52px', background: BORDER }
+								}
+							},
+							{
+								type: 'div',
+								props: {
+									style: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' },
+									children: [
+										{
+											type: 'div',
+											props: {
+												style: {
+													fontFamily: 'ArchivoBlack, Archivo, sans-serif',
+													fontSize: '34px',
+													color: LIME,
+													lineHeight: 1.1
+												},
+												children: '100%'
+											}
+										},
+										{
+											type: 'div',
+											props: {
+												style: {
+													fontFamily: 'JetBrainsMono, monospace',
+													fontSize: '15px',
+													color: TEXT_TERTIARY,
+													letterSpacing: '0.08em',
+													textTransform: 'uppercase'
+												},
+												children: 'Free For Now'
+											}
+										}
+									]
 								}
 							}
 						]
@@ -229,10 +514,18 @@ export const GET: RequestHandler = async ({ url }) => {
 							display: 'flex',
 							justifyContent: 'space-between',
 							alignItems: 'center',
-							fontSize: '22px',
-							color: '#71717a'
+							gap: '24px',
+							fontFamily: 'JetBrainsMono, monospace',
+							fontSize: '19px',
+							color: TEXT_SECONDARY
 						},
-						children: ['Real scores, not made-up numbers', url.origin]
+						children: [
+							{
+								type: 'div',
+								props: { style: { color: TEXT_TERTIARY }, children: 'Real scores, not made-up numbers' }
+							},
+							{ type: 'div', props: { style: { color: CYAN }, children: url.origin } }
+						]
 					}
 				}
 			]
@@ -247,7 +540,11 @@ export const GET: RequestHandler = async ({ url }) => {
 	// (score+pass+total+delta), any unique combination caches forever - massive
 	// cost protection because repeat shares of the same link hit the edge cache,
 	// never the function
-	const og = new ImageResponse(tree as never, { width: WIDTH, height: HEIGHT });
+	const og = new ImageResponse(tree as never, {
+		width: WIDTH,
+		height: HEIGHT,
+		fonts: loadFontFaces()
+	});
 	const buffer = await og.arrayBuffer();
 
 	// store in the function-level memo before responding. LRU eviction keeps
