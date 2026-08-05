@@ -232,7 +232,7 @@ export const GET: RequestHandler = async ({ url }) => {
 							fontSize: '22px',
 							color: '#71717a'
 						},
-						children: ['Free • Open source • No paywalls', 'ats-screener.vercel.app']
+						children: ['Real scores, not made-up numbers', url.origin]
 					}
 				}
 			]

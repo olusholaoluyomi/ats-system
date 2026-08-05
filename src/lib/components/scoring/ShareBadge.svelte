@@ -39,7 +39,7 @@
 	});
 
 	const shareText = $derived(
-		`Just scored ${avgScore}/100 on ATS Screener, a free resume tool that simulates how real ATS platforms (Workday, Taleo, iCIMS, Greenhouse, Lever, and SuccessFactors) parse your resume.\n\n${passCount}/${totalCount} systems passed. Try it free at ats-screener.vercel.app\n\n#ATSScreener #Resume #JobSearch #CareerTips`
+		`Just scored ${avgScore}/100 on ATS Screener, a free resume tool that simulates how real ATS platforms (Workday, Taleo, iCIMS, Greenhouse, Lever, and SuccessFactors) parse your resume.\n\n${passCount}/${totalCount} systems passed. Try it free at ats-screener.olusholaoluyomi.com\n\n#ATSScreener #Resume #JobSearch #CareerTips`
 	);
 
 	let copyState = $state<'idle' | 'copied'>('idle');
@@ -139,7 +139,7 @@
 		const d = new Date();
 		const year = d.getFullYear();
 		const month = d.getMonth() + 1;
-		const url = `https://www.linkedin.com/profile/add?startTask=CERTIFICATION_NAME&name=${encodeURIComponent('ATS Screening Report')}&organizationName=${encodeURIComponent('ATS Screener')}&issueYear=${year}&issueMonth=${month}&certUrl=${encodeURIComponent('https://ats-screener.vercel.app')}`;
+		const url = `https://www.linkedin.com/profile/add?startTask=CERTIFICATION_NAME&name=${encodeURIComponent('ATS Screening Report')}&organizationName=${encodeURIComponent('ATS Screener')}&issueYear=${year}&issueMonth=${month}&certUrl=${encodeURIComponent('https://ats-screener.olusholaoluyomi.com')}`;
 		window.open(url, '_blank', 'noopener,noreferrer');
 	}
 </script>
@@ -588,7 +588,7 @@
 							font-weight="500"
 							fill="#06b6d4"
 							text-anchor="middle"
-							opacity="0.6">ats-screener.vercel.app</text
+							opacity="0.6">ats-screener.olusholaoluyomi.com</text
 						>
 
 						<text

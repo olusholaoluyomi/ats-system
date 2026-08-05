@@ -34,7 +34,7 @@
 	// treated as a non-canonical environment and gets noindex regardless of
 	// the per-page noIndex prop. prevents preview URLs from polluting google's
 	// index with duplicate content.
-	const PRODUCTION_HOST = 'ats-screener.vercel.app';
+	const PRODUCTION_HOST = 'ats-screener.olusholaoluyomi.com';
 	const isPreviewHost = $derived(
 		url.hostname !== PRODUCTION_HOST && url.hostname.endsWith('.vercel.app')
 	);

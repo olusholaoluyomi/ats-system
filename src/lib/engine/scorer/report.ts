@@ -480,7 +480,7 @@ export async function generatePDF() {
 	doc.setFont('helvetica', 'bold');
 	doc.setFontSize(6.5);
 	tc(P.dark);
-	doc.text('ats-screener.vercel.app', W - MR, footerY, { align: 'right' });
+	doc.text('ats-screener.olusholaoluyomi.com', W - MR, footerY, { align: 'right' });
 	doc.setFont('helvetica', 'normal');
 	doc.setFontSize(5);
 	tc(P.light);

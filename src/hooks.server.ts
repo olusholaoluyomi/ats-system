@@ -16,7 +16,7 @@ import { buildContentSecurityPolicy } from '$lib/server/csp';
 const SECURITY_HEADERS: Record<string, string> = {
 	// HSTS: 2 years (63072000s) is the minimum for the Chrome preload list.
 	// "preload" signals intent to appear on the hardcoded browser preload list.
-	// "includeSubDomains" covers *.ats-screener.vercel.app preview deploys.
+	// "includeSubDomains" covers *.ats-screener.olusholaoluyomi.com preview deploys.
 	// only emitted on HTTPS (see applySecurityHeaders) - localhost is excluded.
 	'Strict-Transport-Security': 'max-age=63072000; includeSubDomains; preload',
 	// strict-origin-when-cross-origin: sends the full URL as Referer to same-origin
