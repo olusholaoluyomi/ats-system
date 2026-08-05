@@ -129,6 +129,54 @@ function getFileType(file: File): 'pdf' | 'docx' | null {
 	return null;
 }
 
+// lightweight entry point for documents that only need their raw text pulled
+// out - e.g. an uploaded job description. reuses the exact same PDF/DOCX
+// parsers as parseResume (same chunk-split dynamic imports, same empty-text
+// and per-format error messages) but skips the resume-structure pipeline so a
+// JD upload stays cheap and JD-appropriate.
+export async function extractDocumentText(
+	file: File
+): Promise<{ success: boolean; text: string; error?: string }> {
+	const fileType = getFileType(file);
+	if (!fileType) {
+		return {
+			success: false,
+			text: '',
+			error: `unsupported file type: ${file.type || file.name.split('.').pop()}`
+		};
+	}
+
+	try {
+		let text: string;
+		if (fileType === 'pdf') {
+			const { parsePDF } = await import('./pdf-parser');
+			const result = await parsePDF(file);
+			text = result.text;
+		} else {
+			const { parseDOCX } = await import('./docx-parser');
+			const result = await parseDOCX(file);
+			text = result.text;
+		}
+
+		if (text.trim().length === 0) {
+			return {
+				success: false,
+				text: '',
+				error: 'could not extract any text from the file. it may be an image-based PDF or corrupted.'
+			};
+		}
+
+		return { success: true, text };
+	} catch (err) {
+		const message = err instanceof Error ? err.message : 'unknown parsing error';
+		return {
+			success: false,
+			text: '',
+			error: `failed to parse ${fileType.toUpperCase()}: ${message}`
+		};
+	}
+}
+
 // alternate entry point for users who want to paste resume text directly,
 // bypassing the PDF/DOCX file-pickup step. runs the same downstream
 // extraction pipeline (sections, experience, education, skills, etc) so

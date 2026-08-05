@@ -9,6 +9,96 @@
 	let expanded = $state(false);
 	let libraryOpen = $state(false);
 
+	// JD documents (PDF/DOCX) go through the same text-extraction layer as the
+	// resume uploader: extractDocumentText reuses parsePDF/parseDOCX, and the
+	// extracted text lands in scoresStore.jobDescription so the paste textarea,
+	// live preview, targeted scoring, and save-to-library all work identically.
+	const ACCEPTED_TYPES = [
+		'application/pdf',
+		'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+	];
+	const MAX_JD_FILE_SIZE = 10 * 1024 * 1024;
+	let jdFile = $state<File | null>(null);
+	let isParsingJD = $state(false);
+	let jdError = $state<string | null>(null);
+	let isDraggingJD = $state(false);
+	let jdFileInput = $state<HTMLInputElement | null>(null);
+
+	function handleJdDragOver(e: DragEvent) {
+		e.preventDefault();
+		isDraggingJD = true;
+	}
+
+	function handleJdDragLeave() {
+		isDraggingJD = false;
+	}
+
+	function handleJdDrop(e: DragEvent) {
+		e.preventDefault();
+		isDraggingJD = false;
+		const file = e.dataTransfer?.files[0];
+		if (file) handleJdFile(file);
+	}
+
+	function handleJdFileSelect(e: Event) {
+		const input = e.target as HTMLInputElement;
+		const file = input.files?.[0];
+		if (file) handleJdFile(file);
+		// reset the input value so re-selecting the same file re-fires onchange
+		input.value = '';
+	}
+
+	async function handleJdFile(file: File) {
+		if (!ACCEPTED_TYPES.includes(file.type)) {
+			jdError = 'Please upload a PDF or DOCX file.';
+			return;
+		}
+		if (file.size > MAX_JD_FILE_SIZE) {
+			jdError = 'File too large (max 10MB).';
+			return;
+		}
+
+		jdFile = file;
+		jdError = null;
+		isParsingJD = true;
+		try {
+			// dynamic import keeps pdfjs/mammoth out of the layout chunk until a
+			// JD document is actually uploaded (mirrors the resume uploader path)
+			const { extractDocumentText } = await import('$engine/parser');
+			const result = await extractDocumentText(file);
+			if (result.success) {
+				scoresStore.setJobDescription(result.text);
+			} else {
+				jdFile = null;
+				jdError = result.error ?? 'failed to parse document';
+			}
+		} catch (err) {
+			jdFile = null;
+			jdError = err instanceof Error ? err.message : 'failed to parse document';
+		} finally {
+			isParsingJD = false;
+		}
+	}
+
+	function openJdFilePicker() {
+		jdFileInput?.click();
+	}
+
+	// space and enter both activate per WAI-ARIA button semantics. preventDefault
+	// stops space from scrolling the page when the uploader has focus.
+	function handleJdUploaderKey(e: KeyboardEvent) {
+		if (e.target !== e.currentTarget) return;
+		if (e.key === 'Enter' || e.key === ' ') {
+			e.preventDefault();
+			openJdFilePicker();
+		}
+	}
+
+	function clearJdFile() {
+		jdFile = null;
+		jdError = null;
+	}
+
 	// debounced JD value drives the live skill-extraction preview - parsing on
 	// every keystroke would re-tokenize a long JD on every char and feel laggy
 	const DEBOUNCE_MS = 400;
@@ -142,6 +232,96 @@
 
 	{#if expanded}
 		<div class="jd-textarea-wrapper">
+			<div
+				class="jd-uploader"
+				class:dragging={isDraggingJD}
+				class:has-file={jdFile !== null}
+				ondragover={handleJdDragOver}
+				ondragleave={handleJdDragLeave}
+				ondrop={handleJdDrop}
+				role="button"
+				tabindex="0"
+				aria-label="Upload job description. Click, press Enter or Space, or drag a PDF or DOCX file."
+				onclick={openJdFilePicker}
+				onkeydown={handleJdUploaderKey}
+			>
+				<input
+					bind:this={jdFileInput}
+					type="file"
+					accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+					onchange={handleJdFileSelect}
+					class="visually-hidden"
+				/>
+
+				{#if isParsingJD}
+					<div class="jd-uploading">
+						<div class="spinner-sm"></div>
+						<span class="jd-upload-text">Parsing job description...</span>
+					</div>
+				{:else if jdFile}
+					<div class="jd-file-info">
+						<svg
+							width="20"
+							height="20"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="1.5"
+						>
+							<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+							<polyline points="14,2 14,8 20,8" />
+							<path d="M9 15l3 3 3-3" />
+							<path d="M12 12v6" />
+						</svg>
+						<span class="jd-file-name">{jdFile.name}</span>
+						<span class="jd-file-size">{(jdFile.size / 1024).toFixed(0)} KB</span>
+						<button
+							type="button"
+							class="jd-file-clear"
+							aria-label="Remove uploaded job description file"
+							onclick={(e) => {
+								e.stopPropagation();
+								clearJdFile();
+							}}
+						>
+							<svg
+								width="14"
+								height="14"
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="2.5"
+							>
+								<line x1="18" y1="6" x2="6" y2="18" />
+								<line x1="6" y1="6" x2="18" y2="18" />
+							</svg>
+						</button>
+					</div>
+				{:else}
+					<div class="jd-upload-prompt">
+						<svg
+							class="jd-upload-icon"
+							width="18"
+							height="18"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="1.5"
+						>
+							<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+							<polyline points="17,8 12,3 7,8" />
+							<line x1="12" y1="3" x2="12" y2="15" />
+						</svg>
+						<span class="jd-upload-text">Or upload a job description file</span>
+						<span class="jd-upload-hint">PDF or DOCX, max 10MB. Parsed in your browser.</span>
+					</div>
+				{/if}
+
+				{#if jdError}
+					<p class="jd-upload-error">{jdError}</p>
+				{/if}
+			</div>
+
 			<textarea
 				class="jd-textarea"
 				placeholder="Paste the job description here for targeted keyword matching and industry-specific scoring..."
@@ -353,6 +533,138 @@
 		margin-top: 1rem;
 	}
 
+	/* JD document upload zone: same PDF/DOCX text-extraction path as the resume
+	   uploader, compact enough to sit above the paste textarea */
+	.jd-uploader {
+		display: flex;
+		align-items: center;
+		gap: 0.6rem;
+		margin-bottom: 0.75rem;
+		padding: 0.7rem 1rem;
+		background: var(--tint-weak);
+		border: 1.5px dashed var(--accent-border);
+		border-radius: var(--radius-md);
+		cursor: pointer;
+		transition:
+			border-color 0.2s ease,
+			background 0.2s ease;
+	}
+
+	.jd-uploader:hover,
+	.jd-uploader.dragging {
+		border-color: var(--accent-border-hover);
+		background: var(--accent-tint);
+	}
+
+	.jd-uploader.has-file {
+		border-style: solid;
+		border-color: rgba(34, 197, 94, 0.3);
+	}
+
+	.visually-hidden {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		padding: 0;
+		margin: -1px;
+		overflow: hidden;
+		clip: rect(0, 0, 0, 0);
+		border: 0;
+	}
+
+	.jd-upload-prompt,
+	.jd-uploading,
+	.jd-file-info {
+		display: flex;
+		align-items: center;
+		gap: 0.55rem;
+		min-width: 0;
+	}
+
+	.jd-upload-prompt {
+		flex-wrap: wrap;
+	}
+
+	.jd-upload-icon {
+		color: var(--accent-text);
+		flex-shrink: 0;
+	}
+
+	.jd-upload-text {
+		font-size: 0.82rem;
+		font-weight: 500;
+		color: var(--text-secondary);
+	}
+
+	.jd-upload-hint {
+		font-size: 0.75rem;
+		color: var(--text-tertiary);
+	}
+
+	.spinner-sm {
+		width: 16px;
+		height: 16px;
+		border: 2px solid var(--glass-border);
+		border-top-color: var(--accent-text);
+		border-radius: 50%;
+		animation: jdSpin 0.8s linear infinite;
+		flex-shrink: 0;
+	}
+
+	@keyframes jdSpin {
+		to {
+			transform: rotate(360deg);
+		}
+	}
+
+	.jd-file-info {
+		flex: 1;
+		color: #22c55e;
+	}
+
+	.jd-file-name {
+		font-size: 0.82rem;
+		font-weight: 500;
+		color: var(--text-primary);
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+
+	.jd-file-size {
+		font-size: 0.75rem;
+		color: var(--text-tertiary);
+		font-variant-numeric: tabular-nums;
+	}
+
+	.jd-file-clear {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 28px;
+		height: 28px;
+		margin-left: auto;
+		background: none;
+		border: none;
+		border-radius: var(--radius-md);
+		color: var(--text-tertiary);
+		cursor: pointer;
+		transition:
+			background 0.12s ease,
+			color 0.12s ease;
+	}
+
+	.jd-file-clear:hover {
+		background: rgba(239, 68, 68, 0.12);
+		color: #ef4444;
+	}
+
+	.jd-upload-error {
+		font-size: 0.78rem;
+		color: #ef4444;
+		margin-left: auto;
+	}
+
 	.jd-textarea {
 		width: 100%;
 		padding: 1.25rem;
@@ -515,7 +827,8 @@
 		/* bump action-row buttons to 44px tall on mobile to meet WCAG 2.5.5 */
 		.jd-sample-btn,
 		.jd-save-btn,
-		.jd-library-btn {
+		.jd-library-btn,
+		.jd-file-clear {
 			min-height: 44px;
 		}
 
