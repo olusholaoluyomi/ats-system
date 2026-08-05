@@ -74,7 +74,7 @@
 
 	/* primary variant */
 	.shimmer-btn.primary {
-		color: var(--ink);
+		color: var(--btn-text);
 		background: var(--gradient-primary);
 	}
 

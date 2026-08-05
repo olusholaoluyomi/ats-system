@@ -836,7 +836,7 @@
 	.action-btn.primary {
 		background: var(--accent-cyan);
 		border-color: var(--accent-border-hover);
-		color: var(--ink);
+		color: var(--btn-text);
 	}
 
 	.action-btn.primary:hover {
@@ -848,7 +848,7 @@
 	.action-btn.linkedin {
 		background: rgba(10, 102, 194, 0.15);
 		border-color: rgba(10, 102, 194, 0.3);
-		color: var(--accent-blue);
+		color: var(--accent-2-text);
 	}
 
 	.action-btn.linkedin:hover {

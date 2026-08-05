@@ -39,8 +39,17 @@
 	/* text */
 	--text-primary: #e8edf5;
 	--text-secondary: #9aa3b8;
-	--text-tertiary: #6b7a8d;
-	--text-accent: var(--accent-cyan);
+	--text-tertiary: #818fa0; /* ⚠️ was #6b7a8d — 3.6:1 → 4.8:1 */
+	--text-accent: var(--accent-text);
+
+	/* accent as text — raw accent hues are tuned for backgrounds; these are
+	   the WCAG-AA-safe variants for links / labels on the page */
+	--accent-text: #c6ff00; /* dark: same as --accent (16.3:1) */
+	--accent-2-text: #00e0ff; /* dark: same as --accent-2 (12.1:1) */
+
+	/* fixed dark ink for text ON accent backgrounds (buttons) — does NOT
+	   change with the theme background, unlike --ink */
+	--btn-text: #0a0e14;
 
 	/* translucent tint helpers (replaces hardcoded white-alpha literals) */
 	--tint-weak: rgba(255, 255, 255, 0.04);
@@ -63,8 +72,8 @@
 	--border: rgba(255, 255, 255, 0.08);
 	--fg: #e8edf5;
 	--fg-dim: #9aa3b8;
-	--fg-softer: #6b7a8d;
-	--muted: #6b7a8d;
+	--fg-softer: #818fa0; /* was #6b7a8d — 3.6:1 → 4.8:1 */
+	--muted: #6b7a8d; /* labels only, not body copy */
 	--accent: #c6ff00;
 	--accent-2: #00e0ff;
 	--accent-3: #c6ff00;
@@ -178,19 +187,24 @@
 	--accent-blue: #0088aa;
 	--accent-purple: #6b4fd8;
 	--accent-pink: #e6006f;
-	--accent-green: #2e7d32;
+	--accent-green: #2b762f; /* was #2e7d32 — 4.40:1 → 4.82:1 */
 	--accent-amber: #b26a00;
-	--accent-red: #d32f2f;
+	--accent-red: #cd2b2b; /* was #d32f2f — 4.27:1 → 4.53:1 */
 
 	--gradient-primary: linear-gradient(135deg, #5a9400, #0088aa);
 	--gradient-warm: linear-gradient(135deg, #e6006f, #0088aa);
-	--gradient-success: linear-gradient(135deg, #2e7d32, #0088aa);
-	--gradient-danger: linear-gradient(135deg, #d32f2f, #e6006f);
+	--gradient-success: linear-gradient(135deg, #2b762f, #0088aa);
+	--gradient-danger: linear-gradient(135deg, #cd2b2b, #e6006f);
 
 	--text-primary: #0a0e14;
 	--text-secondary: #4a5260;
-	--text-tertiary: #6b7a8d;
-	--text-accent: var(--accent-cyan);
+	--text-tertiary: #515c6a; /* ⚠️ was #6b7a8d — 3.1:1 → 4.85:1 */
+	--text-accent: var(--accent-text);
+
+	--accent-text: #477500; /* ⚠️ NEW — accent TEXT, 4.72:1 (was 3.18:1 via --accent) */
+	--accent-2-text: #00708b; /* ⚠️ NEW — cyan TEXT, 4.88:1 (was 3.53:1 via --accent-2) */
+
+	--btn-text: #0a0e14; /* fixed dark ink for button labels in both themes */
 
 	--tint-weak: rgba(10, 14, 20, 0.05);
 	--tint: rgba(10, 14, 20, 0.07);
@@ -210,13 +224,13 @@
 	--border: rgba(10, 14, 20, 0.1);
 	--fg: #0a0e14;
 	--fg-dim: #4a5260;
-	--fg-softer: #6b7a8d;
+	--fg-softer: #515c6a; /* was #6b7a8d — 3.1:1 → 4.85:1 */
 	--muted: #4a5260;
 	--accent: #5a9400;
 	--accent-2: #0088aa;
 	--accent-3: #5a9400;
-	--red: #d32f2f;
-	--green: #2e7d32;
+	--red: #cd2b2b;
+	--green: #2b762f;
 
 	--shadow-sm: 0 1px 2px rgba(10, 14, 20, 0.08);
 	--shadow-md: 0 4px 12px rgba(10, 14, 20, 0.1);

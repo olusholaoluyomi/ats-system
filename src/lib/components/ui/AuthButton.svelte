@@ -25,7 +25,7 @@
 
 	.auth-btn:hover {
 		border-color: var(--accent-border-hover);
-		color: var(--accent-cyan);
+		color: var(--accent-text);
 		background: var(--accent-tint);
 	}
 </style>

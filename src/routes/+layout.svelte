@@ -78,7 +78,7 @@
 		left: 0;
 		padding: 0.75rem 1.25rem;
 		background: var(--accent-cyan, #06b6d4);
-		color: var(--ink);
+		color: var(--btn-text);
 		font-weight: 600;
 		text-decoration: none;
 		border-radius: 0 0 8px 0;

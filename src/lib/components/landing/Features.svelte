@@ -225,7 +225,7 @@
 
 	.badge-icon {
 		display: inline-flex;
-		color: var(--accent-cyan);
+		color: var(--accent-text);
 	}
 
 	.section-title {

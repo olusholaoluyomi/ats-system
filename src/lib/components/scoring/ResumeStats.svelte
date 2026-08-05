@@ -321,7 +321,7 @@
 		align-items: center;
 		gap: 0.5rem;
 		margin-bottom: 1.5rem;
-		color: var(--accent-cyan);
+		color: var(--accent-text);
 	}
 
 	.stats-header h3 {
@@ -400,7 +400,7 @@
 	.skill-chip {
 		padding: 0.2rem 0.6rem;
 		background: var(--accent-tint);
-		color: var(--accent-cyan);
+		color: var(--accent-text);
 		border: 1px solid var(--accent-border);
 		border-radius: var(--radius-full);
 		font-size: 0.72rem;
@@ -420,7 +420,7 @@
 
 	.skill-chip.more:hover {
 		border-color: var(--accent-border-hover);
-		color: var(--accent-cyan);
+		color: var(--accent-text);
 	}
 
 	.contact-items {
@@ -449,11 +449,11 @@
 	}
 
 	.contact-link:hover {
-		color: var(--accent-cyan);
+		color: var(--accent-text);
 	}
 
 	.contact-link:hover svg {
-		color: var(--accent-cyan);
+		color: var(--accent-text);
 	}
 
 	.format-flags {

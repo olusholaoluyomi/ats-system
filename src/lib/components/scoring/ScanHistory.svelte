@@ -202,7 +202,7 @@
 	}
 
 	.toggle-left svg {
-		color: var(--accent-cyan);
+		color: var(--accent-text);
 		opacity: 0.7;
 	}
 
@@ -215,7 +215,7 @@
 		padding: 0 5px;
 		border-radius: var(--radius-full);
 		background: var(--accent-tint);
-		color: var(--accent-cyan);
+		color: var(--accent-text);
 		font-size: 0.65rem;
 		font-weight: 700;
 	}

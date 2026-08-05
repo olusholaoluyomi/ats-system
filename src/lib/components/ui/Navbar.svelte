@@ -189,7 +189,7 @@
 	}
 
 	.theme-toggle:hover {
-		color: var(--accent-cyan);
+		color: var(--accent-text);
 		border-color: var(--glass-border-hover);
 		background: var(--tint-hover);
 	}
@@ -263,7 +263,7 @@
 
 	/* active nav item: accent color + 2px left border + subtle tint */
 	.nav-link.active {
-		color: var(--accent-cyan);
+		color: var(--accent-text);
 		border-left: 2px solid var(--accent-cyan);
 		padding-left: 0.6rem;
 		background: rgba(255, 43, 127, 0.05);
@@ -276,7 +276,7 @@
 		font-size: 0.75rem;
 		text-transform: uppercase;
 		letter-spacing: 0.06em;
-		color: var(--ink);
+		color: var(--btn-text);
 		background: var(--gradient-primary);
 		border-radius: var(--radius-sm);
 		text-decoration: none;
@@ -288,7 +288,7 @@
 	.nav-cta:hover {
 		transform: translateY(-1px);
 		box-shadow: var(--glow-accent);
-		color: var(--ink);
+		color: var(--btn-text);
 	}
 
 	.nav-toggle {

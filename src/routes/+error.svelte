@@ -432,7 +432,7 @@
 	.tagline {
 		font-family: 'Geist Mono', 'JetBrains Mono', monospace;
 		font-size: clamp(0.8rem, 1.8vw, 1rem);
-		color: var(--accent-cyan);
+		color: var(--accent-text);
 		text-transform: uppercase;
 		letter-spacing: 0.18em;
 		font-weight: 600;
@@ -480,7 +480,7 @@
 	.nav-chip:hover,
 	.nav-chip:focus-visible {
 		color: var(--text-primary);
-		border-color: var(--accent-cyan);
+		border-color: var(--accent-text);
 		transform: translateY(-2px);
 		box-shadow: 0 0 16px var(--accent-border);
 		outline: none;
@@ -597,7 +597,7 @@
 	}
 
 	.btn-primary {
-		color: var(--ink);
+		color: var(--btn-text);
 		background: var(--gradient-primary);
 	}
 
@@ -613,7 +613,7 @@
 	}
 
 	.btn-secondary:hover {
-		border-color: var(--accent-cyan);
+		border-color: var(--accent-text);
 		color: var(--text-primary);
 	}
 </style>

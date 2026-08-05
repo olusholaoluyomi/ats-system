@@ -418,7 +418,7 @@
 	}
 
 	.page-badge svg {
-		color: var(--accent-cyan);
+		color: var(--accent-text);
 	}
 
 	.hero-title {
@@ -457,7 +457,7 @@
 		border-radius: var(--radius-full);
 		font-size: 0.75rem;
 		font-weight: 600;
-		color: var(--accent-cyan);
+		color: var(--accent-text);
 		text-transform: uppercase;
 		letter-spacing: 0.06em;
 		margin-bottom: 1rem;
@@ -541,7 +541,7 @@
 	.approach-number {
 		font-size: 2rem;
 		font-weight: 800;
-		color: var(--accent-cyan);
+		color: var(--accent-text);
 		opacity: 0.3;
 		line-height: 1;
 		flex-shrink: 0;
@@ -579,7 +579,7 @@
 	.tech-card h4 {
 		font-size: 0.9rem;
 		font-weight: 700;
-		color: var(--accent-cyan);
+		color: var(--accent-text);
 		margin-bottom: 0.75rem;
 		text-transform: uppercase;
 		letter-spacing: 0.04em;
@@ -671,14 +671,14 @@
 	}
 
 	.os-btn.primary {
-		color: var(--ink);
+		color: var(--btn-text);
 		background: var(--gradient-primary);
 	}
 
 	.os-btn.primary:hover {
 		transform: translateY(-2px);
 		box-shadow: 0 0 20px var(--accent-border-hover);
-		color: var(--ink);
+		color: var(--btn-text);
 	}
 
 	.os-btn.secondary {
@@ -688,7 +688,7 @@
 	}
 
 	.os-btn.secondary:hover {
-		border-color: var(--accent-cyan);
+		border-color: var(--accent-text);
 		color: var(--text-primary);
 		transform: translateY(-1px);
 	}
@@ -726,7 +726,7 @@
 	}
 
 	.creator-link:hover {
-		color: var(--accent-cyan);
+		color: var(--accent-text);
 	}
 
 	@media (max-width: 640px) {

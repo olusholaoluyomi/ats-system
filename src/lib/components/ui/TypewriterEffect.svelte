@@ -71,7 +71,7 @@
 	}
 
 	.typewriter-cursor {
-		color: var(--accent-cyan);
+		color: var(--accent-text);
 		font-weight: 300;
 		animation: none;
 	}

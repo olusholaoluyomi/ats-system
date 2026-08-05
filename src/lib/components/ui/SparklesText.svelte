@@ -61,7 +61,7 @@
 
 	.sparkle {
 		position: absolute;
-		color: var(--accent-cyan);
+		color: var(--accent-text);
 		animation: sparkle-pulse 3s ease-in-out infinite;
 		will-change: opacity, transform;
 	}

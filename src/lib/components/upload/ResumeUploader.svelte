@@ -200,7 +200,7 @@
 
 	.uploader:hover,
 	.uploader.dragging {
-		border-color: var(--accent-cyan);
+		border-color: var(--accent-text);
 		background: var(--accent-tint);
 		box-shadow: 0 0 30px var(--accent-tint);
 	}
@@ -232,7 +232,7 @@
 		border-radius: var(--radius-lg);
 		background: var(--accent-tint);
 		border: 1px solid var(--accent-border);
-		color: var(--accent-cyan);
+		color: var(--accent-text);
 	}
 
 	.upload-text {
@@ -274,7 +274,7 @@
 	}
 
 	.privacy-link {
-		color: var(--accent-cyan);
+		color: var(--accent-text);
 		text-decoration: none;
 		border-bottom: 1px solid transparent;
 		transition: border-color 0.15s ease;
@@ -283,7 +283,7 @@
 
 	.privacy-link:hover,
 	.privacy-link:focus-visible {
-		border-bottom-color: var(--accent-cyan);
+		border-bottom-color: var(--accent-text);
 	}
 
 	/* let the global :focus-visible ring (in $lib/styles/global.css) apply on
@@ -302,7 +302,7 @@
 	}
 
 	.file-icon {
-		color: var(--accent-cyan);
+		color: var(--accent-text);
 	}
 
 	.file-details {
@@ -346,7 +346,7 @@
 		width: 32px;
 		height: 32px;
 		border: 3px solid var(--glass-border);
-		border-top-color: var(--accent-cyan);
+		border-top-color: var(--accent-text);
 		border-radius: 50%;
 		animation: spin 0.8s linear infinite;
 	}

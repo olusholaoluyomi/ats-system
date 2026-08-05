@@ -944,7 +944,7 @@
 		border-radius: 999px;
 		font-size: 0.75rem;
 		font-weight: 600;
-		color: var(--accent-cyan);
+		color: var(--accent-text);
 	}
 
 	/* compact toast-style fallback banner */
@@ -1013,7 +1013,7 @@
 	}
 
 	.fallback-retry-hint strong {
-		color: var(--accent-cyan);
+		color: var(--accent-text);
 		font-weight: 600;
 	}
 
@@ -1225,7 +1225,7 @@
 	}
 
 	.quick-wins-icon {
-		color: var(--accent-cyan);
+		color: var(--accent-text);
 		flex-shrink: 0;
 	}
 
@@ -1266,7 +1266,7 @@
 		justify-content: center;
 		font-size: 0.72rem;
 		font-weight: 700;
-		color: var(--accent-cyan);
+		color: var(--accent-text);
 		background: var(--accent-tint);
 		border: 1px solid var(--accent-border);
 		border-radius: 50%;
@@ -1321,7 +1321,7 @@
 
 	.toolbar-btn:hover:not(:disabled) {
 		border-color: var(--accent-border-hover);
-		color: var(--accent-cyan);
+		color: var(--accent-text);
 		background: var(--accent-tint);
 	}
 
@@ -1378,7 +1378,7 @@
 
 	.toggle-btn.active {
 		background: var(--accent-tint);
-		color: var(--accent-cyan);
+		color: var(--accent-text);
 		border: 1px solid var(--accent-border);
 	}
 
@@ -1416,7 +1416,7 @@
 		align-items: center;
 		gap: 0.5rem;
 		margin-bottom: 0.5rem;
-		color: var(--accent-cyan);
+		color: var(--accent-text);
 	}
 
 	.suggestions-title {
@@ -1515,7 +1515,7 @@
 		background: var(--accent-tint);
 		border: 1px solid var(--accent-border);
 		border-radius: 999px;
-		color: var(--accent-cyan);
+		color: var(--accent-text);
 		white-space: nowrap;
 	}
 

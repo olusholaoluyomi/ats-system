@@ -172,7 +172,7 @@
 
 	.badge-icon {
 		display: inline-flex;
-		color: var(--accent-cyan);
+		color: var(--accent-text);
 	}
 
 	.section-title {
@@ -233,7 +233,7 @@
 		height: 28px;
 		border-radius: var(--radius-md);
 		background: color-mix(in srgb, var(--accent) 12%, transparent);
-		color: var(--accent);
+		color: var(--accent-text);
 		font-size: 0.7rem;
 		font-weight: 800;
 		margin-bottom: 1.25rem;
@@ -248,7 +248,7 @@
 		border-radius: var(--radius-lg);
 		background: color-mix(in srgb, var(--accent) 8%, transparent);
 		border: 1px solid color-mix(in srgb, var(--accent) 15%, transparent);
-		color: var(--accent);
+		color: var(--accent-text);
 		margin-bottom: 1rem;
 	}
 

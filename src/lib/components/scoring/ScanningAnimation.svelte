@@ -239,7 +239,7 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		color: var(--accent-cyan);
+		color: var(--accent-text);
 		opacity: 0.8;
 	}
 
@@ -266,7 +266,7 @@
 	.status-verb {
 		display: block;
 		font-size: 0.88rem;
-		color: var(--accent-cyan);
+		color: var(--accent-text);
 		font-weight: 500;
 		animation: verb-enter 0.35s cubic-bezier(0.16, 1, 0.3, 1);
 	}

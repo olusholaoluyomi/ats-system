@@ -202,7 +202,7 @@
 	   that the field is focused. :focus-within elevates the wrapper's bottom
 	   border to cyan whenever the input is the focused element. */
 	.search-input-wrapper:focus-within {
-		border-bottom-color: var(--accent-cyan);
+		border-bottom-color: var(--accent-text);
 	}
 
 	.search-input-icon {
@@ -289,7 +289,7 @@
 	/* highlight matching terms from pagefind */
 	.result-excerpt :global(mark) {
 		background: var(--accent-border);
-		color: var(--accent-cyan);
+		color: var(--accent-text);
 		border-radius: 2px;
 		padding: 0 2px;
 	}

@@ -424,7 +424,7 @@
 	.suggestions h4 {
 		font-size: 0.9rem;
 		font-weight: 600;
-		color: var(--accent-cyan);
+		color: var(--accent-text);
 		margin-bottom: 0.5rem;
 	}
 
@@ -448,7 +448,7 @@
 		content: '>';
 		position: absolute;
 		left: 0;
-		color: var(--accent-cyan);
+		color: var(--accent-text);
 		font-weight: bold;
 	}
 

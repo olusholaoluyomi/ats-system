@@ -240,7 +240,7 @@
 	}
 
 	.social-link:hover {
-		color: var(--accent-cyan);
+		color: var(--accent-text);
 		border-color: var(--accent-border-hover);
 		background: var(--accent-tint);
 	}
@@ -305,7 +305,7 @@
 	}
 
 	.footer-link:hover {
-		color: var(--accent-cyan);
+		color: var(--accent-text);
 	}
 
 	.disclaimer {

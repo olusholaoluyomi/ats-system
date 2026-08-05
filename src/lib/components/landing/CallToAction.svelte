@@ -135,7 +135,7 @@
 		padding: 1.1rem 2.5rem;
 		font-size: 1.05rem;
 		font-weight: 600;
-		color: var(--ink);
+		color: var(--btn-text);
 		background: var(--gradient-primary);
 		border-radius: var(--radius-lg);
 		text-decoration: none;
@@ -150,7 +150,7 @@
 		box-shadow:
 			0 0 40px var(--accent-border-hover),
 			0 0 80px rgba(59, 130, 246, 0.15);
-		color: var(--ink);
+		color: var(--btn-text);
 	}
 
 	.btn-shimmer {

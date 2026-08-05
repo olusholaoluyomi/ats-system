@@ -50,7 +50,7 @@ a {
 }
 
 a:hover {
-	color: var(--accent-teal);
+	color: var(--accent-2-text);
 }
 
 /* headings use Archivo Black — heavy, tight, industrial */

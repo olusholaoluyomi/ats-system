@@ -261,7 +261,7 @@
 		padding: 0.9rem 1.85rem;
 		font-size: 1rem;
 		font-weight: 600;
-		color: var(--ink);
+		color: var(--btn-text);
 		background: var(--gradient-primary);
 		border-radius: var(--radius-full);
 		text-decoration: none;
@@ -302,7 +302,7 @@
 	}
 
 	.share-action-btn:hover {
-		color: var(--accent-cyan);
+		color: var(--accent-text);
 		border-color: var(--accent-border-hover);
 		background: var(--accent-tint);
 	}

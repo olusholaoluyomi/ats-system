@@ -463,7 +463,7 @@
 
 	.encrypted-tagline {
 		font-size: clamp(0.85rem, 1.5vw, 1rem);
-		color: var(--accent-cyan);
+		color: var(--accent-text);
 		text-transform: uppercase;
 		letter-spacing: 0.15em;
 		font-weight: 600;
@@ -513,7 +513,7 @@
 	}
 
 	.flip-system {
-		color: var(--accent-cyan);
+		color: var(--accent-text);
 		font-weight: 700;
 		display: inline-block;
 		text-align: left;
@@ -535,7 +535,7 @@
 		padding: 1rem 2.25rem;
 		font-size: 1.05rem;
 		font-weight: 600;
-		color: var(--ink);
+		color: var(--btn-text);
 		background: var(--gradient-primary);
 		border: none;
 		border-radius: var(--radius-lg);
@@ -552,7 +552,7 @@
 		box-shadow:
 			0 0 40px var(--accent-border-hover),
 			0 0 80px rgba(59, 130, 246, 0.15);
-		color: var(--ink);
+		color: var(--btn-text);
 	}
 
 	.btn-shimmer {

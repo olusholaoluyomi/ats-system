@@ -494,7 +494,7 @@
 	}
 
 	.page-badge svg {
-		color: var(--accent-cyan);
+		color: var(--accent-text);
 	}
 
 	.page-title {
@@ -545,7 +545,7 @@
 		padding: 0.75rem 1rem;
 		font-size: 0.85rem;
 		font-weight: 500;
-		color: var(--accent-cyan);
+		color: var(--accent-text);
 		cursor: pointer;
 		list-style: none;
 		display: flex;
@@ -560,7 +560,7 @@
 
 	.paste-toggle::before {
 		content: '+';
-		color: var(--accent-cyan);
+		color: var(--accent-text);
 		font-weight: 600;
 		font-size: 1.05rem;
 		transition: transform 0.2s ease;
@@ -612,7 +612,7 @@
 	.paste-btn {
 		padding: 0.45rem 0.9rem;
 		background: var(--accent-cyan);
-		color: var(--ink);
+		color: var(--btn-text);
 		border: none;
 		border-radius: var(--radius-md, 8px);
 		font-weight: 600;
@@ -662,7 +662,7 @@
 		padding: 0.9rem 2.25rem;
 		font-size: 1rem;
 		font-weight: 600;
-		color: var(--ink);
+		color: var(--btn-text);
 		background: var(--gradient-primary);
 		border: none;
 		border-radius: var(--radius-lg);
@@ -704,7 +704,7 @@
 	}
 
 	.btn-secondary:hover {
-		border-color: var(--accent-cyan);
+		border-color: var(--accent-text);
 		color: var(--text-primary);
 	}
 
@@ -713,7 +713,7 @@
 		width: 16px;
 		height: 16px;
 		border: 2px solid var(--glass-border);
-		border-top-color: var(--accent-cyan);
+		border-top-color: var(--accent-text);
 		border-radius: 50%;
 		animation: spin 0.6s linear infinite;
 	}
@@ -811,7 +811,7 @@
 	}
 
 	.step-dot.active .step-num {
-		color: var(--accent-cyan);
+		color: var(--accent-text);
 	}
 
 	.step-dot.done .step-num {
@@ -892,7 +892,7 @@
 		padding: 0.65rem 1.75rem;
 		font-size: 0.9rem;
 		font-weight: 600;
-		color: var(--ink);
+		color: var(--btn-text);
 		background: var(--gradient-primary);
 		border-radius: var(--radius-full);
 		text-decoration: none;
@@ -910,7 +910,7 @@
 		width: 36px;
 		height: 36px;
 		border: 3px solid var(--glass-border);
-		border-top-color: var(--accent-cyan);
+		border-top-color: var(--accent-text);
 		border-radius: 50%;
 		animation: spin 0.8s linear infinite;
 		margin-bottom: 1rem;

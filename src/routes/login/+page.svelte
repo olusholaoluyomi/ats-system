@@ -425,7 +425,7 @@
 
 	.mode-tab.active {
 		background: var(--accent-tint);
-		color: var(--accent-cyan);
+		color: var(--accent-text);
 	}
 
 	/* google button */
@@ -524,7 +524,7 @@
 	   users a clearly perceivable focus indicator (the prior 0.5-alpha
 	   border alone was below WCAG 2.4.7 visibility for many users). */
 	.field-input:focus {
-		border-color: var(--accent-cyan);
+		border-color: var(--accent-text);
 		box-shadow: 0 0 0 3px var(--accent-border);
 	}
 
@@ -533,7 +533,7 @@
 		background: none;
 		border: none;
 		font-size: 0.78rem;
-		color: var(--accent-cyan);
+		color: var(--accent-text);
 		cursor: pointer;
 		padding: 0;
 		margin-top: -0.5rem;
@@ -548,7 +548,7 @@
 		width: 100%;
 		padding: 0.75rem;
 		background: var(--gradient-primary);
-		color: var(--ink);
+		color: var(--btn-text);
 		border: none;
 		border-radius: var(--radius-md);
 		font-size: 0.92rem;
@@ -624,7 +624,7 @@
 		background: none;
 		border: none;
 		font-size: 0.82rem;
-		color: var(--accent-cyan);
+		color: var(--accent-text);
 		cursor: pointer;
 		padding: 0;
 		font-family: inherit;

@@ -335,14 +335,14 @@
 	}
 
 	.jd-toggle:hover {
-		border-color: var(--accent-cyan);
+		border-color: var(--accent-text);
 		color: var(--text-primary);
 	}
 
 	.toggle-icon {
 		transition: transform 0.2s ease;
 		display: inline-flex;
-		color: var(--accent-cyan);
+		color: var(--accent-text);
 	}
 
 	.toggle-icon.expanded {
@@ -370,7 +370,7 @@
 
 	.jd-textarea:focus {
 		outline: none;
-		border-color: var(--accent-cyan);
+		border-color: var(--accent-text);
 		box-shadow: 0 0 20px var(--accent-tint);
 	}
 
@@ -391,7 +391,7 @@
 		align-items: center;
 		padding: 0.4rem 0.85rem;
 		background: var(--accent-tint);
-		color: var(--accent-cyan);
+		color: var(--accent-text);
 		border: 1px solid var(--accent-border);
 		border-radius: var(--radius-md);
 		font-size: 0.8rem;
@@ -413,7 +413,7 @@
 		gap: 0.5rem;
 		margin-top: 0.75rem;
 		font-size: 0.85rem;
-		color: var(--accent-cyan);
+		color: var(--accent-text);
 		padding: 0.5rem 0.75rem;
 		background: var(--accent-tint);
 		border: 1px solid var(--accent-border);
@@ -534,7 +534,7 @@
 		gap: 0.35rem;
 		padding: 0.4rem 0.85rem;
 		background: var(--accent-tint);
-		color: var(--accent-cyan);
+		color: var(--accent-text);
 		border: 1px solid var(--accent-border);
 		border-radius: var(--radius-md);
 		font-size: 0.8rem;

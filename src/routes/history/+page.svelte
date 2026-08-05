@@ -324,7 +324,7 @@
 	.cta-btn {
 		padding: 0.6rem 1.5rem;
 		background: var(--gradient-primary);
-		color: var(--ink);
+		color: var(--btn-text);
 		border-radius: var(--radius-full);
 		text-decoration: none;
 		font-size: 0.85rem;
@@ -336,7 +336,7 @@
 		width: 24px;
 		height: 24px;
 		border: 2px solid var(--glass-border);
-		border-top-color: var(--accent-cyan);
+		border-top-color: var(--accent-text);
 		border-radius: 50%;
 		animation: spin 0.6s linear infinite;
 	}
@@ -509,7 +509,7 @@
 		padding: 0.5rem 0;
 		background: none;
 		border: none;
-		color: var(--accent-cyan);
+		color: var(--accent-text);
 		font-size: 0.85rem;
 		font-weight: 500;
 		cursor: pointer;
@@ -549,7 +549,7 @@
 		padding: 0.15rem 0.5rem;
 		background: var(--accent-tint);
 		border-radius: var(--radius-sm);
-		color: var(--accent-cyan);
+		color: var(--accent-text);
 		font-size: 0.72rem;
 		font-weight: 600;
 	}

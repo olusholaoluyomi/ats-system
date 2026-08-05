@@ -194,7 +194,7 @@
 		align-items: center;
 		gap: 0.5rem;
 		margin-bottom: 1.25rem;
-		color: var(--accent-cyan);
+		color: var(--accent-text);
 	}
 
 	.wa-header h3 {
