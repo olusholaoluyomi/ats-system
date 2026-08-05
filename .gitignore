@@ -1,0 +1,45 @@
+# dependencies
+node_modules/
+
+# build output
+.svelte-kit/
+build/
+dist/
+static/docs/
+
+# environment
+.env
+.env.*
+!.env.example
+
+# IDE
+.vscode/
+.idea/
+.claude/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# testing
+coverage/
+test-results/
+playwright-report/
+blob-report/
+
+# vercel
+.vercel/
+
+# firebase
+.firebase/
+
+# misc
+*.log
+*.tsbuildinfo
+.env*.local
+
+# experiment roadmap lives in claude code project memory, not in the repo
+ROADMAP-EXPERIMENT.md

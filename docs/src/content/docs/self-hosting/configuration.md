@@ -1,0 +1,168 @@
+---
+title: Configuration
+description: Environment variables and configuration options for self-hosted instances.
+---
+
+## Environment Variables
+
+All configuration is done through environment variables in the `.env` file. At least one provider must be configured (Gemini, Groq, Cerebras, or Ollama); the route returns `503` otherwise.
+
+| Variable           | Required     | Description                                                                                                            |
+| ------------------ | ------------ | ---------------------------------------------------------------------------------------------------------------------- |
+| `GEMINI_API_KEY`   | One of these | Google AI API key (Gemini 3.5 Flash Lite)                                                                              |
+| `GROQ_API_KEY`     | One of these | Groq API key (Llama 3.3 70B). Retires 2026-08-16, see the note below.                                                  |
+| `CEREBRAS_API_KEY` | One of these | Cerebras API key (Llama 3.3 70B). Recommended cross-vendor fallback.                                                   |
+| `OLLAMA_BASE_URL`  | One of these | Base URL of a local Ollama daemon (e.g. `http://127.0.0.1:11434`)                                                      |
+| `OLLAMA_MODEL`     | Optional     | Ollama model tag, defaults to `llama3.2`. Use any tag from `ollama list`.                                              |
+| `OLLAMA_API_KEY`   | Optional     | Bearer token sent as `Authorization: Bearer {key}` on every Ollama request. Only needed if your Ollama is behind auth. |
+
+:::caution
+Never commit your `.env` file to version control. It's already in `.gitignore`, but double-check before pushing.
+:::
+
+## Provider Priority
+
+The LLM chain composes from whatever's configured in env. Ordering is fixed:
+
+1. **Ollama** (`OLLAMA_BASE_URL`), local first when configured
+2. **Gemini 3.5 Flash Lite** via Google (`GEMINI_API_KEY`)
+3. **Llama 3.3 70B** via Groq (`GROQ_API_KEY`)
+4. **Llama 3.3 70B** via Cerebras (`CEREBRAS_API_KEY`)
+
+Exactly one model per vendor. A second model on the same API key shares that key's
+quota, so it adds latency without adding redundancy; crossing vendors is what makes
+the fallback meaningful.
+
+:::caution[Groq retires this model on 2026-08-16]
+`llama-3.3-70b-versatile` is the only Groq free-tier model that fits the scoring
+prompt, and it shuts down on 2026-08-16. Measured against the real capped prompt
+(6,000 character resume plus 4,000 character job description), the input alone is
+5,981 tokens and the response needs 1,944. Every surviving Groq free-tier model caps
+at 8,000 tokens per minute, and Groq reserves `input + max_tokens` up front, so
+`qwen/qwen3.6-27b` still returns `Requested 8015 / Limit 8000` even with the output
+budget cut to 1,900, and both `gpt-oss` sizes reject `json_object` on this prompt.
+
+Set `CEREBRAS_API_KEY` to keep a cross-vendor fallback. It serves the same
+Llama 3.3 70B the prompt is already tuned against, on a free tier whose per-minute
+ceiling is not the binding constraint. Keys are free at
+[cloud.cerebras.ai](https://cloud.cerebras.ai).
+:::
+
+If a provider fails (timeout, rate limit, malformed response), the system automatically tries the next one. Because each provider uses a separate credential, their quotas are completely independent. Self-hosters who want a fully offline scanner should set only `OLLAMA_BASE_URL` and leave the cloud keys unset.
+
+## Running Locally with Ollama
+
+For privacy-first deployments where every byte of the resume stays on your machine:
+
+```bash
+# install ollama from https://ollama.com and pull a model
+ollama pull llama3.2
+
+# in your .env (or as shell vars before pnpm dev):
+OLLAMA_BASE_URL=http://127.0.0.1:11434
+OLLAMA_MODEL=llama3.2
+
+# leave GEMINI_API_KEY / GROQ_API_KEY unset for offline-only mode
+```
+
+The Ollama path uses Ollama's `format: 'json'` so the model returns strict JSON without prompt-engineering tricks. First scan is slow on commodity hardware (60-120s for `llama3.2:3b` on a typical laptop); subsequent scans of the same resume hit the in-memory result cache and return in <100ms. Bigger models produce noticeably better suggestions but take longer.
+
+The `/api/analyze` response includes `_provider: "ollama-{model}"` so you can confirm requests are landing locally and not falling back to a cloud key you forgot to remove.
+
+### Behind a reverse proxy or auth gate
+
+Vanilla `ollama serve` on `127.0.0.1` has no authentication, which is fine for a local-only setup. If your Ollama lives behind a reverse proxy that requires a bearer token, or you're pointing at a hosted Ollama-compatible endpoint (OpenWebUI, LiteLLM, OpenRouter's Ollama-compatible routes, a Cloudflare-tunneled daemon with a service token, etc.), set `OLLAMA_API_KEY` and the request will include `Authorization: Bearer {key}` on every call:
+
+```bash
+# in your .env
+OLLAMA_BASE_URL=https://ollama.your-domain.tld
+OLLAMA_MODEL=llama3.2
+OLLAMA_API_KEY=sk-your-proxy-token
+```
+
+The header is only attached when the env var is non-empty, so leaving it unset keeps the request shape identical to the local-only setup. Empty or whitespace-only values are treated as not set so a stray `OLLAMA_API_KEY=` line in `.env` does not produce a malformed `Authorization: Bearer ` header that the proxy would reject.
+
+## Authentication
+
+How users sign in (or whether they sign in at all) is a separate choice from the LLM provider, and it's also driven by environment variables. ATS Screener supports three modes, picked automatically:
+
+- **Anonymous**: leave Firebase and LDAP unset. The scanner is open and history is local. This is the default.
+- **Firebase**: set the `PUBLIC_FIREBASE_*` variables for Google / email sign-in and synced history.
+- **Active Directory**: set `LDAP_URL` for on-premise AD sign-in.
+
+See [Authentication](/docs/self-hosting/authentication) for the full comparison and the [Active Directory guide](/docs/self-hosting/active-directory) for AD setup. The Firebase variables are listed below.
+
+```bash
+# self-host without firebase: leave every PUBLIC_FIREBASE_* var unset (the default).
+# self-host with firebase: set all six.
+PUBLIC_FIREBASE_API_KEY=...
+PUBLIC_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
+PUBLIC_FIREBASE_PROJECT_ID=your-project
+PUBLIC_FIREBASE_STORAGE_BUCKET=your-project.appspot.com
+PUBLIC_FIREBASE_MESSAGING_SENDER_ID=1234567890
+PUBLIC_FIREBASE_APP_ID=1:1234567890:web:abc
+```
+
+## Free Tier Limits
+
+| Provider | Model                 | RPM | RPD   | TPM  | Cost |
+| -------- | --------------------- | --- | ----- | ---- | ---- |
+| Google   | Gemini 3.5 Flash Lite | 15  | 500   | 250K | Free |
+| Groq     | Llama 3.3 70B         | 30  | 1,000 | 12K  | Free |
+| Cerebras | Llama 3.3 70B         | -   | -     | -    | Free |
+
+The 12K TPM on Groq is the whole reason that leg retires on 2026-08-16: it is the only
+free-tier model there with enough headroom for this prompt, and every model that
+outlives it caps at 8K. Cerebras limits vary by account, so check your dashboard.
+
+Every provider blocks at its limits and never auto-charges. You cannot accidentally incur costs.
+
+For the latest limits, see the official documentation:
+
+- [Google AI rate limits](https://ai.google.dev/gemini-api/docs/rate-limits)
+- [Groq rate limits](https://console.groq.com/docs/rate-limits)
+- [Cerebras rate limits](https://inference-docs.cerebras.ai/support/rate-limits)
+
+## Rate Limiting
+
+Rate limiting is configured in `src/routes/api/analyze/+server.ts`:
+
+```typescript
+const RATE_LIMIT = {
+	maxPerMinute: 10,
+	maxPerDay: 200
+};
+```
+
+Adjust these values based on your expected traffic and API key limits.
+
+## Timeouts
+
+Each provider has its own timeout. [Vercel Fluid Compute](https://vercel.com/docs/fluid-compute) is enabled by default and allows up to 300 seconds on the Hobby plan:
+
+```typescript
+// Google: 30s, Groq: 15s, Cerebras: 12s → worst case total: 57s
+timeoutMs: 30_000; // buildGoogleProvider
+timeoutMs: 15_000; // buildGroqProvider
+timeoutMs: 12_000; // buildCerebrasProvider
+```
+
+Two constraints govern these numbers.
+
+**They must sum to less than the route's `maxDuration` (60s)**, or the platform kills the
+function before the last leg can run, silently turning a three-provider chain into a
+shorter one. 30 + 15 + 12 leaves 3s of margin.
+
+**Each provider's token budget must be reachable inside its own timeout.** Measured
+throughput is 311 tok/s on Flash Lite and ~290 tok/s on Groq, so a 6,144-token Google
+budget needs 19.8s and a 3,072-token Groq budget needs 10.6s. Cerebras is the fastest
+leg by a wide margin, so its 3,072-token budget clears 12s comfortably. If a budget were raised
+above what its timeout allows, any response that ran to full length would be aborted
+mid-flight, wasting the call and the fallback behind it. A unit test enforces this.
+
+Typical requests are far below the ceiling: Flash Lite answers in 9-11s and Groq in
+about 7s. Output size tracks the fixed 6-platform schema rather than resume length, so a
+short resume and a maxed-out one produce within 5% of the same number of output tokens.
+
+If every provider fails the route returns `503` and logs `llm.all_providers_failed` at
+error level, and the client falls back to rule-based scoring.

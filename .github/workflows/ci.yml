@@ -1,0 +1,77 @@
+name: ci
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main, dev]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # 22 is the engines floor, 24 is what vercel actually builds on
+        node-version: [22, 24]
+
+    env:
+      PUBLIC_FIREBASE_API_KEY: ci-placeholder
+      PUBLIC_FIREBASE_AUTH_DOMAIN: ci-placeholder.firebaseapp.com
+      PUBLIC_FIREBASE_PROJECT_ID: ci-placeholder
+      PUBLIC_FIREBASE_STORAGE_BUCKET: ci-placeholder.appspot.com
+      PUBLIC_FIREBASE_MESSAGING_SENDER_ID: '000000000000'
+      PUBLIC_FIREBASE_APP_ID: '1:000000000000:web:0000000000000000'
+
+    steps:
+      - uses: actions/checkout@v7
+
+      # sha-pinned third-party action. no version input, it reads packageManager from package.json
+      - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'pnpm'
+
+      - name: install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: type check
+        run: pnpm check
+
+      - name: lint
+        run: pnpm lint
+
+      - name: format check
+        run: pnpm format:check
+
+      - name: unit tests
+        run: pnpm test
+
+      - name: build
+        run: pnpm build
+
+  # stops a pr reintroducing a vulnerable dependency, dependabot's own prs included
+  dependency-review:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/dependency-review-action@v5
+        with:
+          fail-on-severity: high
+          comment-summary-in-pr: on-failure
