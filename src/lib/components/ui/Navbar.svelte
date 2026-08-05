@@ -15,7 +15,18 @@
 
 <nav class="navbar">
 	<div class="nav-inner">
-		<Logo size="sm" />
+		<div class="brand">
+			<Logo size="sm" />
+			<a
+				href="https://olusholaoluyomi.com"
+				class="brand-name"
+				target="_blank"
+				rel="noopener"
+				aria-label="Olushola Oluyomi - personal site"
+			>
+				Olushola Oluyomi
+			</a>
+		</div>
 
 		<div class="nav-links" class:open={mobileOpen}>
 			<a
@@ -97,6 +108,31 @@
 		align-items: center;
 		gap: 1rem;
 		justify-content: space-between;
+	}
+
+	/* logo + owner credit link, persistent across all routes */
+	.brand {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		min-width: 0;
+	}
+
+	.brand-name {
+		padding-left: 0.75rem;
+		border-left: 1px solid var(--glass-border);
+		font-family: var(--font-display);
+		font-size: 0.72rem;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+		color: var(--text-tertiary);
+		text-decoration: none;
+		white-space: nowrap;
+		transition: color 0.2s ease;
+	}
+
+	.brand-name:hover {
+		color: var(--accent-text);
 	}
 
 	/* theme toggle */
@@ -216,6 +252,10 @@
 	@media (max-width: 640px) {
 		.nav-toggle {
 			display: flex;
+		}
+
+		.brand-name {
+			font-size: 0.62rem;
 		}
 
 		.nav-links {
