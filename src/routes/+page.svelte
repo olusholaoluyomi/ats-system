@@ -5,7 +5,6 @@
 	import Features from '$components/landing/Features.svelte';
 	import HowItWorks from '$components/landing/HowItWorks.svelte';
 	import CallToAction from '$components/landing/CallToAction.svelte';
-	import Footer from '$components/landing/Footer.svelte';
 	import SeoHead from '$components/seo/SeoHead.svelte';
 
 	const softwareAppLd = {
@@ -41,7 +40,6 @@
 	<Features />
 	<HowItWorks />
 	<CallToAction />
-	<Footer />
 </main>
 
 <style>

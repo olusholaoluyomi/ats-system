@@ -469,23 +469,12 @@ export async function generatePDF() {
 	doc.setFontSize(5);
 	tc(P.light);
 	wrappedText(
-		'This report is provided for informational purposes only. ATS Screener is an independent open-source tool and is not affiliated with any ATS vendor.',
+		'This report is provided for informational purposes only. ATS Screener is an independent tool and is not affiliated with any ATS vendor.',
 		ML,
 		footerY,
 		68,
 		2.8
 	);
-
-	// center: clickable attribution link
-	const linkedInUrl = 'https://www.linkedin.com/in/sunny-patel-30b460204/';
-	const attrText = 'ATS Screener by Sunny Patel';
-	doc.setFont('helvetica', 'bold');
-	doc.setFontSize(6);
-	tc(P.accent);
-	const attrW = doc.getTextWidth(attrText);
-	const attrX = W / 2 - attrW / 2;
-	doc.textWithLink(attrText, attrX, footerY + 1, { url: linkedInUrl });
-	hline(attrX, footerY + 1.6, attrX + attrW, footerY + 1.6, P.accent, 0.15);
 
 	// right: site url + timestamp
 	doc.setFont('helvetica', 'bold');

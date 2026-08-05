@@ -11,7 +11,7 @@ import type { RequestHandler } from './$types';
 // link points at the canonical CHANGELOG location on github so
 // readers can deep-link to a specific version's section.
 
-const REPO = 'https://github.com/sunnypatell/ats-screener';
+const REPO = 'https://github.com/olusholaoluyomi/ats-system-by-sunnypatell';
 const CHANGELOG_URL = `${REPO}/blob/main/CHANGELOG.md`;
 
 interface Release {
@@ -108,7 +108,7 @@ function buildFeed(origin: string): { xml: string; etag: string } {
 	<channel>
 		<title>ATS Screener releases</title>
 		<link>${escapeXml(origin)}</link>
-		<description>Release notes for ATS Screener, a free open-source resume screener.</description>
+		<description>Release notes for ATS Screener, a free resume screener.</description>
 		<language>en-us</language>
 		<lastBuildDate>${buildDate}</lastBuildDate>
 		<atom:link href="${escapeXml(`${origin}/releases.xml`)}" rel="self" type="application/rss+xml" />

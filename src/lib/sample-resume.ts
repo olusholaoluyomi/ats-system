@@ -30,7 +30,7 @@ Nice to have:
 - Experience with Svelte, Next.js, or other modern frameworks
 - gRPC or GraphQL API design
 - Background in resume parsing, ATS systems, or HR tech
-- Public open-source contributions
+- Public software projects
 
 Tech stack: TypeScript, Node.js, React, AWS, Docker, Kubernetes, PostgreSQL, Redis, Kafka.
 `;

@@ -8,7 +8,6 @@ const ROUTES: { path: string; changefreq: string; priority: number }[] = [
 	// app pages
 	{ path: '/', changefreq: 'weekly', priority: 1.0 },
 	{ path: '/scanner', changefreq: 'weekly', priority: 0.9 },
-	{ path: '/about', changefreq: 'monthly', priority: 0.7 },
 	// high-priority docs landings (full docs sitemap also linked from robots.txt)
 	{ path: '/docs/', changefreq: 'weekly', priority: 0.7 },
 	{ path: '/docs/getting-started/introduction/', changefreq: 'monthly', priority: 0.6 },

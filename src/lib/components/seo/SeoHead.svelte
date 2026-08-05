@@ -17,7 +17,7 @@
 		title,
 		description,
 		ogImage = '/og-image.png',
-		ogImageAlt = 'ATS Screener: free open-source resume scoring against 6 real ATS platforms.',
+		ogImageAlt = 'ATS Screener: free resume scoring against 6 real ATS platforms.',
 		ogType = 'website',
 		canonical,
 		noIndex = false

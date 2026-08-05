@@ -39,7 +39,7 @@
 	});
 
 	const shareText = $derived(
-		`Just scored ${avgScore}/100 on ATS Screener, a free open-source resume tool by linkedin.com/in/sunny-patel-30b460204 that simulates how real ATS platforms (Workday, Taleo, iCIMS, Greenhouse, Lever, and SuccessFactors) parse your resume.\n\n${passCount}/${totalCount} systems passed. Try it free at ats-screener.vercel.app\n\n#ATSScreener #Resume #JobSearch #OpenSource #CareerTips`
+		`Just scored ${avgScore}/100 on ATS Screener, a free resume tool that simulates how real ATS platforms (Workday, Taleo, iCIMS, Greenhouse, Lever, and SuccessFactors) parse your resume.\n\n${passCount}/${totalCount} systems passed. Try it free at ats-screener.vercel.app\n\n#ATSScreener #Resume #JobSearch #CareerTips`
 	);
 
 	let copyState = $state<'idle' | 'copied'>('idle');

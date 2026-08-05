@@ -31,7 +31,7 @@
 			: `Scored ${score}/100 across 6 real ATS platforms`
 	);
 	const description = $derived(
-		`Free, open-source resume screener that simulates Workday, Taleo, iCIMS, Greenhouse, Lever, and SuccessFactors. ${pass} of ${total} systems passed.`
+		`Free ATS resume screener that simulates Workday, Taleo, iCIMS, Greenhouse, Lever, and SuccessFactors. ${pass} of ${total} systems passed.`
 	);
 
 	const color = $derived(getScoreColor(score));

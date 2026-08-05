@@ -73,9 +73,7 @@
 
 	const suggestedLinks = [
 		{ href: '/', label: 'Home', icon: 'home' },
-		{ href: '/scanner', label: 'Scanner', icon: 'scan' },
-		{ href: '/docs', label: 'Docs', icon: 'book' },
-		{ href: '/about', label: 'About', icon: 'info' }
+		{ href: '/scanner', label: 'Scanner', icon: 'scan' }
 	] as const;
 </script>
 
@@ -172,19 +170,6 @@
 								aria-hidden="true"
 								><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline
 									points="14,2 14,8 20,8"
-								/></svg
-							>
-						{:else if link.icon === 'book'}
-							<svg
-								width="14"
-								height="14"
-								viewBox="0 0 24 24"
-								fill="none"
-								stroke="currentColor"
-								stroke-width="2"
-								aria-hidden="true"
-								><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" /><path
-									d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"
 								/></svg
 							>
 						{:else}
