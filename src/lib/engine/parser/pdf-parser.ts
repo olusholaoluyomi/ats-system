@@ -31,7 +31,22 @@ interface PDFParseResult {
 
 // extracts text from a PDF with layout-aware line reconstruction
 export async function parsePDF(file: File): Promise<PDFParseResult> {
-	const buffer = await file.arrayBuffer();
+	// some versions of iOS/Safari (and WebViews) lack Blob/ File.arrayBuffer()
+	// (or have buggy implementations). prefer the modern API when available,
+	// but fall back to FileReader.readAsArrayBuffer to avoid "undefined is a
+	// function" runtime errors on older browsers.
+	let buffer: ArrayBuffer;
+	if (typeof (file as any).arrayBuffer === 'function') {
+		buffer = await file.arrayBuffer();
+	} else {
+		buffer = await new Promise<ArrayBuffer>((resolve, reject) => {
+			const reader = new FileReader();
+			reader.onload = () => resolve(reader.result as ArrayBuffer);
+			reader.onerror = () => reject(reader.error);
+			reader.readAsArrayBuffer(file);
+		});
+	}
+
 	const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
 	const pageCount = pdf.numPages;
 
