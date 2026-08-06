@@ -21,7 +21,7 @@ We are committed to providing a friendly, safe, and welcoming environment for al
 
 ## Enforcement
 
-Instances of unacceptable behavior may be reported by contacting the project maintainer at sunnypatel124555@gmail.com. All complaints will be reviewed and investigated, resulting in a response deemed necessary and appropriate to the circumstances.
+Instances of unacceptable behavior may be reported by contacting the project maintainer at olushoaloluyomi@gmail.com. All complaints will be reviewed and investigated, resulting in a response deemed necessary and appropriate to the circumstances.
 
 ## Attribution
 

@@ -6,7 +6,7 @@ import rehypeKatex from 'rehype-katex';
 
 // https://astro.build/config
 export default defineConfig({
-	site: 'https://ats-screener.vercel.app',
+	site: 'https://ats-screener.olusholaoluyomi.com',
 	base: '/docs',
 	markdown: {
 		remarkPlugins: [remarkMath],
@@ -26,17 +26,17 @@ export default defineConfig({
 				{
 					icon: 'github',
 					label: 'GitHub',
-					href: 'https://github.com/sunnypatell/ats-screener'
+					href: 'https://github.com/olusholaoluyomi/ats-system-by-sunnypatell'
 				},
 				{
 					icon: 'external',
 					label: 'Launch Scanner',
-					href: 'https://ats-screener.vercel.app/scanner'
+					href: 'https://ats-screener.olusholaoluyomi.com/scanner'
 				}
 			],
 			customCss: ['./src/styles/custom.css'],
 			editLink: {
-				baseUrl: 'https://github.com/sunnypatell/ats-screener/edit/main/docs/'
+				baseUrl: 'https://github.com/olusholaoluyomi/ats-system-by-sunnypatell/edit/main/docs/'
 			},
 			head: [
 				{
@@ -51,7 +51,7 @@ export default defineConfig({
 					tag: 'meta',
 					attrs: {
 						property: 'og:image',
-						content: 'https://ats-screener.vercel.app/og-image.png'
+						content: 'https://ats-screener.olusholaoluyomi.com/og-image.png'
 					}
 				},
 				{
@@ -112,7 +112,7 @@ export default defineConfig({
 					items: [
 						{
 							label: 'Changelog',
-							link: 'https://github.com/sunnypatell/ats-screener/blob/main/CHANGELOG.md',
+							link: 'https://github.com/olusholaoluyomi/ats-system-by-sunnypatell/blob/main/CHANGELOG.md',
 							attrs: { target: '_blank', rel: 'noopener' }
 						}
 					]

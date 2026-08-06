@@ -1,6 +1,6 @@
 ---
 title: Privacy and Data Handling
-description: How ATS Screener collects, uses, retains, and protects your data. A non-commercial student portfolio project run from Ontario, Canada, open to users worldwide.
+description: How ATS Screener collects, uses, retains, and protects your data. A non-commercial personal project run from Ontario, Canada, open to users worldwide.
 lastUpdated: 2026-04-25
 ---
 
@@ -10,12 +10,11 @@ Plain language. No legalese. The author is not a lawyer. Last updated 2026-04-25
 
 ## What this is (and what it is not)
 
-ATS Screener is a personal student portfolio project run by [Sunny Patel](https://sunnypatel.net) from Ontario, Canada. It is open source under the MIT license and free to use:
+ATS Screener is a personal project run by Oluyomi Olushola Michael from Ontario, Canada. It is free to use:
 
 - No ads.
 - No premium tier or paid features.
 - No data sales.
-- The author accepts voluntary donations via [Buy Me a Coffee](https://buymeacoffee.com/sunnypatell) and [GitHub Sponsors](https://github.com/sponsors/sunnypatell). Donating does not unlock features, remove limits, or change how your data is handled.
 
 It is not a registered business or service, and there is no organization behind it. That framing matters for everything below.
 
@@ -25,10 +24,10 @@ Anyone, anywhere, can use ATS Screener. The author lives in Canada and built the
 
 ## Honest legal framing
 
-Most commercial data-protection statutes are written for commercial activity. A non-commercial student project may not formally fall under their organizational obligations. Here is the author's good-faith reading, not legal advice:
+Most commercial data-protection statutes are written for commercial activity. A non-commercial personal project may not formally fall under their organizational obligations. Here is the author's good-faith reading, not legal advice:
 
-- **PIPEDA (Canada)** applies to "commercial activity". The project itself charges nothing and gates no features behind payment. The donation links above are voluntary tip-jar style; under most readings they would not be treated as commercial activity flowing from the user, since the user receives no additional service or feature in return. PIPEDA's organizational requirements likely do not formally apply, although a regulator could view donation revenue differently if pushed.
-- **CCPA / CPRA (California)** applies to businesses meeting revenue and data thresholds (annual revenue > $25M, or processing data from 100k+ Californians, or > 50% revenue from selling personal info). A free student project funded by occasional small donations does not come close to any of those thresholds.
+- **PIPEDA (Canada)** applies to "commercial activity". The project itself charges nothing and gates no features behind payment. PIPEDA's organizational requirements likely do not formally apply.
+- **CCPA / CPRA (California)** applies to businesses meeting revenue and data thresholds (annual revenue > $25M, or processing data from 100k+ Californians, or > 50% revenue from selling personal info). A free personal project does not come close to any of those thresholds.
 - **GDPR (EU/EEA)** is broader. Its household exemption excludes purely personal activity, but a public-facing global service generally falls outside that exemption. So if you live in the EU/EEA and create an account, GDPR may technically apply to the way the author processes your data, regardless of monetization.
 
 If you are unsure which laws apply to your situation, you should consult someone who actually does this for a living. The practical commitment in the next section applies to every user regardless of which statutes formally bind us.
@@ -117,6 +116,6 @@ If something material changes, we will update the "Last updated" date at the top
 
 ## Contact
 
-Email [sunnypatel124555@gmail.com](mailto:sunnypatel124555@gmail.com) for any privacy question, data access request, correction, or deletion request. The author is based in Ontario, Canada.
+Email [olushoaloluyomi@gmail.com](mailto:olushoaloluyomi@gmail.com) for any privacy question, data access request, correction, or deletion request. The author is based in Ontario, Canada.
 
 This document is written in plain language because legalese hides accountability. If anything here is unclear or seems wrong, write in.

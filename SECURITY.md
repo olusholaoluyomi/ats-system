@@ -2,11 +2,11 @@
 
 ## Reporting a Vulnerability
 
-If you discover a security vulnerability in ATS Screener, please report it responsibly. The canonical disclosure channel is also published as a [`/.well-known/security.txt`](https://ats-screener.vercel.app/.well-known/security.txt) per [RFC 9116](https://www.rfc-editor.org/rfc/rfc9116).
+If you discover a security vulnerability in ATS Screener, please report it responsibly. The canonical disclosure channel is also published as a [`/.well-known/security.txt`](https://ats-screener.olusholaoluyomi.com/.well-known/security.txt) per [RFC 9116](https://www.rfc-editor.org/rfc/rfc9116).
 
 **Do not open a public issue.**
 
-Instead, email **sunnypatel124555@gmail.com** (or open a private advisory on GitHub) with:
+Instead, email **olushoaloluyomi@gmail.com** (or open a private advisory on GitHub) with:
 
 - Description of the vulnerability
 - Steps to reproduce

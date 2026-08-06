@@ -83,7 +83,7 @@ After deploying to Vercel:
 
 ATS Screener is MIT licensed. You're free to self-host, fork, and modify it. The MIT license requires that the original copyright notice and `LICENSE` file remain intact in your copy of the source code.
 
-Beyond the license, this project has a strong community expectation around visible attribution. If you deploy a public instance or build a product on top of ATS Screener, you are expected to include a visible credit in your site's footer linking back to the [original project](https://ats-screener.vercel.app) and [repository](https://github.com/sunnypatell/ats-screener) and crediting [Sunny Patel](https://sunnypatel.net) as the creator.
+Beyond the license, this project has a strong community expectation around visible attribution. If you deploy a public instance or build a product on top of ATS Screener, you are expected to include a visible credit in your site's footer linking back to the [original project](https://ats-screener.olusholaoluyomi.com) and [repository](https://github.com/olusholaoluyomi/ats-system-by-sunnypatell) and crediting [Sunny Patel](https://sunnypatel.net) as the creator.
 
 Something like: `Built on ATS Screener by Sunny Patel`
 

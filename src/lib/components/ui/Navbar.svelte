@@ -41,6 +41,12 @@
 				class:active={currentPath === '/scanner'}
 				aria-current={currentPath === '/scanner' ? 'page' : undefined}>Scanner</a
 			>
+			<a
+				href="/privacy"
+				class="nav-link"
+				class:active={currentPath === '/privacy'}
+				aria-current={currentPath === '/privacy' ? 'page' : undefined}>Privacy</a
+			>
 			<a href="/scanner" class="nav-cta"> Scan Now </a>
 
 			<!-- theme toggle sits between the Scan Now CTA and the auth slot -->

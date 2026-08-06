@@ -166,6 +166,4 @@ Every path below is publicly reachable. None of them require an API key. The two
 
 ### Redirects
 
-| Path       | Method | Behavior                                                                             |
-| ---------- | ------ | ------------------------------------------------------------------------------------ |
-| `/privacy` | GET    | 308 redirect to `/docs/legal/privacy/`. Old footer link kept working after the move. |
+The app serves `/privacy` as a standalone page (rendered by SvelteKit, not a redirect). No legacy privacy redirect remains.

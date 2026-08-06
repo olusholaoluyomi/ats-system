@@ -4,7 +4,7 @@ description: What ATS Screener is, why it exists, and how it's different from ot
 ---
 
 :::caution[Disclaimer]
-This is an independent research project built by [Sunny Patel](https://sunnypatel.net) and is **not intended to defame, misrepresent, or make claims about any ATS platform or vendor**. All scoring simulations are approximations based on publicly available documentation, community reports, and general industry knowledge. They do not reflect the actual proprietary algorithms of any platform. ATS Screener is **not affiliated with or endorsed by** Workday, Oracle (Taleo), iCIMS, Greenhouse, Lever, SAP (SuccessFactors), or any other ATS vendor. The goal is to help students and job seekers get a general sense of how their resume might perform across different types of resume screening approaches used by leading HCM providers.
+This is an independent research project built by [Oluyomi Olushola Michael](https://olusholaoluyomi.com) and is **not intended to defame, misrepresent, or make claims about any ATS platform or vendor**. All scoring simulations are approximations based on publicly available documentation, community reports, and general industry knowledge. They do not reflect the actual proprietary algorithms of any platform. ATS Screener is **not affiliated with or endorsed by** Workday, Oracle (Taleo), iCIMS, Greenhouse, Lever, SAP (SuccessFactors), or any other ATS vendor. The goal is to help students and job seekers get a general sense of how their resume might perform across different types of resume screening approaches used by leading HCM providers.
 :::
 
 ATS Screener is a free, open-source tool that simulates how **6 real enterprise Applicant Tracking Systems** parse, filter, and score resumes. Unlike other resume checkers that use arbitrary algorithms, every score here is backed by research into actual platform behavior.
@@ -61,9 +61,7 @@ Built with performance and privacy in mind:
 - **Vercel** for hosting (free tier)
 
 :::note[Completely Free]
-The live instance at [ats-screener.vercel.app](https://ats-screener.vercel.app) is hosted and maintained by [Sunny Patel](https://sunnypatel.net) using free-tier API keys. There is no catch, no upsell, and no usage tier. If you want full control, you can also [self-host](/docs/self-hosting/setup/) with your own keys.
-
-If you find this tool useful and want to help keep it running, consider [buying me a coffee](https://buymeacoffee.com/sunnypatell) or [sponsoring on GitHub](https://github.com/sponsors/sunnypatell).
+The live instance at [ats-screener.olusholaoluyomi.com](https://ats-screener.olusholaoluyomi.com) is hosted and maintained by [Oluyomi Olushola Michael](https://olusholaoluyomi.com) using free-tier API keys. There is no catch, no upsell, and no usage tier. If you want full control, you can also [self-host](/docs/self-hosting/setup/) with your own keys.
 :::
 
 :::note

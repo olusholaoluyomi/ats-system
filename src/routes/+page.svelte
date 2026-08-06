@@ -16,7 +16,7 @@
 		description:
 			'Free ATS resume screener simulating Workday, Taleo, iCIMS, Greenhouse, Lever, and SuccessFactors. Real scores, not made-up numbers.',
 		offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
-		author: { '@type': 'Person', name: 'Sunny Patel' }
+		author: { '@type': 'Person', name: 'Oluyomi Olushola Michael' }
 	};
 
 	// escape '<' so the serialized JSON can never accidentally close the surrounding

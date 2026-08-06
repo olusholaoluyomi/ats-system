@@ -55,10 +55,10 @@ Your privacy is protected at every step:
 2. **Only text is transmitted.** The extracted text (not the original file) is sent to Google Gemini for AI analysis.
 3. **Scan history is stored in Firebase.** Your scores and scan metadata are saved to your account in Firestore so you can track progress over time. Only you can access your own data.
 4. **Free account required.** Sign in with Google or email/password to use the scanner. This enables scan history and prevents abuse.
-5. **Open source.** You can verify all of the above by reading the [source code](https://github.com/sunnypatell/ats-screener).
+5. **Open source.** You can verify all of the above by reading the [source code](https://github.com/olusholaoluyomi/ats-system-by-sunnypatell).
 
 :::note[Zero Cost to You]
-The live instance is hosted by [Sunny Patel](https://sunnypatel.net) using free-tier API keys. All infrastructure (Vercel, Firebase Spark, Gemini) runs on free tiers.
+The live instance is hosted by [Oluyomi Olushola Michael](https://olusholaoluyomi.com) using free-tier API keys. All infrastructure (Vercel, Firebase Spark, Gemini) runs on free tiers.
 :::
 
 :::note

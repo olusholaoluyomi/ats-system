@@ -66,27 +66,27 @@ describe('log: routing per level', () => {
 
 describe('log: production-browser silencing for info / debug', () => {
 	it('drops info on a non-local host', () => {
-		setHostname('ats-screener.vercel.app');
+		setHostname('ats-screener.olusholaoluyomi.com');
 		log('info', 'should not log');
 		expect(console.info).not.toHaveBeenCalled();
 		expect(console.log).not.toHaveBeenCalled();
 	});
 
 	it('drops debug on a non-local host', () => {
-		setHostname('ats-screener.vercel.app');
+		setHostname('ats-screener.olusholaoluyomi.com');
 		log('debug', 'should not log');
 		expect(console.debug).not.toHaveBeenCalled();
 		expect(console.log).not.toHaveBeenCalled();
 	});
 
 	it('still emits warn on a non-local host', () => {
-		setHostname('ats-screener.vercel.app');
+		setHostname('ats-screener.olusholaoluyomi.com');
 		log('warn', 'visible');
 		expect(console.warn).toHaveBeenCalled();
 	});
 
 	it('still emits error on a non-local host', () => {
-		setHostname('ats-screener.vercel.app');
+		setHostname('ats-screener.olusholaoluyomi.com');
 		log('error', 'visible');
 		expect(console.error).toHaveBeenCalled();
 	});

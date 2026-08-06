@@ -34,7 +34,7 @@ export const GET: RequestHandler = ({ url }) => {
 
 ## Legal
 
-- [Privacy and Data Handling](${origin}/docs/legal/privacy/): what is collected, retention, third parties, user rights
+- [Privacy and Data Handling](${origin}/privacy): what is collected, retention, third parties, user rights
 
 ## Optional
 

@@ -1,10 +1,9 @@
 /* TEAM */
 
-Author: Sunny Patel
-Site: https://sunnypatel.net
-GitHub: @sunnypatell
-LinkedIn: /in/sunny-patel-30b460204
-From: Richmond Hill, Ontario, Canada
+Author: Oluyomi Olushola Michael
+Site: https://olusholaoluyomi.com
+GitHub: @olusholaoluyomi
+From: Ontario, Canada
 
 
 /* THANKS */
@@ -20,10 +19,10 @@ Standards: HTML5, CSS3, ES2022, WCAG 2.2 AA
 Components: SvelteKit 5, Svelte 5 runes, Bits UI
 Docs: Astro Starlight
 Hosting: Vercel
-Source: https://github.com/sunnypatell/ats-screener
+Source: https://github.com/olusholaoluyomi/ats-system-by-sunnypatell
 License: MIT
 
 
 /* SAY HELLO */
 
-sunnypatel124555@gmail.com
+olushoaloluyomi@gmail.com

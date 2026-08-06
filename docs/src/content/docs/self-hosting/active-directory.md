@@ -3,7 +3,7 @@ title: Active Directory (LDAP)
 description: Sign in self-hosted ATS Screener with on-premise Active Directory accounts over LDAP.
 ---
 
-ATS Screener can authenticate users against your **Active Directory** domain over LDAP. This is for self-hosters running the app **inside their own network**, on a host that can reach a domain controller (a domain-joined Windows Server, or any Linux box on the LAN). The hosted instance at `ats-screener.vercel.app` never uses this; it stays on Firebase.
+ATS Screener can authenticate users against your **Active Directory** domain over LDAP. This is for self-hosters running the app **inside their own network**, on a host that can reach a domain controller (a domain-joined Windows Server, or any Linux box on the LAN). The hosted instance at `ats-screener.olusholaoluyomi.com` never uses this; it stays on Firebase.
 
 When Active Directory is enabled, users sign in with their normal AD username and password, the scanner sits behind that login, and each user's scan history is kept separate on their browser.
 

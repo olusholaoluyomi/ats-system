@@ -11,7 +11,7 @@ ATS Screener picks one of three sign-in modes automatically from your environmen
 | **Firebase**         | set `PUBLIC_FIREBASE_PROJECT_ID` (+ keys) | Google or email/password         | Firestore, synced      | a hosted-style instance with accounts |
 | **Active Directory** | set `LDAP_URL` (+ service account)        | AD username + password (on-prem) | per user, localStorage | a company on its own network          |
 
-If more than one is configured, the precedence is **Active Directory > Firebase > anonymous**. The public instance at `ats-screener.vercel.app` uses Firebase; it never sets `LDAP_URL`, so the Active Directory UI never appears there.
+If more than one is configured, the precedence is **Active Directory > Firebase > anonymous**. The public instance at `ats-screener.olusholaoluyomi.com` uses Firebase; it never sets `LDAP_URL`, so the Active Directory UI never appears there.
 
 ## Anonymous (no sign-in)
 

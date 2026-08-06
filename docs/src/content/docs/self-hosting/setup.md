@@ -15,7 +15,7 @@ ATS Screener can be self-hosted for free. You'll need at least one LLM API key.
 
 ```bash
 # clone the repo
-git clone https://github.com/sunnypatell/ats-screener.git
+git clone https://github.com/olusholaoluyomi/ats-system-by-sunnypatell.git
 cd ats-screener
 
 # install dependencies
