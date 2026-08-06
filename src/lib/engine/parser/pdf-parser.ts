@@ -1,8 +1,13 @@
-import * as pdfjsLib from 'pdfjs-dist';
+// use the legacy build (not the default modern one). the modern pdfjs-dist
+// build requires APIs like Promise.withResolvers that only shipped in
+// Safari 17.4 / Chrome 119 / Firefox 121; the legacy build ships a polyfill
+// for them at module load, so resume parsing keeps working for users on
+// older browsers instead of failing with "undefined is not a function".
+import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
 import type { TextItem } from 'pdfjs-dist/types/src/display/api';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
-	'pdfjs-dist/build/pdf.worker.min.mjs',
+	'pdfjs-dist/legacy/build/pdf.worker.min.mjs',
 	import.meta.url
 ).toString();
 
