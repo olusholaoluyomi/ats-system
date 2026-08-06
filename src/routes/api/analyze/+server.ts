@@ -227,6 +227,14 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		);
 	}
 
+	// diagnostics: which providers the deployed function actually sees as
+	// configured. if this list is missing GROQ/CEREBRAS the keys are not
+	// reaching the running function (stale deploy / env scope), not a code issue.
+	logger.info('llm.providers_configured', {
+		providers: buildProviders(keys).map((p) => p.name),
+		mode: body.mode
+	});
+
 	const result = await callLLM(prompt, keys);
 
 	if (!result) {
