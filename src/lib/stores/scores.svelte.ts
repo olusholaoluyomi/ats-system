@@ -1,6 +1,7 @@
 import { browser } from '$app/environment';
 import { env as publicEnv } from '$env/dynamic/public';
 import type { ScoreResult } from '$engine/scorer/types';
+import { averagePassingScore } from '$engine/scorer/comparison';
 import type { LLMAnalysis } from '$engine/llm/types';
 import type { ParsedJobDescription } from '$engine/job-parser/types';
 import { firebaseConfigured, getFirebase } from '$lib/firebase';
@@ -117,9 +118,17 @@ class ScoresStore {
 	}
 
 	get averageScore(): number {
-		if (this.results.length === 0) return 0;
+		return this.passingAverage ?? 0;
+	}
+
+	// headline average restricted to "Likely to Pass" systems. null when no
+	// system passes so the summary card can render a dash instead of a
+	// misleading number (May Be Filtered results never count here).
+	get passingAverage(): number | null {
+		const passing = this.results.filter((r) => r.passesFilter);
+		if (passing.length === 0) return null;
 		return Math.round(
-			this.results.reduce((sum, r) => sum + r.overallScore, 0) / this.results.length
+			passing.reduce((sum, r) => sum + r.overallScore, 0) / passing.length
 		);
 	}
 
@@ -237,7 +246,7 @@ class ScoresStore {
 				id: `local-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
 				timestamp: new Date().toISOString(),
 				mode: this.mode,
-				averageScore: Math.round(results.reduce((s, r) => s + r.overallScore, 0) / results.length),
+				averageScore: averagePassingScore(results),
 				passingCount: results.filter((r) => r.passesFilter).length,
 				results,
 				...(fileName && { fileName }),
@@ -264,7 +273,7 @@ class ScoresStore {
 			const entry: Omit<ScanHistoryEntry, 'id'> = {
 				timestamp: new Date().toISOString(),
 				mode: this.mode,
-				averageScore: Math.round(results.reduce((s, r) => s + r.overallScore, 0) / results.length),
+				averageScore: averagePassingScore(results),
 				passingCount: results.filter((r) => r.passesFilter).length,
 				results,
 				...(fileName && { fileName }),

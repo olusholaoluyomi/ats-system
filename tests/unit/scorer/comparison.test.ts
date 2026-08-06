@@ -37,15 +37,28 @@ describe('computeScanComparison', () => {
 		const current = [r('Workday', 80, true), r('Lever', 75, true)];
 		const cmp = computeScanComparison(current, previous);
 		expect(cmp).not.toBeNull();
-		expect(cmp?.previousAverage).toBe(65);
+		// averages count only "Likely to Pass" systems: previous excludes the
+		// failing Lever 60, current averages both passing systems.
+		expect(cmp?.previousAverage).toBe(70);
 		expect(cmp?.currentAverage).toBe(78);
-		expect(cmp?.deltaAverage).toBe(13);
+		expect(cmp?.deltaAverage).toBe(8);
 		expect(cmp?.previousPassing).toBe(1);
 		expect(cmp?.currentPassing).toBe(2);
 		expect(cmp?.deltaPassing).toBe(1);
 		expect(cmp?.improved).toBe(2);
 		expect(cmp?.regressed).toBe(0);
 		expect(cmp?.unchanged).toBe(0);
+	});
+
+	it('averages to 0 when no system is likely to pass', () => {
+		const previous = [r('Workday', 40, false), r('Lever', 55, false)];
+		const current = [r('Workday', 50, false), r('Lever', 60, false)];
+		const cmp = computeScanComparison(current, previous);
+		expect(cmp).not.toBeNull();
+		expect(cmp?.previousAverage).toBe(0);
+		expect(cmp?.currentAverage).toBe(0);
+		expect(cmp?.previousPassing).toBe(0);
+		expect(cmp?.currentPassing).toBe(0);
 	});
 
 	it('counts regressions and unchanged separately', () => {

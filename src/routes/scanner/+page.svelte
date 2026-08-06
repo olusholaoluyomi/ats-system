@@ -138,8 +138,11 @@
 		if (scoresStore.hasResults && !scoresStore.isFromHistory) {
 			const total = scoresStore.results.length;
 			const passing = scoresStore.passingCount;
-			const avg = scoresStore.averageScore;
-			return `Scan complete. Average score ${avg} out of 100. ${passing} of ${total} ATS systems passed.`;
+			const avg = scoresStore.passingAverage;
+			if (avg === null) {
+				return `Scan complete. None of the ${total} ATS systems were likely to pass.`;
+			}
+			return `Scan complete. Average score ${avg} out of 100 among systems likely to pass. ${passing} of ${total} ATS systems passed.`;
 		}
 		return '';
 	});

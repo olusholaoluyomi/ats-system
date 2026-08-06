@@ -6,6 +6,7 @@
 	import WeakestAreas from './WeakestAreas.svelte';
 	import ResumeStats from './ResumeStats.svelte';
 	import ShareBadge from './ShareBadge.svelte';
+	import UpdatedResume from './UpdatedResume.svelte';
 	import { generatePDF } from '$engine/scorer/report';
 	import { getScoreColor, getScoreLabel } from '$engine/scorer/classification';
 	import { computeScanComparison } from '$engine/scorer/comparison';
@@ -14,8 +15,9 @@
 	import { logger } from '$lib/log';
 	import type { Suggestion, StructuredSuggestion } from '$engine/scorer/types';
 
-	// derived stats for the summary card header
-	const avgScore = $derived(scoresStore.averageScore);
+	// derived stats for the summary card header. the headline average only
+	// counts "Likely to Pass" systems (null when none pass -> dash + message).
+	const avgScore = $derived(scoresStore.passingAverage);
 	const passCount = $derived(scoresStore.passingCount);
 	const totalCount = $derived(scoresStore.results.length);
 
@@ -181,13 +183,22 @@
 			<div class="summary-card">
 				<div class="summary-left">
 					<div class="summary-score">
-						<span class="score-number" style="color: {getAvgColor(avgScore)}">
-							{avgScore}
-						</span>
-						<span class="score-verdict" style="color: {getAvgColor(avgScore)}">
-							{getScoreLabel(avgScore)}
-						</span>
-						<span class="score-label">Average Score</span>
+						{#if avgScore !== null}
+							<span class="score-number" style="color: {getAvgColor(avgScore)}">
+								{avgScore}
+							</span>
+							<span class="score-verdict" style="color: {getAvgColor(avgScore)}">
+								{getScoreLabel(avgScore)}
+							</span>
+							<span class="score-label">Average Score</span>
+							<span class="score-subnote">
+								based on {passCount} likely-to-pass {passCount === 1 ? 'system' : 'systems'}
+							</span>
+						{:else}
+							<span class="score-number no-pass">—</span>
+							<span class="score-verdict no-pass">No systems likely to pass</span>
+							<span class="score-label">Average Score</span>
+						{/if}
 					</div>
 				</div>
 				<div class="summary-center">
@@ -761,6 +772,9 @@
 				</div>
 			</div>
 		{/if}
+
+		<!-- editable, downloadable version of the resume with improvements applied -->
+		<UpdatedResume />
 	</div>
 {/if}
 
@@ -816,6 +830,21 @@
 		letter-spacing: 0.06em;
 		font-weight: 500;
 		margin-top: 0.15rem;
+	}
+
+	.score-subnote {
+		font-size: 0.68rem;
+		color: var(--text-tertiary);
+		margin-top: 0.35rem;
+	}
+
+	.score-number.no-pass {
+		color: #ef4444;
+		font-size: 3rem;
+	}
+
+	.score-verdict.no-pass {
+		color: #ef4444;
 	}
 
 	/* mini bar chart in summary header */

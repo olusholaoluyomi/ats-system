@@ -24,10 +24,14 @@ export interface ScanComparison {
 	unchanged: number;
 }
 
-function average(results: ScoreResult[]): number {
-	if (results.length === 0) return 0;
-	const sum = results.reduce((acc, r) => acc + r.overallScore, 0);
-	return Math.round(sum / results.length);
+// overall summary averages are computed over "Likely to Pass" results only:
+// "May Be Filtered" systems must not drag the headline verdict down. when no
+// system passes, the average is 0 (consumers render a dash + message).
+export function averagePassingScore(results: ScoreResult[]): number {
+	const passing = results.filter((r) => r.passesFilter);
+	if (passing.length === 0) return 0;
+	const sum = passing.reduce((acc, r) => acc + r.overallScore, 0);
+	return Math.round(sum / passing.length);
 }
 
 function passingCount(results: ScoreResult[]): number {
@@ -40,8 +44,8 @@ export function computeScanComparison(
 ): ScanComparison | null {
 	if (current.length === 0 || previous.length === 0) return null;
 
-	const currentAverage = average(current);
-	const previousAverage = average(previous);
+	const currentAverage = averagePassingScore(current);
+	const previousAverage = averagePassingScore(previous);
 	const currentPassing = passingCount(current);
 	const previousPassing = passingCount(previous);
 
