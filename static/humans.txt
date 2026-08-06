@@ -3,7 +3,6 @@
 Author: Oluyomi Olushola Michael
 Site: https://olusholaoluyomi.com
 GitHub: @olusholaoluyomi
-From: Ontario, Canada
 
 
 /* THANKS */

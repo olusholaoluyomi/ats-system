@@ -1,16 +1,16 @@
 ---
 title: Privacy and Data Handling
-description: How ATS Screener collects, uses, retains, and protects your data. A non-commercial personal project run from Ontario, Canada, open to users worldwide.
-lastUpdated: 2026-04-25
+description: How ATS Screener collects, uses, retains, and protects your data. A non-commercial personal project, open to users worldwide.
+lastUpdated: 2026-08-06
 ---
 
 :::note
-Plain language. No legalese. The author is not a lawyer. Last updated 2026-04-25.
+Plain language. No legalese. The author is not a lawyer. Last updated 2026-08-06.
 :::
 
 ## What this is (and what it is not)
 
-ATS Screener is a personal project run by Oluyomi Olushola Michael from Ontario, Canada. It is free to use:
+ATS Screener is a personal project run by Oluyomi Olushola Michael. It is free to use:
 
 - No ads.
 - No premium tier or paid features.
@@ -18,9 +18,11 @@ ATS Screener is a personal project run by Oluyomi Olushola Michael from Ontario,
 
 It is not a registered business or service, and there is no organization behind it. That framing matters for everything below.
 
+ATS Screener is inspired by and built on the open-source ATS Screener by [Sunny Patel](https://sunnypatel.net) — thank you for the open-source material that made this possible.
+
 ## Where you fit in
 
-Anyone, anywhere, can use ATS Screener. The author lives in Canada and built the project there, but the app is hosted on global infrastructure and accepts users from any country.
+Anyone, anywhere, can use ATS Screener. The app is hosted on US-based infrastructure and accepts users from any country.
 
 ## Honest legal framing
 
@@ -84,7 +86,7 @@ The full prompt and the raw provider response are not retained on our servers as
 
 ## Where account data lives
 
-Account info and scan history are stored in a managed cloud database operated by a well-known third-party provider, with access restricted to your account. Like most cloud services, that provider may store data in regions outside Canada and outside your home country. Data in transit is encrypted with TLS, and the provider encrypts data at rest.
+Account info and scan history are stored in a managed cloud database operated by a well-known third-party provider, with access restricted to your account. Data is stored in the United States. Data in transit is encrypted with TLS, and the provider encrypts data at rest.
 
 ## How long we keep it
 
@@ -116,6 +118,6 @@ If something material changes, we will update the "Last updated" date at the top
 
 ## Contact
 
-Email [olushoaloluyomi@gmail.com](mailto:olushoaloluyomi@gmail.com) for any privacy question, data access request, correction, or deletion request. The author is based in Ontario, Canada.
+Email [olushoaloluyomi@gmail.com](mailto:olushoaloluyomi@gmail.com) for any privacy question, data access request, correction, or deletion request.
 
 This document is written in plain language because legalese hides accountability. If anything here is unclear or seems wrong, write in.

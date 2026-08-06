@@ -36,8 +36,8 @@
 			<section>
 				<h2>What this is (and what it is not)</h2>
 				<p>
-					ATS Screener is a personal project run by <strong>Oluyomi Olushola Michael</strong> from
-					Ontario, Canada. It is free to use:
+					ATS Screener is a personal project run by <strong>Oluyomi Olushola Michael</strong>. It
+					is free to use:
 				</p>
 				<ul>
 					<li>No ads.</li>
@@ -48,14 +48,18 @@
 					It is not a registered business or service, and there is no organization behind it.
 					That framing matters for everything below.
 				</p>
+				<p>
+					ATS Screener is inspired by and built on the open-source ATS Screener by
+					<a href="https://sunnypatel.net" target="_blank" rel="noopener">Sunny Patel</a> —
+					thank you for the open-source material that made this possible.
+				</p>
 			</section>
 
 			<section>
 				<h2>Where you fit in</h2>
 				<p>
-					Anyone, anywhere, can use ATS Screener. The author lives in Canada and built the
-					project there, but the app is hosted on global infrastructure and accepts users from
-					any country.
+					Anyone, anywhere, can use ATS Screener. The app is hosted on US-based infrastructure
+					and accepts users from any country.
 				</p>
 			</section>
 
@@ -189,10 +193,9 @@
 				<h2>Where account data lives</h2>
 				<p>
 					Account info and scan history are stored in a managed cloud database operated by a
-					well-known third-party provider, with access restricted to your account. Like most
-					cloud services, that provider may store data in regions outside Canada and outside
-					your home country. Data in transit is encrypted with TLS, and the provider encrypts
-					data at rest.
+					well-known third-party provider, with access restricted to your account. Data is
+					stored in the United States. Data in transit is encrypted with TLS, and the provider
+					encrypts data at rest.
 				</p>
 			</section>
 
@@ -269,8 +272,7 @@
 				<p>
 					Email
 					<a href="mailto:{CONTACT_EMAIL}" class="email-link">{CONTACT_EMAIL}</a>
-					for any privacy question, data access request, correction, or deletion request. The
-					author is based in Ontario, Canada.
+					for any privacy question, data access request, correction, or deletion request.
 				</p>
 				<p>
 					This document is written in plain language because legalese hides accountability. If
