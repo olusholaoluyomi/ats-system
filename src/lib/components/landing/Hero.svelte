@@ -95,16 +95,20 @@
 
 		// real auth-user count from the admin-sdk-backed endpoint (the client
 		// SDK cannot enumerate accounts, so this is the only accurate source).
-		// polled so a newly created account shows up without a reload. skipped
-		// entirely on self-host (firebase not configured): the strip omits the
-		// Users Served stat upstream, so pulling the count would just throw.
-		// if the endpoint is unavailable (no service account configured, or a
-		// transient failure) we fall back to the live Firestore stats counter.
+		// fetched once on load and again whenever the user returns to the tab
+		// (no background polling — the number only changes when someone signs
+		// up, so a stale-until-focus count is fine and keeps the network tab
+		// quiet). skipped entirely on self-host (firebase not configured): the
+		// strip omits the Users Served stat upstream, so pulling the count
+		// would just throw. if the endpoint is unavailable (no service account
+		// configured, or a transient failure) we fall back to the live
+		// Firestore stats counter.
 		if (!firebaseConfigured) return;
 
 		let hasAuthoritative = false;
 		let fallbackInstalled = false;
 		let unsubscribeStats: (() => void) | null = null;
+		let lastRefreshAt = 0;
 
 		const applyCount = (n: number) => {
 			userCount = n;
@@ -155,16 +159,30 @@
 					applyCount(data.userCount);
 				}
 			} catch {
-				// transient network error; retry on the next poll
+				// transient network error; retry on the next refresh
 				setupFirestoreFallback();
 			}
 		};
 
 		void poll();
-		const pollTimer = setInterval(poll, 60_000);
+		const refreshOnVisible = () => {
+			// only refresh when the tab is in the foreground: hidden tabs don't
+			// need a live number, and skipping them removes all background
+			// request churn.
+			if (document.visibilityState !== 'visible') return;
+			// visibilitychange + focus can both fire when returning to the
+			// window/tab; dedupe so we send at most one request per burst.
+			const now = Date.now();
+			if (now - lastRefreshAt < 1000) return;
+			lastRefreshAt = now;
+			void poll();
+		};
+		document.addEventListener('visibilitychange', refreshOnVisible);
+		window.addEventListener('focus', refreshOnVisible);
 
 		return () => {
-			clearInterval(pollTimer);
+			document.removeEventListener('visibilitychange', refreshOnVisible);
+			window.removeEventListener('focus', refreshOnVisible);
 			unsubscribeStats?.();
 		};
 	});
