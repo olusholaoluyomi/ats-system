@@ -91,4 +91,35 @@ describe('pdfjs legacy build compatibility', () => {
 		expect(result.hasTables).toBe(false);
 		expect(result.hasImages).toBe(false);
 	});
+
+	it('bypasses the Web Worker entirely on iOS Safari (main-thread parse)', async () => {
+		// regression test for the modern-iPhone outage: even on recent iOS the
+		// pdf.js ES-module worker can fail its handshake and hang getDocument()
+		// forever. parsePDF must detect the iOS UA, expose the worker module on
+		// globalThis.pdfjsWorker, and parse on the main thread instead.
+		const ua =
+			'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1';
+		const originalUA = Object.getOwnPropertyDescriptor(window.navigator, 'userAgent');
+		try {
+			Object.defineProperty(window.navigator, 'userAgent', {
+				value: ua,
+				configurable: true
+			});
+
+			const bytes = makeMinimalPDF('iOS main-thread parse');
+			const file = new File([bytes], 'resume.pdf', { type: 'application/pdf' });
+
+			const result = await parsePDF(file);
+
+			expect(result.pageCount).toBe(1);
+			expect(result.text).toContain('iOS main-thread parse');
+			// the iOS path must skip `new Worker(...)` by making pdfjs use the
+			// main-thread "fake worker" handler
+			expect((globalThis as any).pdfjsWorker?.WorkerMessageHandler).toBeTypeOf('function');
+		} finally {
+			if (originalUA) {
+				Object.defineProperty(window.navigator, 'userAgent', originalUA);
+			}
+		}
+	});
 });

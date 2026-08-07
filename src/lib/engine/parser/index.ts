@@ -8,7 +8,8 @@ import type {
 	EducationEntry,
 	ProjectEntry,
 	CertificationEntry,
-	ResumeSection
+	ResumeSection,
+	DateRange
 } from './types';
 
 // main entry point: parses PDF/DOCX into structured ParsedResume
@@ -317,20 +318,33 @@ function parseJobHeader(line1: string, line2: string): { title: string; company:
 	return { title: cleanLine1, company: '' };
 }
 
-// extracts structured education entries from education sections
+// covers dotted AND dotless abbreviations, including subject suffixes the old
+// `b\.?s\.?` pattern rejected. the classic failure was "B.Sc.": after matching
+// "B.S" the trailing word boundary check failed on the following "c" (a word
+// char), so no degree was ever recognized and the whole line was dumped into
+// the institution field — making it look like the candidate had no education.
+const EDU_DEGREE_REGEX =
+	/\b(ph\.?d\.?|doctor(?:al|ate)?|master(?:'s)?|m\.?b\.?a\.?|m\.?a\.?(?:s)?\.?|m\.?s\.?c\.?|m\.?s\.?|m\.?eng\.?|m\.?ed\.?|bachelor(?:'s)?|b\.?b\.?a\.?|b\.?s\.?c\.?|b\.?a\.?s\.?|b\.?s\.?|b\.?a\.?|b\.?eng\.?(?:g)?\.?|b\.?tech\.?|b\.?pharm\.?|b\.?ed\.?|b\.?sc\.?|associate(?:'s)?|a\.?s\.?c\.?|a\.?s\.?|a\.?a\.?|hnd|ond|nce|diploma|certificate)(?=$|[\s,.|;:])/i;
+
+// extracts structured education entries from education sections. entries are
+// split on blank lines AND on bullet lines, because bulleted resumes (e.g.
+// "• B.Sc. Computer Science | Ahmadu Bello University. | 2010") put one school
+// per line with no blank-line separation, which the shared splitIntoEntries
+// collapsed into a single garbage entry.
 function extractEducation(sections: ResumeSection[]): EducationEntry[] {
 	const eduSections = sections.filter((s) => s.type === 'education');
 	const entries: EducationEntry[] = [];
 
 	for (const section of eduSections) {
-		const blocks = splitIntoEntries(section.content);
-
-		for (const block of blocks) {
+		for (const block of splitEducationBlocks(section.content)) {
 			const lines = block.split('\n').filter((l) => l.trim());
 			if (lines.length === 0) continue;
 
 			const fullText = lines.join(' ');
 			const dateRange = extractFirstDateRange(fullText);
+			// graduation is commonly a bare year ("| 2010") that the date-range
+			// extractor skips; fall back to grabbing it as the start year
+			const dates = dateRange || extractGraduationYear(fullText);
 			const { degree, field, institution } = parseEduHeader(lines);
 			const gpa = extractGPA(fullText);
 			const honors = extractHonors(lines);
@@ -339,7 +353,7 @@ function extractEducation(sections: ResumeSection[]): EducationEntry[] {
 				degree,
 				field,
 				institution,
-				dates: dateRange || { start: null, end: null, isCurrent: false },
+				dates,
 				gpa,
 				honors,
 				rawText: block
@@ -350,38 +364,89 @@ function extractEducation(sections: ResumeSection[]): EducationEntry[] {
 	return entries;
 }
 
-function parseEduHeader(lines: string[]): { degree: string; field: string; institution: string } {
-	const degreePatterns =
-		/\b(ph\.?d\.?|doctor|master'?s?|m\.?s\.?|m\.?a\.?|m\.?b\.?a\.?|bachelor'?s?|b\.?s\.?|b\.?a\.?|b\.?eng\.?|associate'?s?|a\.?s\.?|a\.?a\.?|diploma)\b/i;
+// splits education content into entries: a bullet line always starts a new
+// entry, and blank lines separate multi-line (paragraph-style) entries.
+function splitEducationBlocks(content: string): string[] {
+	const blocks: string[] = [];
+	let current: string[] = [];
 
+	for (const raw of content.split('\n')) {
+		const trimmed = raw.trim();
+		if (trimmed.length === 0) {
+			if (current.length > 0) {
+				blocks.push(current.join('\n'));
+				current = [];
+			}
+			continue;
+		}
+
+		const isBullet = /^\s*[•▪◦●\-*]\s*/.test(raw);
+		if (isBullet && current.length > 0) {
+			blocks.push(current.join('\n'));
+			current = [];
+		}
+		current.push(raw);
+	}
+
+	if (current.length > 0) blocks.push(current.join('\n'));
+	return blocks;
+}
+
+// falls back to a bare 4-digit graduation year ("| 2010") as the start date
+function extractGraduationYear(text: string): DateRange {
+	const yearMatch = text.match(/\b(19|20)\d{2}\b/);
+	return yearMatch
+		? { start: yearMatch[0], end: null, isCurrent: false }
+		: { start: null, end: null, isCurrent: false };
+}
+
+function parseEduHeader(lines: string[]): { degree: string; field: string; institution: string } {
 	let degree = '';
 	let field = '';
 	let institution = '';
 
 	for (const line of lines) {
-		const cleaned = line.replace(/\d{4}\s*[-–—]\s*(?:\d{4}|present|current)/gi, '').trim();
+		const cleaned = line
+			.replace(/^\s*[•▪◦●\-*]\s*/, '')
+			.replace(/\d{4}\s*[-–—]\s*(?:\d{4}|present|current)/gi, '')
+			.trim();
+		if (!cleaned) continue;
 
-		if (degreePatterns.test(cleaned) && !degree) {
-			const match = cleaned.match(degreePatterns);
+		// "B.Sc. Computer Science | Ahmadu Bello University. | 2010"
+		const parts = cleaned
+			.split('|')
+			.map((p) => p.trim())
+			.filter(Boolean);
+
+		if (!degree) {
+			const match = cleaned.match(EDU_DEGREE_REGEX);
 			if (match) {
-				degree = match[0];
-				// field often follows "in" or "of"
-				const fieldMatch = cleaned.match(/(?:in|of)\s+(.+?)(?:\s*[-–—,|]|$)/i);
-				if (fieldMatch) field = fieldMatch[1].trim();
-				// if degree is on a line with the institution
-				const afterDegree = cleaned
-					.replace(degreePatterns, '')
-					.replace(/(?:in|of)\s+.+/, '')
-					.trim();
-				if (afterDegree && !institution)
-					institution = afterDegree.replace(/^[-–—,|\s]+|[-–—,|\s]+$/g, '');
+				degree = match[0].trim();
+				// field usually sits right after the degree, before a separator
+				const afterDegree = cleaned.slice((match.index ?? 0) + match[0].length).trim();
+				const fieldText = afterDegree
+					.replace(/^(?:of|in|at)\s+/i, '')
+					.match(/^[^|,–—-]+/)?.[0]
+					.trim()
+					.replace(/[.,;:\s]+$/, '');
+				if (fieldText && !/\b(university|college|institute|school)\b/i.test(fieldText)) {
+					field = fieldText;
+				}
 			}
-		} else if (!institution && cleaned.length > 3) {
-			institution = cleaned.replace(/^[-–—,|\s]+|[-–—,|\s]+$/g, '');
+		}
+
+		// institution: a part that looks like a named organization (capitalized
+		// words, possibly with small connectors) and is not the year or degree
+		for (const part of parts) {
+			if (/\b(19|20)\d{2}\b/.test(part)) continue;
+			if (EDU_DEGREE_REGEX.test(part)) continue;
+			if (/^[A-Z][A-Za-z&'.-]*(?:\s+(?:[A-Z][A-Za-z&'.-]*|[a-z]{1,3}\.?))+$/.test(part)) {
+				if (!institution) institution = part.replace(/[.,;|]+$/g, '').trim();
+			}
 		}
 	}
 
-	// if we couldn't separate, use best guesses
+	// last-resort guesses when nothing structured was found
 	if (!degree && !institution) {
 		institution = lines[0]?.trim() || '';
 		if (lines.length > 1) degree = lines[1]?.trim() || '';

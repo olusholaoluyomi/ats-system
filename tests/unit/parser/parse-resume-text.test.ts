@@ -135,3 +135,48 @@ describe('parseResumeText: result shape compatibility', () => {
 		expect(r.metadata).toBeDefined();
 	});
 });
+
+describe('parseResumeText: bulleted education with dotted degrees', () => {
+	const bulletedResume = `Ajiyana Shalom
+ajiyana.shalom@example.com
+
+EXPERIENCE
+Backend Developer at Semicolon Africa
+Jan 2023 - Present
+
+EDUCATION
+• B.Sc. Computer Science | Ahmadu Bello University. | 2010
+• WAEC | Christ Ambassadors College. | 2005
+
+SKILLS
+JavaScript, TypeScript, Python
+`;
+
+	it('extracts one education entry per bullet line', () => {
+		const result = parseResumeText(bulletedResume);
+		expect(result.success).toBe(true);
+		expect(result.resume?.education.length).toBe(2);
+	});
+
+	it('parses dotted degrees like B.Sc. into the degree field', () => {
+		const result = parseResumeText(bulletedResume);
+		const edu = result.resume?.education ?? [];
+		expect(edu[0]?.degree).toBe('B.Sc.');
+		expect(edu[0]?.field).toBe('Computer Science');
+		expect(edu[0]?.institution).toBe('Ahmadu Bello University');
+	});
+
+	it('extracts a bare graduation year as the education date', () => {
+		const result = parseResumeText(bulletedResume);
+		const edu = result.resume?.education ?? [];
+		expect(edu[0]?.dates.start).toBe('2010');
+		expect(edu[0]?.dates.end).toBeNull();
+	});
+
+	it('still separates institution for non-degree lines (e.g. WAEC)', () => {
+		const result = parseResumeText(bulletedResume);
+		const edu = result.resume?.education ?? [];
+		expect(edu[1]?.institution).toBe('Christ Ambassadors College');
+		expect(edu[1]?.dates.start).toBe('2005');
+	});
+});

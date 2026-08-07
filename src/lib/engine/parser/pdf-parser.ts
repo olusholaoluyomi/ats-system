@@ -29,94 +29,163 @@ interface PDFParseResult {
 	hasImages: boolean;
 }
 
-// extracts text from a PDF with layout-aware line reconstruction
-export async function parsePDF(file: File): Promise<PDFParseResult> {
-	// some versions of iOS/Safari (and WebViews) lack Blob/ File.arrayBuffer()
-	// (or have buggy implementations). prefer the modern API when available,
-	// but fall back to FileReader.readAsArrayBuffer to avoid "undefined is a
-	// function" runtime errors on older browsers.
-	let buffer: ArrayBuffer;
+// iOS Safari's ES-module Web Worker support is unreliable — even on recent
+// iOS builds a pdf.js worker can fail its startup handshake and then
+// getDocument() hangs forever instead of rejecting (no error is ever thrown,
+// so try/catch and error banners never fire). bypass the worker on iOS and
+// parse on the main thread instead: pdf.js v5+ treats
+// globalThis.pdfjsWorker.WorkerMessageHandler as the main-thread "fake
+// worker" and skips creating a real Worker when it's present.
+let mainThreadWorkerPromise: Promise<void> | null = null;
+function forceMainThreadWorker(): Promise<void> {
+	if ((globalThis as any).pdfjsWorker?.WorkerMessageHandler) {
+		return Promise.resolve();
+	}
+	mainThreadWorkerPromise ??= import('pdfjs-dist/legacy/build/pdf.worker.min.mjs').then((mod) => {
+		(globalThis as any).pdfjsWorker = mod;
+	});
+	return mainThreadWorkerPromise;
+}
+
+function isIOSBrowser(): boolean {
+	return typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent);
+}
+
+// reads a File's bytes via the modern arrayBuffer API when present, falling
+// back to FileReader.readAsArrayBuffer on older iOS/Safari/WebViews that lack
+// (or have buggy) Blob.arrayBuffer implementations.
+function readFileAsArrayBuffer(file: File): Promise<ArrayBuffer> {
 	if (typeof (file as any).arrayBuffer === 'function') {
-		buffer = await file.arrayBuffer();
-	} else {
-		buffer = await new Promise<ArrayBuffer>((resolve, reject) => {
-			const reader = new FileReader();
-			reader.onload = () => resolve(reader.result as ArrayBuffer);
-			reader.onerror = () => reject(reader.error);
-			reader.readAsArrayBuffer(file);
-		});
+		return file.arrayBuffer();
+	}
+	return new Promise<ArrayBuffer>((resolve, reject) => {
+		const reader = new FileReader();
+		reader.onload = () => resolve(reader.result as ArrayBuffer);
+		reader.onerror = () => reject(reader.error);
+		reader.readAsArrayBuffer(file);
+	});
+}
+
+// a stalled pdf.js worker (or a pathological document) hangs instead of
+// rejecting, which would leave the scanner spinning forever. bound every
+// worker round-trip with a timeout so the caller gets a real error and can
+// destroy the loading task.
+function withTimeout<T>(promise: Promise<T>, ms: number, phase: string): Promise<T> {
+	return new Promise<T>((resolve, reject) => {
+		const timer = setTimeout(() => reject(new Error(`${phase} timed out after ${ms / 1000}s`)), ms);
+		promise.then(
+			(v) => {
+				clearTimeout(timer);
+				resolve(v);
+			},
+			(e) => {
+				clearTimeout(timer);
+				reject(e);
+			}
+		);
+	});
+}
+
+// extracts text from a PDF with layout-aware line reconstruction. pdf.js runs
+// in a Web Worker on desktop browsers; on iOS it is forced onto the main
+// thread (see forceMainThreadWorker) because iOS Safari's module-worker
+// support is what breaks parsing there.
+export async function parsePDF(file: File): Promise<PDFParseResult> {
+	if (isIOSBrowser()) {
+		await forceMainThreadWorker();
 	}
 
-	const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
-	const pageCount = pdf.numPages;
+	const buffer = await readFileAsArrayBuffer(file);
 
-	const allLines: PDFTextLine[] = [];
-	let hasImages = false;
+	// keep the loading task so a timeout/failure can destroy it (which
+	// terminates a stalled worker instead of leaking it).
+	const loadingTask = pdfjsLib.getDocument({ data: buffer });
 
-	for (let i = 1; i <= pageCount; i++) {
-		const page = await pdf.getPage(i);
-		const textContent = await page.getTextContent();
-		const operators = await page.getOperatorList();
+	try {
+		const pdf = await withTimeout(loadingTask.promise, 30_000, 'opening the document');
+		const pageCount = pdf.numPages;
 
-		// detect actual raster images via operator list
-		// only count paintImageXObject (real images), NOT paintXObject (which includes fonts/glyphs)
-		// LaTeX PDFs embed glyphs as XObjects, causing false positives with paintXObject
-		const imageOps = [pdfjsLib.OPS.paintImageXObject, pdfjsLib.OPS.paintImageMaskXObject];
-		for (let opIdx = 0; opIdx < operators.fnArray.length; opIdx++) {
-			if (imageOps.includes(operators.fnArray[opIdx])) {
-				// check if the image is large enough to be a real image (not a tiny glyph/icon)
-				// small images (<50px in either dimension) are likely font glyphs or bullets
-				const args = operators.argsArray[opIdx];
-				if (args && args[0]) {
-					try {
-						const imgObj = page.objs.get(args[0] as string) as {
-							width?: number;
-							height?: number;
-						} | null;
-						if (imgObj && (imgObj.width ?? 0) > 50 && (imgObj.height ?? 0) > 50) {
+		const allLines: PDFTextLine[] = [];
+		let hasImages = false;
+
+		for (let i = 1; i <= pageCount; i++) {
+			const page = await withTimeout(pdf.getPage(i), 30_000, `loading page ${i}`);
+			const textContent = await withTimeout(
+				page.getTextContent(),
+				30_000,
+				`extracting text from page ${i}`
+			);
+			const operators = await withTimeout(
+				page.getOperatorList(),
+				30_000,
+				`reading operators on page ${i}`
+			);
+
+			// detect actual raster images via operator list
+			// only count paintImageXObject (real images), NOT paintXObject (which includes fonts/glyphs)
+			// LaTeX PDFs embed glyphs as XObjects, causing false positives with paintXObject
+			const imageOps = [pdfjsLib.OPS.paintImageXObject, pdfjsLib.OPS.paintImageMaskXObject];
+			for (let opIdx = 0; opIdx < operators.fnArray.length; opIdx++) {
+				if (imageOps.includes(operators.fnArray[opIdx])) {
+					// check if the image is large enough to be a real image (not a tiny glyph/icon)
+					// small images (<50px in either dimension) are likely font glyphs or bullets
+					const args = operators.argsArray[opIdx];
+					if (args && args[0]) {
+						try {
+							const imgObj = page.objs.get(args[0] as string) as {
+								width?: number;
+								height?: number;
+							} | null;
+							if (imgObj && (imgObj.width ?? 0) > 50 && (imgObj.height ?? 0) > 50) {
+								hasImages = true;
+								break;
+							}
+						} catch {
+							// if we can't inspect the image object, count it conservatively
 							hasImages = true;
 							break;
 						}
-					} catch {
-						// if we can't inspect the image object, count it conservatively
-						hasImages = true;
-						break;
 					}
 				}
 			}
+
+			for (const item of textContent.items) {
+				if (!('str' in item)) continue;
+				const textItem = item as TextItem;
+				if (!textItem.str.trim()) continue;
+
+				allLines.push({
+					text: textItem.str,
+					x: textItem.transform[4],
+					y: textItem.transform[5],
+					width: textItem.width,
+					height: textItem.height,
+					pageIndex: i - 1
+				});
+			}
 		}
 
-		for (const item of textContent.items) {
-			if (!('str' in item)) continue;
-			const textItem = item as TextItem;
-			if (!textItem.str.trim()) continue;
+		const hasMultipleColumns = detectMultipleColumns(allLines);
+		const hasTables = detectTables(allLines);
 
-			allLines.push({
-				text: textItem.str,
-				x: textItem.transform[4],
-				y: textItem.transform[5],
-				width: textItem.width,
-				height: textItem.height,
-				pageIndex: i - 1
-			});
-		}
+		// group text items into lines by y-position proximity
+		const reconstructedLines = reconstructLines(allLines);
+		const text = reconstructedLines.join('\n');
+
+		return {
+			text,
+			lines: reconstructedLines,
+			pageCount,
+			hasMultipleColumns,
+			hasTables,
+			hasImages
+		};
+	} catch (err) {
+		// tear down the loading task so a timed-out/stalled worker is
+		// terminated rather than left running in the background
+		await loadingTask.destroy().catch(() => {});
+		throw err;
 	}
-
-	const hasMultipleColumns = detectMultipleColumns(allLines);
-	const hasTables = detectTables(allLines);
-
-	// group text items into lines by y-position proximity
-	const reconstructedLines = reconstructLines(allLines);
-	const text = reconstructedLines.join('\n');
-
-	return {
-		text,
-		lines: reconstructedLines,
-		pageCount,
-		hasMultipleColumns,
-		hasTables,
-		hasImages
-	};
 }
 
 // groups text items into lines by y-position (3px threshold), sorted top-to-bottom
