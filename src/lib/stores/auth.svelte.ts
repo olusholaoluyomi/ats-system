@@ -155,33 +155,44 @@ class AuthStore {
 		}
 	}
 
+	// getFirebase()/SDK imports are intentionally INSIDE the try/catch below.
+	// previously they sat above it, so a rejected firebase init (e.g. a partial
+	// env config on a preview deploy) propagated to the caller uncaught, leaving
+	// authStore.error null and making the Sign In / Create Account button a
+	// silent dead end. the login page swallows the rejection ("error is set in
+	// authStore"), so this store must always set `error` before rethrowing.
 	async signInWithGoogle() {
 		this.error = null;
-		const { auth } = await getFirebase();
-		const { GoogleAuthProvider, signInWithPopup, signInWithRedirect, getAdditionalUserInfo } =
-			await import('firebase/auth');
-		const provider = new GoogleAuthProvider();
 		try {
-			const result = await signInWithPopup(auth, provider);
-			if (getAdditionalUserInfo(result)?.isNewUser) {
-				this.incrementUserCount();
+			const { auth } = await getFirebase();
+			const { GoogleAuthProvider, signInWithPopup, signInWithRedirect, getAdditionalUserInfo } =
+				await import('firebase/auth');
+			const provider = new GoogleAuthProvider();
+			try {
+				const result = await signInWithPopup(auth, provider);
+				if (getAdditionalUserInfo(result)?.isNewUser) {
+					this.incrementUserCount();
+				}
+			} catch (err) {
+				// if popup fails with an internal SDK error (not a Firebase auth error),
+				// fall back to redirect-based sign-in
+				const code = (err as { code?: string })?.code;
+				if (!code || err instanceof TypeError) {
+					logger.warn('auth.popup_fallback_to_redirect', {
+						error: err instanceof Error ? err.message : String(err)
+					});
+					try {
+						await signInWithRedirect(auth, provider);
+						return; // redirect navigates away
+					} catch (redirectErr) {
+						this.error = this.getErrorMessage(redirectErr);
+						throw redirectErr;
+					}
+				}
+				this.error = this.getErrorMessage(err);
+				throw err;
 			}
 		} catch (err) {
-			// if popup fails with an internal SDK error (not a Firebase auth error),
-			// fall back to redirect-based sign-in
-			const code = (err as { code?: string })?.code;
-			if (!code || err instanceof TypeError) {
-				logger.warn('auth.popup_fallback_to_redirect', {
-					error: err instanceof Error ? err.message : String(err)
-				});
-				try {
-					await signInWithRedirect(auth, provider);
-					return; // redirect navigates away
-				} catch (redirectErr) {
-					this.error = this.getErrorMessage(redirectErr);
-					throw redirectErr;
-				}
-			}
 			this.error = this.getErrorMessage(err);
 			throw err;
 		}
@@ -189,9 +200,9 @@ class AuthStore {
 
 	async signInWithEmail(email: string, password: string) {
 		this.error = null;
-		const { auth } = await getFirebase();
-		const { signInWithEmailAndPassword } = await import('firebase/auth');
 		try {
+			const { auth } = await getFirebase();
+			const { signInWithEmailAndPassword } = await import('firebase/auth');
 			await signInWithEmailAndPassword(auth, email, password);
 		} catch (err) {
 			this.error = this.getErrorMessage(err);
@@ -201,10 +212,10 @@ class AuthStore {
 
 	async signUpWithEmail(email: string, password: string, displayName: string) {
 		this.error = null;
-		const { auth } = await getFirebase();
-		const { createUserWithEmailAndPassword, updateProfile, sendEmailVerification } =
-			await import('firebase/auth');
 		try {
+			const { auth } = await getFirebase();
+			const { createUserWithEmailAndPassword, updateProfile, sendEmailVerification } =
+				await import('firebase/auth');
 			const credential = await createUserWithEmailAndPassword(auth, email, password);
 			if (displayName) {
 				await updateProfile(credential.user, { displayName });
@@ -225,9 +236,9 @@ class AuthStore {
 
 	async sendPasswordReset(email: string) {
 		this.error = null;
-		const { auth } = await getFirebase();
-		const { sendPasswordResetEmail } = await import('firebase/auth');
 		try {
+			const { auth } = await getFirebase();
+			const { sendPasswordResetEmail } = await import('firebase/auth');
 			await sendPasswordResetEmail(auth, email);
 		} catch (err) {
 			this.error = this.getErrorMessage(err);
@@ -250,9 +261,9 @@ class AuthStore {
 			this.ldapUser = null;
 			return;
 		}
-		const { auth } = await getFirebase();
-		const { signOut: firebaseSignOut } = await import('firebase/auth');
 		try {
+			const { auth } = await getFirebase();
+			const { signOut: firebaseSignOut } = await import('firebase/auth');
 			await firebaseSignOut(auth);
 		} catch (err) {
 			this.error = this.getErrorMessage(err);
@@ -299,6 +310,13 @@ class AuthStore {
 				return 'Firebase auth is not configured. Check your environment variables.';
 			case 'auth/internal-error':
 				return 'Firebase internal error. Check that Google sign-in is enabled in Firebase Console.';
+			case 'auth/operation-not-allowed':
+			case 'auth/admin-restricted-operation':
+				return 'This sign-in method is not enabled. Enable it in Firebase Console → Authentication → Sign-in method.';
+			case 'auth/network-request-failed':
+				return 'Network error. Check your connection and try again.';
+			case 'auth/missing-email':
+				return 'Please enter your email address.';
 			default:
 				logger.error('auth.unhandled_error', {
 					code: code || 'unknown',
