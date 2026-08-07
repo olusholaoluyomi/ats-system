@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { firebaseConfigured, getFirebase } from '$lib/firebase';
+	import { logger } from '$lib/log';
 	import FlipWords from '$components/ui/FlipWords.svelte';
 	import SparklesText from '$components/ui/SparklesText.svelte';
 	import NumberFlow from '@number-flow/svelte';
@@ -105,11 +106,23 @@
 			try {
 				const { db } = await getFirebase();
 				const { doc, onSnapshot } = await import('firebase/firestore');
-				unsubscribeStats = onSnapshot(doc(db, 'stats', 'public'), (snap) => {
-					if (snap.exists()) {
-						userCount = snap.data().userCount ?? 0;
+				unsubscribeStats = onSnapshot(
+					doc(db, 'stats', 'public'),
+					(snap) => {
+						if (snap.exists()) {
+							userCount = snap.data().userCount ?? 0;
+						}
+					},
+					// snapshot errors (e.g. permission-denied if the firestore
+					// rules haven't been deployed) are non-critical here — the
+					// counter just falls back to 0 — but without an onError
+					// handler they surface as an uncaught listener exception.
+					(err) => {
+						logger.warn('landing.stats_listener_failed', {
+							error: err instanceof Error ? err.message : String(err)
+						});
 					}
-				});
+				);
 			} catch {
 				// non-critical; counter falls back to 0
 			}
