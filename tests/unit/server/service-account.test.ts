@@ -58,4 +58,31 @@ describe('parseServiceAccount', () => {
 		);
 		expect(creds?.projectId).toBe('ats-screener');
 	});
+
+	it('normalizes literal backslash-n in the private key back to newlines', () => {
+		const privateKey = ['-----BEGIN PRIVATE KEY-----', 'abc', '-----END PRIVATE KEY-----'].join(
+			'\n'
+		);
+		const creds = parseServiceAccount(
+			JSON.stringify({
+				project_id: 'ats-screener',
+				client_email: 'admin@ats-screener.iam.gserviceaccount.com',
+				// simulates an env-var editor collapsing PEM newlines into \n
+				private_key: privateKey.replaceAll('\n', '\\n')
+			})
+		);
+		expect(creds?.privateKey).toBe(privateKey);
+	});
+
+	it('leaves an already-newline private key untouched', () => {
+		const privateKey = '-----BEGIN PRIVATE KEY-----\nabc\n-----END PRIVATE KEY-----';
+		const creds = parseServiceAccount(
+			JSON.stringify({
+				project_id: 'ats-screener',
+				client_email: 'admin@ats-screener.iam.gserviceaccount.com',
+				private_key: privateKey
+			})
+		);
+		expect(creds?.privateKey).toBe(privateKey);
+	});
 });

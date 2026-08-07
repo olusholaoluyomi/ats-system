@@ -26,7 +26,12 @@ export function parseServiceAccount(raw: string | undefined): ServiceAccountCred
 			return {
 				projectId: parsed.project_id,
 				clientEmail: parsed.client_email,
-				privateKey: parsed.private_key
+				// env-var editors (and casual copy-paste) commonly collapse the
+				// PEM's real newlines into literal backslash-n sequences. the
+				// admin SDK rejects such a key (createPrivateKey fails), so
+				// normalize them back to real newlines here. harmless when the
+				// key already uses real newlines.
+				privateKey: parsed.private_key.replace(/\\n/g, '\n')
 			};
 		}
 	} catch {
