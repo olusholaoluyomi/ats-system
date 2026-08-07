@@ -1,5 +1,5 @@
 import { browser } from '$app/environment';
-import type { User } from 'firebase/auth';
+import type { PasswordValidationStatus, User } from 'firebase/auth';
 import { firebaseConfigured, getFirebase } from '$lib/firebase';
 import { logger } from '$lib/log';
 
@@ -214,8 +214,25 @@ class AuthStore {
 		this.error = null;
 		try {
 			const { auth } = await getFirebase();
-			const { createUserWithEmailAndPassword, updateProfile, sendEmailVerification } =
-				await import('firebase/auth');
+			const {
+				createUserWithEmailAndPassword,
+				updateProfile,
+				sendEmailVerification,
+				validatePassword
+			} = await import('firebase/auth');
+			// check the password against the project's enforced policy BEFORE
+			// calling createUserWithEmailAndPassword, so a weak password fails
+			// client-side instead of round-tripping to the Auth backend and
+			// coming back as a cryptic auth/weak-password error. this also
+			// adapts to a custom Firebase Console password policy (min length,
+			// upper/lower/numeric/symbol requirements) rather than hard-coding
+			// the SDK's 6-character floor in the UI.
+			const validation = await validatePassword(auth, password);
+			if (!validation.isValid) {
+				const message = this.describePasswordRequirements(validation);
+				this.error = message;
+				throw Object.assign(new Error(message), { code: 'auth/weak-password' });
+			}
 			const credential = await createUserWithEmailAndPassword(auth, email, password);
 			if (displayName) {
 				await updateProfile(credential.user, { displayName });
@@ -284,6 +301,24 @@ class AuthStore {
 		});
 	}
 
+	private describePasswordRequirements(validation: PasswordValidationStatus): string {
+		const unmet: string[] = [];
+		const policy = validation.passwordPolicy.customStrengthOptions;
+		if (validation.meetsMinPasswordLength === false && policy.minPasswordLength !== undefined) {
+			unmet.push(`at least ${policy.minPasswordLength} characters`);
+		}
+		if (validation.meetsMaxPasswordLength === false && policy.maxPasswordLength !== undefined) {
+			unmet.push(`no more than ${policy.maxPasswordLength} characters`);
+		}
+		if (validation.containsLowercaseLetter === false) unmet.push('a lowercase letter');
+		if (validation.containsUppercaseLetter === false) unmet.push('an uppercase letter');
+		if (validation.containsNumericCharacter === false) unmet.push('a number');
+		if (validation.containsNonAlphanumericCharacter === false) unmet.push('a special character');
+		return unmet.length > 0
+			? `Password must include ${unmet.join(', ')}.`
+			: 'Password does not meet the requirements.';
+	}
+
 	private getErrorMessage(err: unknown): string {
 		const code = (err as { code?: string })?.code ?? '';
 		switch (code) {
@@ -295,7 +330,12 @@ class AuthStore {
 			case 'auth/email-already-in-use':
 				return 'An account with this email already exists.';
 			case 'auth/weak-password':
-				return 'Password must be at least 6 characters.';
+				// the client-side validatePassword pre-check (see signUpWithEmail)
+				// throws this code with a specific requirements message; fall back
+				// to the SDK default only if that path didn't produce one.
+				return err instanceof Error && err.message
+					? err.message
+					: 'Password does not meet the requirements.';
 			case 'auth/invalid-email':
 				return 'Please enter a valid email address.';
 			case 'auth/too-many-requests':

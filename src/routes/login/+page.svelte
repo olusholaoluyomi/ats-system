@@ -325,7 +325,7 @@
 						<input
 							type="password"
 							bind:value={password}
-							placeholder={mode === 'signup' ? 'At least 6 characters' : 'Your password'}
+							placeholder={mode === 'signup' ? 'Create a strong password' : 'Your password'}
 							required
 							minlength={6}
 							class="field-input"

@@ -37,13 +37,23 @@ function mockFirebaseAuth(): void {
 		getAdditionalUserInfo: vi.fn(),
 		signInWithEmailAndPassword: vi.fn(),
 		createUserWithEmailAndPassword: vi.fn(),
-		updateProfile: vi.fn(),
-		sendEmailVerification: vi.fn(),
+		updateProfile: vi.fn().mockResolvedValue(undefined),
+		sendEmailVerification: vi.fn().mockResolvedValue(undefined),
 		sendPasswordResetEmail: vi.fn(),
 		signOut: vi.fn(),
+		validatePassword: vi
+			.fn()
+			.mockResolvedValue({ isValid: true, passwordPolicy: { customStrengthOptions: {} } }),
 		GoogleAuthProvider: vi.fn(),
 		signInWithPopup: vi.fn(),
 		signInWithRedirect: vi.fn()
+	}));
+	// incrementUserCount() imports firebase/firestore after a successful signup;
+	// keep the real SDK out so the fake { db } handle never reaches it.
+	vi.doMock('firebase/firestore', () => ({
+		doc: vi.fn(),
+		updateDoc: vi.fn().mockRejectedValue(new Error('n/a')),
+		increment: vi.fn((n: number) => n)
 	}));
 }
 
@@ -132,5 +142,52 @@ describe('auth store: error-code mappings for email/password failures', () => {
 			authStore.signUpWithEmail('user@example.com', 'secret1', 'A User')
 		).rejects.toBeTruthy();
 		expect(authStore.error).toMatch(/not enabled/i);
+	});
+
+	it('rejects a weak password client-side before hitting createUserWithEmailAndPassword', async () => {
+		mockFirebaseModule({
+			configured: true,
+			getFirebase: () => Promise.resolve({ auth: {}, db: {} })
+		});
+		mockFirebaseAuth();
+		const { authStore } = await import('../../../src/lib/stores/auth.svelte');
+		const { validatePassword, createUserWithEmailAndPassword } = await import('firebase/auth');
+		(validatePassword as ReturnType<typeof vi.fn>).mockResolvedValue({
+			isValid: false,
+			meetsMinPasswordLength: false,
+			containsUppercaseLetter: false,
+			passwordPolicy: {
+				customStrengthOptions: { minPasswordLength: 8, containsUppercaseLetter: true }
+			}
+		});
+
+		await expect(
+			authStore.signUpWithEmail('user@example.com', 'short', 'A User')
+		).rejects.toBeTruthy();
+		expect(authStore.error).toMatch(/at least 8 characters/);
+		expect(authStore.error).toMatch(/uppercase letter/);
+		// the backend account-creation call must never have been attempted
+		expect(createUserWithEmailAndPassword).not.toHaveBeenCalled();
+	});
+
+	it('accepts a password that passes validatePassword', async () => {
+		mockFirebaseModule({
+			configured: true,
+			getFirebase: () => Promise.resolve({ auth: {}, db: {} })
+		});
+		mockFirebaseAuth();
+		const { authStore } = await import('../../../src/lib/stores/auth.svelte');
+		const { validatePassword, createUserWithEmailAndPassword } = await import('firebase/auth');
+		(validatePassword as ReturnType<typeof vi.fn>).mockResolvedValue({
+			isValid: true,
+			passwordPolicy: { customStrengthOptions: {} }
+		});
+		(createUserWithEmailAndPassword as ReturnType<typeof vi.fn>).mockResolvedValue({
+			user: { displayName: '' }
+		});
+
+		await authStore.signUpWithEmail('user@example.com', 'StrongPass1!', 'A User');
+		expect(createUserWithEmailAndPassword).toHaveBeenCalledTimes(1);
+		expect(authStore.error).toBeNull();
 	});
 });
