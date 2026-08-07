@@ -93,42 +93,78 @@
 	onMount(() => {
 		mounted = true;
 
-		// subscribe to the live Firestore stats doc. skipped entirely on
-		// self-host (firebase not configured): the strip omits the Users Served
-		// stat upstream, so pulling the count would just throw and clutter the
-		// error reporter. on hosted builds we lazy-import firebase so
-		// landing-only visitors don't pull the SDK into the critical bundle.
-		// onSnapshot (not a one-shot getDoc) so the number is live: a new
-		// signup updates the count in real time without a page reload.
+		// real auth-user count from the admin-sdk-backed endpoint (the client
+		// SDK cannot enumerate accounts, so this is the only accurate source).
+		// polled so a newly created account shows up without a reload. skipped
+		// entirely on self-host (firebase not configured): the strip omits the
+		// Users Served stat upstream, so pulling the count would just throw.
+		// if the endpoint is unavailable (no service account configured, or a
+		// transient failure) we fall back to the live Firestore stats counter.
 		if (!firebaseConfigured) return;
+
+		let hasAuthoritative = false;
+		let fallbackInstalled = false;
 		let unsubscribeStats: (() => void) | null = null;
-		(async () => {
-			try {
-				const { db } = await getFirebase();
-				const { doc, onSnapshot } = await import('firebase/firestore');
-				unsubscribeStats = onSnapshot(
-					doc(db, 'stats', 'public'),
-					(snap) => {
-						if (snap.exists()) {
-							userCount = snap.data().userCount ?? 0;
+
+		const applyCount = (n: number) => {
+			userCount = n;
+		};
+
+		const setupFirestoreFallback = () => {
+			if (fallbackInstalled) return;
+			fallbackInstalled = true;
+			(async () => {
+				try {
+					const { db } = await getFirebase();
+					const { doc, onSnapshot } = await import('firebase/firestore');
+					unsubscribeStats = onSnapshot(
+						doc(db, 'stats', 'public'),
+						(snap) => {
+							if (!hasAuthoritative && snap.exists()) {
+								applyCount(snap.data().userCount ?? 0);
+							}
+						},
+						// snapshot errors are non-critical here — the counter just
+						// stays wherever it is — but without an onError handler they
+						// surface as an uncaught listener exception.
+						(err) => {
+							logger.warn('landing.stats_listener_failed', {
+								error: err instanceof Error ? err.message : String(err)
+							});
 						}
-					},
-					// snapshot errors (e.g. permission-denied if the firestore
-					// rules haven't been deployed) are non-critical here — the
-					// counter just falls back to 0 — but without an onError
-					// handler they surface as an uncaught listener exception.
-					(err) => {
-						logger.warn('landing.stats_listener_failed', {
-							error: err instanceof Error ? err.message : String(err)
-						});
-					}
-				);
+					);
+				} catch {
+					// non-critical; counter falls back to 0
+				}
+			})();
+		};
+
+		const poll = async () => {
+			try {
+				const res = await fetch('/api/stats/users');
+				if (!res.ok) {
+					// 503 = no service account configured; anything else = server
+					// trouble. either way the endpoint can't answer right now, so
+					// lean on the Firestore counter until it recovers.
+					setupFirestoreFallback();
+					return;
+				}
+				const data = await res.json();
+				if (typeof data.userCount === 'number') {
+					hasAuthoritative = true;
+					applyCount(data.userCount);
+				}
 			} catch {
-				// non-critical; counter falls back to 0
+				// transient network error; retry on the next poll
+				setupFirestoreFallback();
 			}
-		})();
+		};
+
+		void poll();
+		const pollTimer = setInterval(poll, 60_000);
 
 		return () => {
+			clearInterval(pollTimer);
 			unsubscribeStats?.();
 		};
 	});
