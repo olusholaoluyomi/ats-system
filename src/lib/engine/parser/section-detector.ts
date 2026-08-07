@@ -1,5 +1,9 @@
 import type { ResumeSection, SectionType } from './types';
 
+// optional qualifier words people commonly prefix section headers with
+// (e.g. "Relevant Work Experience", "Key Skills", "Selected Projects")
+const QUALIFIER = '(?:relevant|key|core|selected|notable|primary|main|additional|technical)\\s*';
+
 // maps common resume section headers to canonical types
 const SECTION_PATTERNS: Record<SectionType, RegExp[]> = {
 	contact: [/^(contact\s*(info(rmation)?)?|personal\s*(info(rmation)?|details))$/i],
@@ -7,16 +11,25 @@ const SECTION_PATTERNS: Record<SectionType, RegExp[]> = {
 		/^(summary|profile|about(\s*me)?|objective|professional\s*summary|career\s*summary|executive\s*summary|personal\s*statement)$/i
 	],
 	experience: [
-		/^(experience|work\s*experience|professional\s*experience|employment(\s*history)?|work\s*history|relevant\s*experience|career\s*history)$/i
+		new RegExp(
+			`^(${QUALIFIER})?(experience|work\\s*experience|professional\\s*experience|employment(\\s*history)?|work\\s*history|relevant\\s*experience|career\\s*history)$`,
+			'i'
+		)
 	],
 	education: [
 		/^(education|academic(\s*background)?|educational\s*background|qualifications|academic\s*qualifications)$/i
 	],
 	skills: [
-		/^(skills|technical\s*skills|core\s*competencies|competencies|areas?\s*of\s*expertise|proficiencies|technologies|tools?\s*(&|and)\s*technologies)$/i
+		new RegExp(
+			`^(${QUALIFIER})?(skills|competencies|areas?\\s*of\\s*expertise|proficiencies|technologies|tools?(\\s*(&|and)\\s*(technologies|methods|methodologies))?|tools?\\s*(&|and)\\s*methods)$`,
+			'i'
+		)
 	],
 	projects: [
-		/^(projects|personal\s*projects|academic\s*projects|notable\s*projects|selected\s*projects|key\s*projects|side\s*projects)$/i
+		new RegExp(
+			`^(${QUALIFIER})?projects$`,
+			'i'
+		)
 	],
 	certifications: [
 		/^(certifications?|licenses?(\s*(&|and)\s*certifications?)?|professional\s*certifications?|accreditations?)$/i
@@ -37,8 +50,14 @@ function isSectionHeader(line: string, prevLine: string | null, nextLine: string
 
 	if (trimmed.length === 0 || trimmed.length > 80) return false;
 
-	// check against known patterns
-	const cleaned = trimmed.replace(/[:\-_|]/g, '').trim();
+	// check against known patterns. Strip trailing parenthetical asides
+	// (e.g. "Technical Projects (Some)" -> "Technical Projects") in addition
+	// to punctuation, since a header's core phrase is what should match.
+	const cleaned = trimmed
+		.replace(/\([^)]*\)/g, '')
+		.replace(/[:\-_|]/g, '')
+		.replace(/\s{2,}/g, ' ')
+		.trim();
 	for (const patterns of Object.values(SECTION_PATTERNS)) {
 		if (patterns.some((p) => p.test(cleaned))) return true;
 	}
@@ -56,7 +75,9 @@ function isSectionHeader(line: string, prevLine: string | null, nextLine: string
 
 	// heuristic: line is visually separated and looks like a category label
 	// must be preceded by blank line AND have content after it
-	const isAlphaOnly = /^[a-zA-Z\s&,/]+$/.test(cleaned);
+	// (parens allowed here too, so a fallback catch still works even for
+	// phrasing the canonical patterns above don't recognize)
+	const isAlphaOnly = /^[a-zA-Z\s&,/()]+$/.test(trimmed);
 	const wordCount = cleaned.split(/\s+/).length;
 	const nextIsContent = nextLine !== null && nextLine.trim().length > 0;
 	// avoid matching personal names (typically 2-3 title-case words at document start)
@@ -70,7 +91,11 @@ function isSectionHeader(line: string, prevLine: string | null, nextLine: string
 
 // classifies a section header string into a canonical SectionType
 function classifySection(header: string): SectionType {
-	const cleaned = header.replace(/[:\-_|]/g, '').trim();
+	const cleaned = header
+		.replace(/\([^)]*\)/g, '')
+		.replace(/[:\-_|]/g, '')
+		.replace(/\s{2,}/g, ' ')
+		.trim();
 
 	for (const [type, patterns] of Object.entries(SECTION_PATTERNS)) {
 		if (patterns.some((p: RegExp) => p.test(cleaned))) {
