@@ -2,8 +2,81 @@
 // these prompts are built on real ATS platform research (see /research/)
 // they encode actual documented parsing, matching, and scoring behavior
 
+import { detectSections } from '$engine/parser/section-detector';
+import type { ResumeSection, SectionType } from '$engine/parser/types';
+
+// Sections that are typically short but structurally critical for scoring.
+// These are always included in full, regardless of budget, so they can
+// never be silently cut off - which is what was happening before: a hard
+// resumeText.slice(0, N) truncates from the TOP of the document, and on
+// any resume where Experience/Projects push past N characters (common for
+// anyone with a few years across multiple roles), Education/Certifications/
+// Skills - which usually sit near the bottom - would vanish from the LLM's
+// input entirely. The LLM then correctly reports them "missing" based on
+// what it was actually given, producing a confusing, wrong-looking result
+// for a resume that has those sections.
+const ALWAYS_INCLUDE_SECTIONS: SectionType[] = [
+	'contact',
+	'summary',
+	'education',
+	'certifications',
+	'skills',
+	'languages',
+	'awards'
+];
+
+// Builds an LLM-context string that fits within maxChars while guaranteeing
+// short/critical sections survive intact. Only the long, truncatable
+// sections (experience, projects, etc.) get cut - and only the last one
+// that doesn't fit, not everything after an arbitrary character offset.
+// Falls back to a plain head-slice if section detection finds no real
+// structure, so unstructured/plain-text resumes degrade safely rather than
+// crashing or producing an empty context.
+export function buildResumeContext(resumeText: string, maxChars: number): string {
+	const sections = detectSections(resumeText.split('\n'));
+	const hasStructure = sections.some((s) => s.type !== 'unknown');
+	if (!hasStructure) return resumeText.slice(0, maxChars);
+
+	const render = (s: ResumeSection) => (s.header ? `${s.header}\n${s.content}` : s.content);
+
+	const priority = sections.filter((s) => ALWAYS_INCLUDE_SECTIONS.includes(s.type));
+	const truncatable = sections.filter((s) => !ALWAYS_INCLUDE_SECTIONS.includes(s.type));
+
+	const kept: { section: ResumeSection; text: string }[] = [];
+	let used = 0;
+
+	// critical sections go in first, uncapped - they're usually only a few
+	// lines each, so in practice this rarely consumes much of the budget
+	for (const s of priority) {
+		const text = render(s);
+		kept.push({ section: s, text });
+		used += text.length + 2;
+	}
+
+	// remaining budget fills the long sections in original document order;
+	// the first one that doesn't fit gets truncated with a visible marker
+	// instead of being dropped silently, and nothing after it is included
+	for (const s of truncatable) {
+		const remaining = maxChars - used;
+		if (remaining <= 0) break;
+		const text = render(s);
+		if (text.length <= remaining) {
+			kept.push({ section: s, text });
+			used += text.length + 2;
+		} else {
+			kept.push({ section: s, text: text.slice(0, remaining) + '\n[...truncated for length]' });
+			break;
+		}
+	}
+
+	// re-sort into original document order so the LLM still reads the
+	// resume top-to-bottom rather than "all critical sections first"
+	kept.sort((a, b) => a.section.startLine - b.section.startLine);
+	return kept.map((k) => k.text).join('\n\n');
+}
+
 export function buildFullScoringPrompt(resumeText: string, jobDescription?: string): string {
-	const resumeSlice = resumeText.slice(0, 6000);
+	const resumeSlice = buildResumeContext(resumeText, 6000);
 	const jdSlice = jobDescription?.slice(0, 4000);
 
 	const jdSection = jdSlice
@@ -12,9 +85,7 @@ export function buildFullScoringPrompt(resumeText: string, jobDescription?: stri
 ${jdSlice}
 </JOB_DESCRIPTION>
 
-MODE: targeted scoring. match the resume against this specific job description. extract required and preferred skills from the JD. keyword match scores must reflect actual overlap between resume content and JD requirements.
-
-THE JOB DESCRIPTION ABOVE IS THE SCORING CONTRACT FOR THIS ENTIRE RESPONSE. every keyword-dependent number in your output must be derived from THIS JD and nothing else. if the JD were swapped for a different job, the scores would have to change - that is a hard requirement, not a suggestion. a polished resume that does not contain the JD's required skills must score far lower than the same resume matched against a JD that fits it.`
+MODE: targeted scoring. match the resume against this specific job description. extract required and preferred skills from the JD. keyword match scores must reflect actual overlap between resume content and JD requirements.`
 		: `
 MODE: general ATS readiness. no job description provided. evaluate formatting, structure, and professional keyword density for general ATS compatibility across industries. assess how well this resume would parse and surface in recruiter keyword searches for roles matching the candidate's apparent experience level and field.`;
 
@@ -141,7 +212,6 @@ For each of the 6 systems, evaluate these dimensions:
 - Greenhouse: embedding-based semantic matching. related terms are recognized
 - Workday (base): keyword-only. (with HiredScore): semantic relationship clusters
 - SuccessFactors: taxonomy normalization. "Software Engineer," "Application Developer," and "Backend Developer" map to same concept
-- ${jdSlice ? "TARGETED MODE: compute this score from the ACTUAL JD above. take the JD's 10-20 most important required terms, count how many are present in the resume (exact, or synonym per this platform's strategy), and derive the score from that ratio. matched and missing must be real terms from the JD, verbatim where possible. a resume with no overlap against this JD MUST score below 25 here, on every platform. if you catch yourself assigning the same keywordMatch score you gave for a different JD, the JD was ignored - re-read it and redo." : ''}
 
 **sections** (0-100): presence of standard parseable sections
 - all systems: contact info, experience, education, skills are expected
@@ -177,7 +247,6 @@ CALIBRATION ANCHORS (use these to calibrate your scoring):
 - A well-matched resume with quantified achievements and strong keywords should score 75-95
 - Resume content quality MUST dramatically affect scores. the difference between a sparse resume and a polished one should be 30-50+ points
 - When a JD is provided: a nurse resume vs a software engineering JD should have keyword match below 20 on ALL platforms because the skills don't overlap at all
-- ${jdSlice ? "In targeted mode the resume's polish does NOT set the score. a beautifully formatted resume that lacks the JD's required skills must score in the 40s or below on the JD-dependent dimensions; the same resume matched to the right JD should score in the 80s+. fit to THIS JD is the primary driver, not formatting or keywords density alone." : ''}
 - If the resume is short (under 200 words), scores CANNOT be high. brevity = missing content = low scores
 
 CRITICAL RULES:
@@ -195,7 +264,6 @@ CRITICAL RULES:
 - return between 3 and 5 unique structured suggestions total (not per platform). 3 minimum, 5 maximum. use your judgment based on how many genuine issues the resume has. deduplicate across platforms, tag each suggestion with which platforms it helps most, and only keep the highest-impact ones
 - the detail bullets should tell the user EXACTLY what to change: quote the current text and suggest the improved version. think "change X to Y" not "consider improving X"
 - IMPORTANT: the resume text may contain LaTeX rendering artifacts like #, ï, §, Æ, €, fi, fl ligatures, or unicode combining characters. these are font rendering artifacts from PDF extraction, NOT actual special characters in the resume. do NOT flag these as formatting issues or "special characters detected." treat them as normal text
-- ${jdSlice ? 'LAST-CHECK before returning JSON: re-read the JOB_DESCRIPTION above and confirm the matched/missing arrays and keywordMatch scores reflect THAT job, not the resume alone. every keywordMatch score must be explainable by JD-resume overlap. if two different JDs would produce the same keywordMatch output, you ignored the JD - redo the whole scoring.' : ''}
 
 **passesFilter thresholds** (reflects each platform's filtering philosophy):
 - Taleo: true if overallScore >= 75 (strictest auto-scorer, visible Req Rank)
@@ -291,7 +359,7 @@ ${resumeSkills.join(', ')}
 </RESUME_SKILLS>
 
 <RESUME_EXCERPT>
-${resumeText.slice(0, 2500)}
+${buildResumeContext(resumeText, 2500)}
 </RESUME_EXCERPT>
 
 <JOB_DESCRIPTION>
@@ -334,7 +402,7 @@ export function buildSuggestionsPrompt(
 Current average ATS score: ${currentScore}/100
 
 <RESUME_EXCERPT>
-${resumeText.slice(0, 2500)}
+${buildResumeContext(resumeText, 2500)}
 </RESUME_EXCERPT>
 
 <JOB_DESCRIPTION>
