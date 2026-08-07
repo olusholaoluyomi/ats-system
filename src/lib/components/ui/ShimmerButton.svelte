@@ -114,23 +114,13 @@
 	.shimmer-highlight {
 		position: absolute;
 		inset: 0;
-		background: linear-gradient(
-			110deg,
-			transparent 25%,
-			var(--tint-strong) 50%,
-			transparent 75%
-		);
+		background: linear-gradient(110deg, transparent 25%, var(--tint-strong) 50%, transparent 75%);
 		background-size: 200% 100%;
 		animation: shimmer 2.5s ease-in-out infinite;
 	}
 
 	.shimmer-btn.secondary .shimmer-highlight {
-		background: linear-gradient(
-			110deg,
-			transparent 25%,
-			var(--accent-tint) 50%,
-			transparent 75%
-		);
+		background: linear-gradient(110deg, transparent 25%, var(--accent-tint) 50%, transparent 75%);
 		background-size: 200% 100%;
 	}
 

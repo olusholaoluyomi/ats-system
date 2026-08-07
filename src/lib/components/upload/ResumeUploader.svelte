@@ -170,9 +170,7 @@
 			</div>
 			<p class="privacy-hint">
 				Parsed entirely in your browser. The file itself never reaches our servers.
-				<a href="/privacy" class="privacy-link" onclick={(e) => e.stopPropagation()}>
-					Read more
-				</a>
+				<a href="/privacy" class="privacy-link" onclick={(e) => e.stopPropagation()}> Read more </a>
 			</p>
 		</div>
 	{/if}

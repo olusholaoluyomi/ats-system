@@ -54,7 +54,9 @@ function compositeOver(
 // ---- token extraction ----
 
 // parses --name: <value>; lines from a :root block in a css file.
-// returns a map of property name to raw value string.
+// returns a map of property name to raw value string. inline /* comments */
+// after a value are stripped so values survive token re-themes that annotate
+// colors in place (e.g. `--text-tertiary: #818fa0; /* was #6b7a8d */`).
 function parseRootTokens(css: string): Map<string, string> {
 	const rootMatch = css.match(/:root\s*\{([^}]+)\}/s);
 	if (!rootMatch) return new Map();
@@ -62,7 +64,13 @@ function parseRootTokens(css: string): Map<string, string> {
 	const map = new Map<string, string>();
 	for (const line of body.split('\n')) {
 		const m = line.match(/^\s*(--[a-zA-Z0-9-]+)\s*:\s*(.+?);?\s*$/);
-		if (m) map.set(m[1], m[2].trim().replace(/;$/, ''));
+		if (m) {
+			const value = m[2]
+				.replace(/\/\*[\s\S]*?\*\//g, '')
+				.trim()
+				.replace(/;$/, '');
+			map.set(m[1], value);
+		}
 	}
 	return map;
 }
@@ -92,9 +100,9 @@ const tokensPath = join(process.cwd(), 'src/lib/styles/tokens.css');
 const tokensCSS = readFileSync(tokensPath, 'utf-8');
 const tokens = parseRootTokens(tokensCSS);
 
-// page background is --color-bg-primary: #0a0a1a
-const pageBgHex = tokens.get('--color-bg-primary') ?? '#0a0a1a';
-const pageBgRgb = parseHex(pageBgHex) ?? [10, 10, 26];
+// page background is --color-bg-primary: #0a0e14
+const pageBgHex = tokens.get('--color-bg-primary') ?? '#0a0e14';
+const pageBgRgb = parseHex(pageBgHex) ?? [10, 14, 20];
 const [bgR, bgG, bgB] = pageBgRgb;
 const bgL = luminance(bgR, bgG, bgB);
 
@@ -173,7 +181,7 @@ function ratioTextOnTintedBg(
 const BODY_TEXT_MIN = 4.5; // wcag AA normal text
 const UI_TEXT_MIN = 3.0; // wcag AA large text / UI components >= 18pt or 14pt bold
 
-describe('wcag 2.1 AA contrast: design token pairs on --color-bg-primary (#0a0a1a)', () => {
+describe('wcag 2.1 AA contrast: design token pairs on --color-bg-primary (#0a0e14)', () => {
 	it('--text-primary on bg meets 4.5:1 (body text floor)', () => {
 		expect(ratio('--text-primary')).toBeGreaterThanOrEqual(BODY_TEXT_MIN);
 	});
@@ -182,13 +190,14 @@ describe('wcag 2.1 AA contrast: design token pairs on --color-bg-primary (#0a0a1
 		expect(ratio('--text-secondary')).toBeGreaterThanOrEqual(BODY_TEXT_MIN);
 	});
 
-	it('--text-tertiary on bg meets 4.5:1 (body text floor, lifted from 0.4 to 0.5 alpha)', () => {
-		// this is the token most at risk. it was at rgba(255,255,255,0.4) = 3.78:1 before
-		// this audit, which failed AA. now at rgba(255,255,255,0.5) = 5.36:1.
+	it('--text-tertiary on bg meets 4.5:1 (body text floor, solid #818fa0 = 5.8:1)', () => {
+		// this is the token most at risk. it was at rgba(255,255,255,0.4) = 3.78:1
+		// before the first audit (failed AA), then rgba(255,255,255,0.5) = 5.36:1,
+		// then hardened to solid #818fa0 in the re-theme.
 		expect(ratio('--text-tertiary')).toBeGreaterThanOrEqual(BODY_TEXT_MIN);
 	});
 
-	it('--accent-cyan on bg meets 4.5:1 (used as link/focus color)', () => {
+	it('--text-accent (#c6ff00) on bg meets 4.5:1 (used as link/focus color)', () => {
 		expect(ratio('--text-accent')).toBeGreaterThanOrEqual(BODY_TEXT_MIN);
 	});
 
@@ -271,23 +280,35 @@ describe('wcag 2.1 AA contrast: UI component text on tinted glass backgrounds', 
 });
 
 describe('wcag 2.1 AA contrast: token extraction sanity', () => {
-	it('parsed --color-bg-primary as #0a0a1a', () => {
-		expect(tokens.get('--color-bg-primary')).toBe('#0a0a1a');
+	it('parsed --color-bg-primary as #0a0e14', () => {
+		expect(tokens.get('--color-bg-primary')).toBe('#0a0e14');
 	});
 
-	it('parsed --text-primary as rgba with alpha >= 0.9', () => {
-		const raw = tokens.get('--text-primary') ?? '';
+	// returns the opacity of a token after resolving a single-level var() ref.
+	// solid hex counts as fully opaque (1.0); only rgba() carries real alpha.
+	function opacityOf(name: string): number | null {
+		const raw = tokens.get(name);
+		if (!raw) return null;
+		if (raw.startsWith('#')) return 1;
 		const rgba = parseRgba(raw);
-		expect(rgba).not.toBeNull();
-		expect(rgba!.a).toBeGreaterThanOrEqual(0.9);
+		if (rgba) return rgba.a;
+		const varMatch = raw.match(/^var\((--[a-zA-Z0-9-]+)\)$/);
+		if (varMatch) return opacityOf(varMatch[1]);
+		return null;
+	}
+
+	it('parsed --text-primary as solid hex (opacity 1.0 >= 0.9)', () => {
+		const opacity = opacityOf('--text-primary');
+		expect(opacity).not.toBeNull();
+		expect(opacity!).toBeGreaterThanOrEqual(0.9);
 	});
 
-	it('parsed --text-tertiary as rgba with alpha >= 0.49 (floor set by this audit)', () => {
-		// alpha 0.49 composites to 5.14:1 which still passes 4.5:1.
-		// if someone drops it below 0.49 this test catches the regression.
-		const raw = tokens.get('--text-tertiary') ?? '';
-		const rgba = parseRgba(raw);
-		expect(rgba).not.toBeNull();
-		expect(rgba!.a).toBeGreaterThanOrEqual(0.49);
+	it('parsed --text-tertiary with opacity >= 0.49 (floor set by this audit)', () => {
+		// a semi-transparent tertiary at 0.49 composites to 5.14:1 (still AA).
+		// the re-theme hardened it to solid #818fa0 (5.8:1); if anyone drops it
+		// below this floor this test catches the regression.
+		const opacity = opacityOf('--text-tertiary');
+		expect(opacity).not.toBeNull();
+		expect(opacity!).toBeGreaterThanOrEqual(0.49);
 	});
 });

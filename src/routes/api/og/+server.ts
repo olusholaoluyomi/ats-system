@@ -172,8 +172,7 @@ export const GET: RequestHandler = async ({ url }) => {
 				flexDirection: 'column',
 				justifyContent: 'space-between',
 				// ink background + two soft "mesh orb" radial glows (lime/cyan)
-				background:
-					`radial-gradient(circle at 18% 8%, rgba(198, 255, 0, 0.1), transparent 42%), radial-gradient(circle at 84% 92%, rgba(0, 224, 255, 0.12), transparent 45%), ${INK}`,
+				background: `radial-gradient(circle at 18% 8%, rgba(198, 255, 0, 0.1), transparent 42%), radial-gradient(circle at 84% 92%, rgba(0, 224, 255, 0.12), transparent 45%), ${INK}`,
 				color: TEXT_PRIMARY,
 				padding: '52px 64px 48px',
 				fontFamily: 'Archivo, system-ui, sans-serif'
@@ -252,15 +251,15 @@ export const GET: RequestHandler = async ({ url }) => {
 							{
 								type: 'div',
 								props: {
-								style: {
-									display: 'flex',
-									flexDirection: 'column',
-									fontFamily: 'ArchivoBlack, Archivo, sans-serif',
-									fontSize: '44px',
-									lineHeight: 1.12,
-									letterSpacing: '-0.02em',
-									color: TEXT_PRIMARY
-								},
+									style: {
+										display: 'flex',
+										flexDirection: 'column',
+										fontFamily: 'ArchivoBlack, Archivo, sans-serif',
+										fontSize: '44px',
+										lineHeight: 1.12,
+										letterSpacing: '-0.02em',
+										color: TEXT_PRIMARY
+									},
 									children: [
 										'Your Resume vs.',
 										{ type: 'div', props: { style: { color: LIME }, children: 'Real ATS Systems' } }
@@ -395,7 +394,12 @@ export const GET: RequestHandler = async ({ url }) => {
 							{
 								type: 'div',
 								props: {
-									style: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' },
+									style: {
+										display: 'flex',
+										flexDirection: 'column',
+										alignItems: 'center',
+										gap: '2px'
+									},
 									children: [
 										{
 											type: 'div',
@@ -434,7 +438,12 @@ export const GET: RequestHandler = async ({ url }) => {
 							{
 								type: 'div',
 								props: {
-									style: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' },
+									style: {
+										display: 'flex',
+										flexDirection: 'column',
+										alignItems: 'center',
+										gap: '2px'
+									},
 									children: [
 										{
 											type: 'div',
@@ -473,7 +482,12 @@ export const GET: RequestHandler = async ({ url }) => {
 							{
 								type: 'div',
 								props: {
-									style: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' },
+									style: {
+										display: 'flex',
+										flexDirection: 'column',
+										alignItems: 'center',
+										gap: '2px'
+									},
 									children: [
 										{
 											type: 'div',
@@ -522,7 +536,10 @@ export const GET: RequestHandler = async ({ url }) => {
 						children: [
 							{
 								type: 'div',
-								props: { style: { color: TEXT_TERTIARY }, children: 'Real scores, not made-up numbers' }
+								props: {
+									style: { color: TEXT_TERTIARY },
+									children: 'Real scores, not made-up numbers'
+								}
 							},
 							{ type: 'div', props: { style: { color: CYAN }, children: url.origin } }
 						]

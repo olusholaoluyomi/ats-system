@@ -162,7 +162,8 @@ export async function extractDocumentText(
 			return {
 				success: false,
 				text: '',
-				error: 'could not extract any text from the file. it may be an image-based PDF or corrupted.'
+				error:
+					'could not extract any text from the file. it may be an image-based PDF or corrupted.'
 			};
 		}
 

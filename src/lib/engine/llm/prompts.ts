@@ -141,7 +141,7 @@ For each of the 6 systems, evaluate these dimensions:
 - Greenhouse: embedding-based semantic matching. related terms are recognized
 - Workday (base): keyword-only. (with HiredScore): semantic relationship clusters
 - SuccessFactors: taxonomy normalization. "Software Engineer," "Application Developer," and "Backend Developer" map to same concept
-- ${jdSlice ? 'TARGETED MODE: compute this score from the ACTUAL JD above. take the JD\'s 10-20 most important required terms, count how many are present in the resume (exact, or synonym per this platform\'s strategy), and derive the score from that ratio. matched and missing must be real terms from the JD, verbatim where possible. a resume with no overlap against this JD MUST score below 25 here, on every platform. if you catch yourself assigning the same keywordMatch score you gave for a different JD, the JD was ignored - re-read it and redo.' : ''}
+- ${jdSlice ? "TARGETED MODE: compute this score from the ACTUAL JD above. take the JD's 10-20 most important required terms, count how many are present in the resume (exact, or synonym per this platform's strategy), and derive the score from that ratio. matched and missing must be real terms from the JD, verbatim where possible. a resume with no overlap against this JD MUST score below 25 here, on every platform. if you catch yourself assigning the same keywordMatch score you gave for a different JD, the JD was ignored - re-read it and redo." : ''}
 
 **sections** (0-100): presence of standard parseable sections
 - all systems: contact info, experience, education, skills are expected
@@ -177,7 +177,7 @@ CALIBRATION ANCHORS (use these to calibrate your scoring):
 - A well-matched resume with quantified achievements and strong keywords should score 75-95
 - Resume content quality MUST dramatically affect scores. the difference between a sparse resume and a polished one should be 30-50+ points
 - When a JD is provided: a nurse resume vs a software engineering JD should have keyword match below 20 on ALL platforms because the skills don't overlap at all
-- ${jdSlice ? 'In targeted mode the resume\'s polish does NOT set the score. a beautifully formatted resume that lacks the JD\'s required skills must score in the 40s or below on the JD-dependent dimensions; the same resume matched to the right JD should score in the 80s+. fit to THIS JD is the primary driver, not formatting or keywords density alone.' : ''}
+- ${jdSlice ? "In targeted mode the resume's polish does NOT set the score. a beautifully formatted resume that lacks the JD's required skills must score in the 40s or below on the JD-dependent dimensions; the same resume matched to the right JD should score in the 80s+. fit to THIS JD is the primary driver, not formatting or keywords density alone." : ''}
 - If the resume is short (under 200 words), scores CANNOT be high. brevity = missing content = low scores
 
 CRITICAL RULES:

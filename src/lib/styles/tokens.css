@@ -81,7 +81,8 @@
 	--green: #00e676;
 
 	/* === typography === */
-	--font-display: 'Archivo Black', 'Archivo', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+	--font-display:
+		'Archivo Black', 'Archivo', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 	--font-sans: 'Archivo', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 	--font-mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
 
