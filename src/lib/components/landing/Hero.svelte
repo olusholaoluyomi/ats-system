@@ -19,6 +19,7 @@
 	let displayCount = $state(0);
 	let isVisible = $state(false);
 	let hasAnimated = false;
+	let animationRunning = $state(false);
 	let statsEl = $state<HTMLElement | null>(null);
 
 	// observe stats strip for scroll-triggered animation.
@@ -59,9 +60,19 @@
 		}
 	});
 
+	// after the initial count-up finishes, keep the displayed number live: a
+	// later onSnapshot update (someone signed up) syncs the number directly
+	// without re-triggering the one-shot animation.
+	$effect(() => {
+		if (hasAnimated && !animationRunning) {
+			displayCount = userCount;
+		}
+	});
+
 	function animateCount(target: number) {
 		const duration = 2500;
 		const start = performance.now();
+		animationRunning = true;
 
 		function tick(now: number) {
 			const elapsed = now - start;
@@ -69,7 +80,11 @@
 			// easeOutExpo for smooth deceleration
 			const eased = progress === 1 ? 1 : 1 - Math.pow(2, -12 * progress);
 			displayCount = Math.floor(eased * target);
-			if (progress < 1) requestAnimationFrame(tick);
+			if (progress < 1) {
+				requestAnimationFrame(tick);
+			} else {
+				animationRunning = false;
+			}
 		}
 		requestAnimationFrame(tick);
 	}
@@ -77,24 +92,32 @@
 	onMount(() => {
 		mounted = true;
 
-		// fetch live user count. skipped entirely on self-host (firebase not
-		// configured): the strip omits the Users Served stat upstream, so
-		// pulling the count would just throw and clutter the error reporter.
-		// on hosted builds we lazy-import firebase so landing-only visitors
-		// don't pull the SDK into the critical bundle.
+		// subscribe to the live Firestore stats doc. skipped entirely on
+		// self-host (firebase not configured): the strip omits the Users Served
+		// stat upstream, so pulling the count would just throw and clutter the
+		// error reporter. on hosted builds we lazy-import firebase so
+		// landing-only visitors don't pull the SDK into the critical bundle.
+		// onSnapshot (not a one-shot getDoc) so the number is live: a new
+		// signup updates the count in real time without a page reload.
 		if (!firebaseConfigured) return;
+		let unsubscribeStats: (() => void) | null = null;
 		(async () => {
 			try {
 				const { db } = await getFirebase();
-				const { doc, getDoc } = await import('firebase/firestore');
-				const snap = await getDoc(doc(db, 'stats', 'public'));
-				if (snap.exists()) {
-					userCount = snap.data().userCount ?? 0;
-				}
+				const { doc, onSnapshot } = await import('firebase/firestore');
+				unsubscribeStats = onSnapshot(doc(db, 'stats', 'public'), (snap) => {
+					if (snap.exists()) {
+						userCount = snap.data().userCount ?? 0;
+					}
+				});
 			} catch {
 				// non-critical; counter falls back to 0
 			}
 		})();
+
+		return () => {
+			unsubscribeStats?.();
+		};
 	});
 
 	// converts pixel coords to percentage of hero bounds for the glow

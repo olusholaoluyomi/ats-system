@@ -52,7 +52,7 @@ function mockFirebaseAuth(): void {
 	// keep the real SDK out so the fake { db } handle never reaches it.
 	vi.doMock('firebase/firestore', () => ({
 		doc: vi.fn(),
-		updateDoc: vi.fn().mockRejectedValue(new Error('n/a')),
+		setDoc: vi.fn().mockResolvedValue(undefined),
 		increment: vi.fn((n: number) => n)
 	}));
 }
@@ -188,6 +188,35 @@ describe('auth store: error-code mappings for email/password failures', () => {
 
 		await authStore.signUpWithEmail('user@example.com', 'StrongPass1!', 'A User');
 		expect(createUserWithEmailAndPassword).toHaveBeenCalledTimes(1);
+		expect(authStore.error).toBeNull();
+	});
+
+	it('counts the new user with setDoc(merge:true) so a missing stats doc does not zero the counter', async () => {
+		mockFirebaseModule({
+			configured: true,
+			getFirebase: () => Promise.resolve({ auth: {}, db: {} })
+		});
+		mockFirebaseAuth();
+		const { authStore } = await import('../../../src/lib/stores/auth.svelte');
+		const { validatePassword, createUserWithEmailAndPassword } = await import('firebase/auth');
+		(validatePassword as ReturnType<typeof vi.fn>).mockResolvedValue({
+			isValid: true,
+			passwordPolicy: { customStrengthOptions: {} }
+		});
+		(createUserWithEmailAndPassword as ReturnType<typeof vi.fn>).mockResolvedValue({
+			user: { displayName: '' }
+		});
+		const { setDoc } = await import('firebase/firestore');
+
+		await authStore.signUpWithEmail('user@example.com', 'StrongPass1!', 'A User');
+		// incrementUserCount is intentionally fire-and-forget (non-critical), so
+		// flush the pending microtasks before asserting.
+		await vi.waitFor(() => {
+			expect(setDoc).toHaveBeenCalledTimes(1);
+		});
+		const [, data, options] = (setDoc as ReturnType<typeof vi.fn>).mock.calls[0];
+		expect(options).toEqual({ merge: true });
+		expect(data).toEqual({ userCount: 1 });
 		expect(authStore.error).toBeNull();
 	});
 });

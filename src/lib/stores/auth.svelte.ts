@@ -293,10 +293,13 @@ class AuthStore {
 
 	private async incrementUserCount() {
 		const { db } = await getFirebase();
-		const { doc, updateDoc, increment } = await import('firebase/firestore');
-		updateDoc(doc(db, 'stats', 'public'), {
-			userCount: increment(1)
-		}).catch(() => {
+		const { doc, setDoc, increment } = await import('firebase/firestore');
+		// setDoc with merge:true (not updateDoc): the stats/public doc does not
+		// exist before the first-ever signup, and updateDoc throws on a missing
+		// document, which silently left the landing page's Users Served counter
+		// at 0 forever. merge:true creates the doc at userCount:1 on the first
+		// signup and increments it from there.
+		setDoc(doc(db, 'stats', 'public'), { userCount: increment(1) }, { merge: true }).catch(() => {
 			// non-critical, don't break auth flow
 		});
 	}
