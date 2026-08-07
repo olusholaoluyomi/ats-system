@@ -167,27 +167,114 @@ function detectEducationRequirement(text: string): string {
 	return 'not specified';
 }
 
+// Ordered list of (roleType, patterns[]) — checked top to bottom, first match wins.
+// Order matters: more specific/compound titles are listed before broader,
+// generic ones so e.g. "Technical Account Manager" resolves to
+// account_management rather than the generic engineering/sales bucket, and
+// "Data Engineer" resolves to data_analytics rather than plain engineering.
+//
+// To add a new role type or title later: add one entry to this array.
+// No other code needs to change — this is the whole extension point.
+const ROLE_TYPE_PATTERNS: Array<{ type: string; patterns: RegExp[] }> = [
+	{
+		type: 'customer_success',
+		patterns: [
+			/\b(customer success|client success|customer experience manager|onboarding specialist|renewals? manager|csm)\b/i
+		]
+	},
+	{
+		type: 'account_management',
+		patterns: [
+			/\b(account manager|account management|technical account manager|key account|client relationship manager|relationship manager)\b/i
+		]
+	},
+	{
+		type: 'customer_support',
+		patterns: [
+			/\b(customer support|technical support|help ?desk|support specialist|support engineer|support representative)\b/i
+		]
+	},
+	{
+		type: 'product',
+		patterns: [
+			/\b(product manager|product owner|product management|product lead|head of product|group product manager|associate product manager|technical product manager)\b/i
+		]
+	},
+	{
+		type: 'design',
+		patterns: [
+			/\b(product designer|ux designer|ui designer|graphic designer|visual designer|design lead|creative director|user experience|user interface design)\b/i,
+			/\b(?:design|ux|ui|graphic|creative)\b/i
+		]
+	},
+	{
+		type: 'data_analytics',
+		patterns: [
+			/\b(data scientist|data analyst|data engineer|analytics engineer|business intelligence|machine learning engineer|ml engineer|ai engineer|data science)\b/i
+		]
+	},
+	{
+		type: 'engineering',
+		patterns: [
+			/\b(?:engineer|engineering|developer|programmer|devops|sre|software|frontend|backend|full[\s-]?stack|software development|web development|application development)\b/i
+		]
+	},
+	{
+		type: 'hr_people',
+		patterns: [
+			/\b(human resources|hr generalist|hr business partner|hrbp|recruiter|recruiting|talent acquisition|people operations|people ops)\b/i
+		]
+	},
+	{
+		type: 'sales',
+		patterns: [/\b(?:sales|account executive|business development|sdr|bdr)\b/i]
+	},
+	{
+		type: 'marketing',
+		patterns: [
+			/\b(?:marketing|market|brand|content|seo|social media|growth marketing|demand generation|communications|public relations|\bpr\b)\b/i
+		]
+	},
+	{
+		type: 'finance',
+		patterns: [
+			/\b(?:financial|finance|accounting|accountant|controller|audit|tax|treasury|cpa|cfa|fp&a)\b/i
+		]
+	},
+	{
+		type: 'legal',
+		patterns: [/\b(?:legal|attorney|counsel|compliance|paralegal|contracts)\b/i]
+	},
+	{
+		type: 'operations',
+		patterns: [
+			/\b(?:operat|supply chain|logistics|procurement|business operations|program manager|project manager)\b/i
+		]
+	},
+	{
+		type: 'consulting',
+		patterns: [/\b(?:consultant|consulting|advisory)\b/i]
+	},
+	{
+		type: 'executive',
+		patterns: [
+			/\b(chief executive|chief \w+ officer|\bceo\b|\bcoo\b|\bcto\b|\bcfo\b|\bcmo\b|vice president|\bvp\b|\bsvp\b|\bevp\b|president|chief of staff)\b/i
+		]
+	},
+	{
+		type: 'healthcare',
+		patterns: [/\b(?:nurse|physician|clinical|patient|healthcare|medical)\b/i]
+	},
+	{
+		type: 'administrative',
+		patterns: [/\b(executive assistant|administrative assistant|office manager|\badmin\b)\b/i]
+	}
+];
+
 function detectRoleType(text: string): string {
-	if (
-		/\b(?:product manager|product owner|product management|product lead|head of product|group product manager|associate product manager|technical product manager)\b/.test(
-			text
-		)
-	)
-		return 'product';
-	if (
-		/\b(?:engineer|developer|programmer|devops|sre|software|frontend|backend|fullstack)\b/.test(
-			text
-		)
-	)
-		return 'engineering';
-	if (/\b(?:sales|account executive|business development)\b/.test(text)) return 'sales';
-	if (/\b(?:market|brand|content|seo|social media)\b/.test(text)) return 'marketing';
-	if (/\b(?:financial|finance|accounting|audit|tax|treasury|cpa|cfa)\b/.test(text))
-		return 'finance';
-	if (/\b(?:nurse|physician|clinical|patient|healthcare)\b/.test(text)) return 'healthcare';
-	if (/\b(?:legal|attorney|counsel|compliance)\b/.test(text)) return 'legal';
-	if (/\b(?:operat|supply chain|logistics|procurement)\b/.test(text)) return 'operations';
-	if (/\b(?:design|ux|ui|graphic|creative)\b/.test(text)) return 'design';
+	for (const { type, patterns } of ROLE_TYPE_PATTERNS) {
+		if (patterns.some((p) => p.test(text))) return type;
+	}
 	return 'other';
 }
 
