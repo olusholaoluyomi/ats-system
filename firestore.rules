@@ -11,10 +11,12 @@ service cloud.firestore {
       allow create: if request.auth != null;
     }
 
-    // the landing page's live "Users Served" counter is read by anyone (the
-    // hero renders before a visitor has signed in), but only written by
-    // authenticated users: the counter increments once per new signup.
-    match /stats/public {
+    // aggregate landing-page counters (Users Served, Resumes Analyzed) live in
+    // their own insights/global doc, separate from user scan records, so they
+    // keep growing even when a user clears their history. readable by anyone
+    // (the hero renders before a visitor has signed in), writable only by
+    // authenticated users: each counter increments via increment(1).
+    match /insights/global {
       allow read: if true;
       allow write: if request.auth != null;
     }

@@ -1,6 +1,7 @@
 import { browser } from '$app/environment';
 import type { PasswordValidationStatus, User } from 'firebase/auth';
 import { firebaseConfigured, getFirebase } from '$lib/firebase';
+import { incrementUserCount } from '$lib/insights';
 import { logger } from '$lib/log';
 
 // three mutually-exclusive auth modes, resolved server-side and surfaced via the
@@ -138,7 +139,7 @@ class AuthStore {
 			try {
 				const result = await getRedirectResult(auth);
 				if (result && getAdditionalUserInfo(result)?.isNewUser) {
-					this.incrementUserCount();
+					incrementUserCount();
 				}
 			} catch {
 				// non-critical; redirect path is the fallback for popup blockers
@@ -171,7 +172,7 @@ class AuthStore {
 			try {
 				const result = await signInWithPopup(auth, provider);
 				if (getAdditionalUserInfo(result)?.isNewUser) {
-					this.incrementUserCount();
+					incrementUserCount();
 				}
 			} catch (err) {
 				// if popup fails with an internal SDK error (not a Firebase auth error),
@@ -244,7 +245,7 @@ class AuthStore {
 				});
 			});
 			// new email sign-up is always a new user
-			this.incrementUserCount();
+			incrementUserCount();
 		} catch (err) {
 			this.error = this.getErrorMessage(err);
 			throw err;
@@ -289,19 +290,6 @@ class AuthStore {
 
 	clearError() {
 		this.error = null;
-	}
-
-	private async incrementUserCount() {
-		const { db } = await getFirebase();
-		const { doc, setDoc, increment } = await import('firebase/firestore');
-		// setDoc with merge:true (not updateDoc): the stats/public doc does not
-		// exist before the first-ever signup, and updateDoc throws on a missing
-		// document, which silently left the landing page's Users Served counter
-		// at 0 forever. merge:true creates the doc at userCount:1 on the first
-		// signup and increments it from there.
-		setDoc(doc(db, 'stats', 'public'), { userCount: increment(1) }, { merge: true }).catch(() => {
-			// non-critical, don't break auth flow
-		});
 	}
 
 	private describePasswordRequirements(validation: PasswordValidationStatus): string {

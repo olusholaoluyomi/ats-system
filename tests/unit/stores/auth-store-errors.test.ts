@@ -191,7 +191,7 @@ describe('auth store: error-code mappings for email/password failures', () => {
 		expect(authStore.error).toBeNull();
 	});
 
-	it('counts the new user with setDoc(merge:true) so a missing stats doc does not zero the counter', async () => {
+	it('counts the new user with setDoc(merge:true) so a missing insights doc does not zero the counter', async () => {
 		mockFirebaseModule({
 			configured: true,
 			getFirebase: () => Promise.resolve({ auth: {}, db: {} })

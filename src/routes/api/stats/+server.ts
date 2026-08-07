@@ -4,12 +4,15 @@ import { logger } from '$lib/log';
 import type { Auth } from 'firebase-admin/auth';
 import type { RequestHandler } from './$types';
 
-// public read of the real firebase auth user count for the landing page's
-// "Users Served" counter. the client SDK cannot enumerate accounts, so the
-// count comes from the admin SDK and is cached server-side (listUsers is
-// quota-bound and the landing page is high-traffic). when no service account
-// is configured (self-host / dev / not yet set on the deploy), this returns
-// 503 and the hero falls back to the firestore stats counter.
+// public read of the landing page's two aggregate stats: the real firebase
+// auth user count ("Users Served") and the number of resumes analyzed.
+// the client SDK cannot enumerate accounts, so userCount comes from the admin
+// SDK (cached server-side; listUsers is quota-bound and the landing page is
+// high-traffic). resumesAnalyzed is a client-incremented counter in the
+// insights/global firestore doc, read here through the admin SDK so the page
+// gets both numbers from one CDN-cached request. when no service account is
+// configured (self-host / dev / not yet set on the deploy), this returns 503
+// and the hero falls back to the live firestore stats counter.
 export const GET: RequestHandler = async () => {
 	// firebase-admin is imported dynamically on purpose: the admin SDK pulls in
 	// heavy deps (firestore, grpc, etc.) that occasionally fail to LOAD on the
@@ -35,22 +38,31 @@ export const GET: RequestHandler = async () => {
 		throw error(503, 'firebase admin not configured');
 	}
 	try {
-		const { userCountCache } = await import('$lib/server/user-count');
+		const [{ userCountCache }, { getAdminFirestore }] = await Promise.all([
+			import('$lib/server/user-count'),
+			import('$lib/server/firebase-admin')
+		]);
 		const userCount = await userCountCache.get(auth);
-		// a public stat: let the browser and Vercel's CDN hold it briefly on top
+		const db = await getAdminFirestore(privateEnv);
+		const snapshot = db ? await db.doc('insights/global').get() : null;
+		const data = snapshot?.data();
+		const resumesAnalyzed =
+			data && typeof data.resumesAnalyzed === 'number' ? data.resumesAnalyzed : 0;
+		// public stats: let the browser and Vercel's CDN hold them briefly on top
 		// of the in-process cache. s-maxage matches the server cache TTL.
 		return json(
-			{ userCount },
+			{ userCount, resumesAnalyzed },
 			{
 				headers: { 'Cache-Control': 'public, max-age=60, s-maxage=300' }
 			}
 		);
 	} catch (err) {
-		// failed auth walk (bad/expired service account, quota, network). surface
-		// a 500 so the failure is loud; the hero degrades to the firestore counter.
-		logger.error('stats.user_count_failed', {
+		// failed auth walk or insights read (bad/expired service account, quota,
+		// network). surface a 500 so the failure is loud; the hero degrades to
+		// the firestore counter.
+		logger.error('stats.read_failed', {
 			error: err instanceof Error ? err.message : String(err)
 		});
-		throw error(500, err instanceof Error ? err.message : 'failed to count users');
+		throw error(500, err instanceof Error ? err.message : 'failed to read stats');
 	}
 };

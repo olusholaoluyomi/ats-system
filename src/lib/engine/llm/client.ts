@@ -1,6 +1,7 @@
 import type { ScoreResult, Suggestion, StructuredSuggestion } from '$engine/scorer/types';
 import type { LLMAnalysis, LLMRequestPayload, LLMResponse } from './types';
 import { generateFallbackAnalysis } from './fallback';
+import { incrementResumesAnalyzed } from '$lib/insights';
 import { logger } from '$lib/log';
 
 const CLIENT_TIMEOUT_MS = 65_000;
@@ -74,6 +75,11 @@ export async function scoreLLM(
 		const results: ScoreResult[] = data.results.map((r: Record<string, unknown>) =>
 			normalizeScoreResult(r)
 		);
+
+		// this resume made it through a real analysis; bump the landing page's
+		// Resumes Analyzed counter. fire-and-forget: a failed write must not
+		// fail or delay the scan that just succeeded.
+		void incrementResumesAnalyzed();
 
 		return {
 			status: 'ok',

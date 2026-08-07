@@ -15,9 +15,11 @@
 	let mouseX = $state(50);
 	let mouseY = $state(50);
 
-	// live user count from Firestore
+	// live stats from /api/stats (Users Served + Resumes Analyzed)
 	let userCount = $state(0);
 	let displayCount = $state(0);
+	let resumesAnalyzed = $state(0);
+	let displayAnalyzed = $state(0);
 	let isVisible = $state(false);
 	let hasAnimated = false;
 	let animationRunning = $state(false);
@@ -42,7 +44,7 @@
 		// before the observer fires, trigger the animation after 1500ms anyway
 		// (only when a count has already loaded).
 		const safetyTimer = setTimeout(() => {
-			if (userCount > 0 && !hasAnimated) {
+			if ((userCount > 0 || resumesAnalyzed > 0) && !hasAnimated) {
 				isVisible = true;
 			}
 		}, 1500);
@@ -53,24 +55,27 @@
 		};
 	});
 
-	// trigger count-up animation when both visible and count is loaded
+	// trigger count-up animation when the strip is visible and a count has
+	// loaded. both numbers arrive in the same response, so one animation
+	// drives them in sync.
 	$effect(() => {
-		if (isVisible && userCount > 0 && !hasAnimated) {
+		if (isVisible && (userCount > 0 || resumesAnalyzed > 0) && !hasAnimated) {
 			hasAnimated = true;
-			animateCount(userCount);
+			animateCounts(userCount, resumesAnalyzed);
 		}
 	});
 
-	// after the initial count-up finishes, keep the displayed number live: a
-	// later onSnapshot update (someone signed up) syncs the number directly
-	// without re-triggering the one-shot animation.
+	// after the initial count-up finishes, keep the displayed numbers live: a
+	// later update (someone signed up / analyzed) syncs them directly without
+	// re-triggering the one-shot animation.
 	$effect(() => {
 		if (hasAnimated && !animationRunning) {
 			displayCount = userCount;
+			displayAnalyzed = resumesAnalyzed;
 		}
 	});
 
-	function animateCount(target: number) {
+	function animateCounts(targetUsers: number, targetAnalyzed: number) {
 		const duration = 2500;
 		const start = performance.now();
 		animationRunning = true;
@@ -80,7 +85,8 @@
 			const progress = Math.min(elapsed / duration, 1);
 			// easeOutExpo for smooth deceleration
 			const eased = progress === 1 ? 1 : 1 - Math.pow(2, -12 * progress);
-			displayCount = Math.floor(eased * target);
+			displayCount = Math.floor(eased * targetUsers);
+			displayAnalyzed = Math.floor(eased * targetAnalyzed);
 			if (progress < 1) {
 				requestAnimationFrame(tick);
 			} else {
@@ -93,13 +99,14 @@
 	onMount(() => {
 		mounted = true;
 
-		// real auth-user count from the admin-sdk-backed endpoint (the client
-		// SDK cannot enumerate accounts, so this is the only accurate source).
-		// fetched once on load and again whenever the user returns to the tab
-		// (no background polling — the number only changes when someone signs
-		// up, so a stale-until-focus count is fine and keeps the network tab
-		// quiet). skipped entirely on self-host (firebase not configured): the
-		// strip omits the Users Served stat upstream, so pulling the count
+		// landing-page stats from the admin-sdk-backed endpoint: the real auth
+		// user count (Users Served; the client SDK cannot enumerate accounts)
+		// plus the Resumes Analyzed counter from the insights/global firestore
+		// doc. fetched once on load and again whenever the user returns to the
+		// tab (no background polling — both numbers only change when someone
+		// signs up or scans, so a stale-until-focus count is fine and keeps the
+		// network tab quiet). skipped entirely on self-host (firebase not
+		// configured): the strip omits both counters upstream, so pulling them
 		// would just throw. if the endpoint is unavailable (no service account
 		// configured, or a transient failure) we fall back to the live
 		// Firestore stats counter.
@@ -110,8 +117,9 @@
 		let unsubscribeStats: (() => void) | null = null;
 		let lastRefreshAt = 0;
 
-		const applyCount = (n: number) => {
-			userCount = n;
+		const applyStats = (stats: { userCount: number; resumesAnalyzed: number }) => {
+			userCount = stats.userCount;
+			resumesAnalyzed = stats.resumesAnalyzed;
 		};
 
 		const setupFirestoreFallback = () => {
@@ -122,14 +130,19 @@
 					const { db } = await getFirebase();
 					const { doc, onSnapshot } = await import('firebase/firestore');
 					unsubscribeStats = onSnapshot(
-						doc(db, 'stats', 'public'),
+						doc(db, 'insights', 'global'),
 						(snap) => {
 							if (!hasAuthoritative && snap.exists()) {
-								applyCount(snap.data().userCount ?? 0);
+								const data = snap.data();
+								applyStats({
+									userCount: typeof data.userCount === 'number' ? data.userCount : 0,
+									resumesAnalyzed:
+										typeof data.resumesAnalyzed === 'number' ? data.resumesAnalyzed : 0
+								});
 							}
 						},
-						// snapshot errors are non-critical here — the counter just
-						// stays wherever it is — but without an onError handler they
+						// snapshot errors are non-critical here — the counters just
+						// stay wherever they are — but without an onError handler they
 						// surface as an uncaught listener exception.
 						(err) => {
 							logger.warn('landing.stats_listener_failed', {
@@ -138,14 +151,14 @@
 						}
 					);
 				} catch {
-					// non-critical; counter falls back to 0
+					// non-critical; counters fall back to 0
 				}
 			})();
 		};
 
 		const poll = async () => {
 			try {
-				const res = await fetch('/api/stats/users');
+				const res = await fetch('/api/stats');
 				if (!res.ok) {
 					// 503 = no service account configured; anything else = server
 					// trouble. either way the endpoint can't answer right now, so
@@ -154,9 +167,12 @@
 					return;
 				}
 				const data = await res.json();
-				if (typeof data.userCount === 'number') {
+				if (
+					typeof data.userCount === 'number' &&
+					typeof data.resumesAnalyzed === 'number'
+				) {
 					hasAuthoritative = true;
-					applyCount(data.userCount);
+					applyStats({ userCount: data.userCount, resumesAnalyzed: data.resumesAnalyzed });
 				}
 			} catch {
 				// transient network error; retry on the next refresh
@@ -336,9 +352,10 @@
 		</div>
 
 		<!-- stats strip. on self-host (firebase not configured) the Users
-		     Served counter is meaningless (no firestore to read from), so the
-		     entire stat + trailing divider are omitted. the rest of the strip
-		     is universally true and renders identically across both builds. -->
+		     Served and Resumes Analyzed counters are meaningless (no firestore
+		     to read from), so both stats + trailing dividers are omitted. the
+		     rest of the strip is universally true and renders identically
+		     across both builds. -->
 		<div class="hero-stats" bind:this={statsEl}>
 			{#if firebaseConfigured}
 				<div class="stat">
@@ -347,6 +364,11 @@
 						<span class="live-dot"></span>
 						Users Served
 					</span>
+				</div>
+				<div class="stat-divider"></div>
+				<div class="stat">
+					<span class="stat-number">{displayAnalyzed.toLocaleString()}</span>
+					<span class="stat-label">Resumes Analyzed</span>
 				</div>
 				<div class="stat-divider"></div>
 			{/if}
@@ -358,11 +380,6 @@
 			<div class="stat">
 				<span class="stat-number">100%</span>
 				<span class="stat-label">Free For Now</span>
-			</div>
-			<div class="stat-divider"></div>
-			<div class="stat">
-				<span class="stat-number">Any</span>
-				<span class="stat-label">Industry or Role</span>
 			</div>
 		</div>
 	</div>
