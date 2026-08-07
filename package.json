@@ -64,16 +64,6 @@
 		"vite": "^8.2.0",
 		"vitest": "^4.1.10"
 	},
-	"pnpm": {
-		"onlyBuiltDependencies": [
-			"esbuild",
-			"sharp",
-			"workerd"
-		],
-		"overrides": {
-			"rollup@<4.59.0": "^4.59.0"
-		}
-	},
 	"optionalDependencies": {
 		"ldapts": "^9.0.0"
 	}
