@@ -35,16 +35,16 @@ const CURRENT_INDICATORS = /\b(present|current|now|ongoing|today)\b/i;
 // "Jan 2023 - Present", "January 2023 - December 2024", "01/2023 - 12/2024"
 const DATE_RANGE_PATTERNS = [
 	// Month Year - Month Year (or Present)
-	/(?:(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\s*\.?\s*\d{4})\s*(?:[-–—~]+|to)\s*(?:(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\s*\.?\s*\d{4}|present|current|now|ongoing|today)/gi,
+	/(?:(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\s*\.?\s*\d{4})\s*(?:[-–—~]+|\bto\b)\s*(?:(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\s*\.?\s*\d{4}|present|current|now|ongoing|today)/gi,
 
 	// MM/YYYY - MM/YYYY (or Present)
-	/\d{1,2}\/\d{4}\s*(?:[-–—~]+|to)\s*(?:\d{1,2}\/\d{4}|present|current|now|ongoing|today)/gi,
+	/\d{1,2}\/\d{4}\s*(?:[-–—~]+|\bto\b)\s*(?:\d{1,2}\/\d{4}|present|current|now|ongoing|today)/gi,
 
 	// Year - Year (or Present)
-	/\b(20\d{2}|19\d{2})\s*(?:[-–—~]+|to)\s*(?:(20\d{2}|19\d{2})|present|current|now|ongoing|today)\b/gi,
+	/\b(20\d{2}|19\d{2})\s*(?:[-–—~]+|\bto\b)\s*(?:(20\d{2}|19\d{2})|present|current|now|ongoing|today)\b/gi,
 
 	// Season Year - Season Year
-	/(?:spring|summer|fall|autumn|winter)\s*\d{4}\s*(?:[-–—~]+|to)\s*(?:(?:spring|summer|fall|autumn|winter)\s*\d{4}|present|current|now)/gi,
+	/(?:spring|summer|fall|autumn|winter)\s*\d{4}\s*(?:[-–—~]+|\bto\b)\s*(?:(?:spring|summer|fall|autumn|winter)\s*\d{4}|present|current|now)/gi,
 
 	// standalone "Month Year" (single date)
 	/(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\s*\.?\s*\d{4}/gi
