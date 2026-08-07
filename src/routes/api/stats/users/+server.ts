@@ -1,8 +1,7 @@
 import { json, error } from '@sveltejs/kit';
 import { env as privateEnv } from '$env/dynamic/private';
 import { logger } from '$lib/log';
-import { getAdminAuth } from '$lib/server/firebase-admin';
-import { userCountCache } from '$lib/server/user-count';
+import type { Auth } from 'firebase-admin/auth';
 import type { RequestHandler } from './$types';
 
 // public read of the real firebase auth user count for the landing page's
@@ -12,14 +11,21 @@ import type { RequestHandler } from './$types';
 // is configured (self-host / dev / not yet set on the deploy), this returns
 // 503 and the hero falls back to the firestore stats counter.
 export const GET: RequestHandler = async () => {
-	let auth;
+	// firebase-admin is imported dynamically on purpose: the admin SDK pulls in
+	// heavy deps (firestore, grpc, etc.) that occasionally fail to LOAD on the
+	// serverless runtime. a static import would throw during module evaluation,
+	// before any try/catch here runs, and surface as the framework's generic
+	// "Internal Error". dynamic import keeps every failure inside the catch so
+	// the real message is returned and logged.
+	let auth: Auth | null;
 	try {
+		const { getAdminAuth } = await import('$lib/server/firebase-admin');
 		auth = getAdminAuth(privateEnv);
 	} catch (err) {
-		// init failure (bad/expired service account, malformed key). surface the
-		// real reason instead of the framework's generic "Internal Error" so it
-		// is diagnosable from the response; the hero degrades to the firestore
-		// counter meanwhile.
+		// import or init failure (bad/expired service account, malformed key,
+		// missing dependency in the bundled function). surface the real reason
+		// instead of "Internal Error" so it is diagnosable from the response;
+		// the hero degrades to the firestore counter meanwhile.
 		logger.error('stats.admin_init_failed', {
 			error: err instanceof Error ? err.message : String(err)
 		});
@@ -29,6 +35,7 @@ export const GET: RequestHandler = async () => {
 		throw error(503, 'firebase admin not configured');
 	}
 	try {
+		const { userCountCache } = await import('$lib/server/user-count');
 		const userCount = await userCountCache.get(auth);
 		// a public stat: let the browser and Vercel's CDN hold it briefly on top
 		// of the in-process cache. s-maxage matches the server cache TTL.
