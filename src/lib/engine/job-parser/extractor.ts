@@ -82,6 +82,8 @@ function extractSkills(
 		/\b(?:machine learning|deep learning|data science|nlp|natural language|computer vision|tensorflow|pytorch|pandas|spark|hadoop|tableau|power bi|etl)\b/gi,
 		// business
 		/\b(?:salesforce|hubspot|sap|oracle|quickbooks|excel|powerpoint|jira|confluence|asana|slack)\b/gi,
+		// product management
+		/\b(?:product roadmap(?:ping)?|okrs?|rice (?:framework|scoring)|kano(?: model)?|user stories|backlog (?:management|grooming)|sprint planning|stakeholder management|go-to-market|product-led growth|plg|a\/b testing|user research|shapeup|scrum master|agile ceremonies)\b/gi,
 		// certifications
 		/\b(?:cpa|pmp|aws certified|google certified|azure certified|cissp|ceh|six sigma|scrum master|agile)\b/gi
 	];
@@ -166,6 +168,12 @@ function detectEducationRequirement(text: string): string {
 }
 
 function detectRoleType(text: string): string {
+	if (
+		/\b(?:product manager|product owner|product management|product lead|head of product|group product manager|associate product manager|technical product manager)\b/.test(
+			text
+		)
+	)
+		return 'product';
 	if (
 		/\b(?:engineer|developer|programmer|devops|sre|software|frontend|backend|fullstack)\b/.test(
 			text
