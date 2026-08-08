@@ -25,12 +25,7 @@ const SECTION_PATTERNS: Record<SectionType, RegExp[]> = {
 			'i'
 		)
 	],
-	projects: [
-		new RegExp(
-			`^(${QUALIFIER})?projects$`,
-			'i'
-		)
-	],
+	projects: [new RegExp(`^(${QUALIFIER})?projects$`, 'i')],
 	certifications: [
 		/^(certifications?|licenses?(\s*(&|and)\s*certifications?)?|professional\s*certifications?|accreditations?)$/i
 	],
