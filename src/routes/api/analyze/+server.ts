@@ -8,9 +8,16 @@ import { checkRateLimit } from './rate-limiter';
 import { buildProviders, PROVIDER_ENV_KEYS } from './providers';
 import { resolveAuthMode } from '$lib/server/auth/config';
 
-// tries each provider in sequence until one succeeds and returns valid JSON
+// tries each provider in sequence until one succeeds and returns valid JSON.
+// promptFor is called once per provider with that provider's own
+// contextBudget, so Gemini (huge context window) gets a near-complete
+// resume while Groq/Cerebras (tight free-tier TPM ceilings) still get the
+// smaller, section-prioritized slice they need to stay under their limits.
+// Building lazily per-provider (rather than once up front) also means a
+// provider that's skipped for missing credentials never pays the cost of
+// having a prompt built for it.
 async function callLLM(
-	prompt: string,
+	promptFor: (contextBudget: number) => string,
 	env: Record<string, string>
 ): Promise<{ parsed: Record<string, unknown>; provider: string } | null> {
 	const providers = buildProviders(env);
@@ -19,6 +26,7 @@ async function callLLM(
 		if (!secret) continue;
 
 		try {
+			const prompt = promptFor(provider.contextBudget);
 			const { url, init } = provider.buildRequest(prompt, secret);
 
 			const controller = new AbortController();
@@ -195,17 +203,23 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		throw error(400, 'invalid mode');
 	}
 
-	// build the prompt based on mode
-	let prompt: string;
+	// build a per-provider prompt function based on mode. For full-score this
+	// depends on the calling provider's own contextBudget (set in callLLM)
+	// so a high-capacity provider like Gemini isn't starved down to the
+	// budget a free-tier provider like Groq needs. analyze-jd doesn't
+	// involve resume text at all, so its prompt is fixed regardless of
+	// which provider ends up serving it.
+	let promptFor: (contextBudget: number) => string;
 
 	switch (body.mode) {
 		case 'full-score':
 			if (!body.resumeText) throw error(400, 'resumeText is required');
-			prompt = buildFullScoringPrompt(body.resumeText, body.jobDescription);
+			promptFor = (contextBudget) =>
+				buildFullScoringPrompt(body.resumeText as string, body.jobDescription, contextBudget);
 			break;
 		case 'analyze-jd':
 			if (!body.jobDescription) throw error(400, 'jobDescription is required');
-			prompt = buildJDAnalysisPrompt(body.jobDescription);
+			promptFor = () => buildJDAnalysisPrompt(body.jobDescription as string);
 			break;
 		default:
 			throw error(400, 'invalid mode');
@@ -217,8 +231,20 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		'Cache-Control': 'no-store'
 	};
 
-	// content-addressed cache: identical prompts return identical results, no LLM call
-	const cacheKey = await hashPrompt(prompt);
+	// content-addressed cache: identical INPUTS return identical results, no
+	// LLM call needed. Keyed on the stable request inputs (mode + resume +
+	// job description) rather than a single rendered prompt string, since
+	// the prompt itself now legitimately varies by which provider ends up
+	// serving the request (see callLLM / contextBudget above). A cache hit
+	// this way reflects the same underlying resume regardless of which
+	// provider's variant produced it.
+	const cacheKey = await hashPrompt(
+		JSON.stringify({
+			mode: body.mode,
+			resumeText: body.resumeText ?? null,
+			jobDescription: body.jobDescription ?? null
+		})
+	);
 	const cached = getCached(cacheKey);
 	if (cached) {
 		return json(
@@ -227,15 +253,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		);
 	}
 
-	// diagnostics: which providers the deployed function actually sees as
-	// configured. if this list is missing GROQ/CEREBRAS the keys are not
-	// reaching the running function (stale deploy / env scope), not a code issue.
-	logger.info('llm.providers_configured', {
-		providers: buildProviders(keys).map((p) => p.name),
-		mode: body.mode
-	});
-
-	const result = await callLLM(prompt, keys);
+	const result = await callLLM(promptFor, keys);
 
 	if (!result) {
 		// every leg failing is an outage, not a retryable blip - the per-provider
