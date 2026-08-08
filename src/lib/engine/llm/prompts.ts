@@ -25,10 +25,29 @@ const ALWAYS_INCLUDE_SECTIONS: SectionType[] = [
 	'awards'
 ];
 
+// Within the truncatable (long) sections, this ranks which ones get first
+// claim on any *leftover* budget after every section has already been
+// guaranteed its fair-share floor (see buildResumeContext). Lower = more
+// important. Experience is the resume's core content for scoring purposes
+// and must never be crowded out just because it happens to sit ahead of -
+// or behind - another long section in the document.
+const TRUNCATABLE_IMPORTANCE: Partial<Record<SectionType, number>> = {
+	experience: 0,
+	projects: 1,
+	publications: 2,
+	volunteer: 3,
+	interests: 4
+};
+const importanceRank = (s: ResumeSection) => TRUNCATABLE_IMPORTANCE[s.type] ?? 5;
+
 // Builds an LLM-context string that fits within maxChars while guaranteeing
 // short/critical sections survive intact. Only the long, truncatable
-// sections (experience, projects, etc.) get cut - and only the last one
-// that doesn't fit, not everything after an arbitrary character offset.
+// sections (experience, projects, etc.) get cut - and every one of them is
+// guaranteed at least a fair-share floor of the remaining budget first, so
+// a single long section (e.g. a big Experience block) can no longer eat the
+// entire remaining budget and silently zero out everything after it. Any
+// budget left over after every section gets its floor is then handed out by
+// importance (Experience first) until it runs out.
 // Falls back to a plain head-slice if section detection finds no real
 // structure, so unstructured/plain-text resumes degrade safely rather than
 // crashing or producing an empty context.
@@ -53,20 +72,40 @@ export function buildResumeContext(resumeText: string, maxChars: number): string
 		used += text.length + 2;
 	}
 
-	// remaining budget fills the long sections in original document order;
-	// the first one that doesn't fit gets truncated with a visible marker
-	// instead of being dropped silently, and nothing after it is included
-	for (const s of truncatable) {
-		const remaining = maxChars - used;
-		if (remaining <= 0) break;
-		const text = render(s);
-		if (text.length <= remaining) {
-			kept.push({ section: s, text });
-			used += text.length + 2;
-		} else {
-			kept.push({ section: s, text: text.slice(0, remaining) + '\n[...truncated for length]' });
-			break;
-		}
+	const remaining = maxChars - used;
+	if (remaining <= 0 || truncatable.length === 0) {
+		kept.sort((a, b) => a.section.startLine - b.section.startLine);
+		return kept.map((k) => k.text).join('\n\n');
+	}
+
+	const entries = truncatable.map((s) => ({ section: s, full: render(s) }));
+
+	// pass 1: every truncatable section gets a guaranteed floor (fair
+	// equal share of the remaining budget), so no section can be shut out
+	// entirely just because another one happened to come first and was
+	// long enough to consume the whole remaining budget by itself
+	const floor = Math.floor(remaining / entries.length);
+	const allocated = entries.map((e) => ({ ...e, alloc: Math.min(e.full.length, floor) }));
+	const usedInFloor = allocated.reduce((sum, e) => sum + e.alloc, 0);
+	let leftover = remaining - usedInFloor;
+
+	// pass 2: hand out whatever's left over (because some sections were
+	// shorter than their floor) to the sections that still have more
+	// content, most scoring-relevant first, until it runs out
+	allocated.sort((a, b) => importanceRank(a.section) - importanceRank(b.section));
+	for (const e of allocated) {
+		if (leftover <= 0) break;
+		const need = e.full.length - e.alloc;
+		if (need <= 0) continue;
+		const grant = Math.min(need, leftover);
+		e.alloc += grant;
+		leftover -= grant;
+	}
+
+	for (const e of allocated) {
+		const text =
+			e.alloc >= e.full.length ? e.full : e.full.slice(0, e.alloc) + '\n[...truncated for length]';
+		kept.push({ section: e.section, text });
 	}
 
 	// re-sort into original document order so the LLM still reads the
@@ -75,8 +114,12 @@ export function buildResumeContext(resumeText: string, maxChars: number): string
 	return kept.map((k) => k.text).join('\n\n');
 }
 
-export function buildFullScoringPrompt(resumeText: string, jobDescription?: string): string {
-	const resumeSlice = buildResumeContext(resumeText, 6000);
+export function buildFullScoringPrompt(
+	resumeText: string,
+	jobDescription?: string,
+	resumeBudget = 6000
+): string {
+	const resumeSlice = buildResumeContext(resumeText, resumeBudget);
 	const jdSlice = jobDescription?.slice(0, 4000);
 
 	const jdSection = jdSlice
