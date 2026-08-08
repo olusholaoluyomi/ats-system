@@ -57,7 +57,12 @@ const GOOGLE_MAX_OUTPUT_TOKENS = 6144;
 export function buildGoogleProvider(
 	name: string,
 	model: string,
-	opts?: { jsonMode?: boolean; timeoutMs?: number; maxOutputTokens?: number; contextBudget?: number }
+	opts?: {
+		jsonMode?: boolean;
+		timeoutMs?: number;
+		maxOutputTokens?: number;
+		contextBudget?: number;
+	}
 ): LLMProvider {
 	return {
 		name,
