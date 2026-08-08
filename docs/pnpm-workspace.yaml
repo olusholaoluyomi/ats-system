@@ -1,0 +1,3 @@
+dangerouslyAllowAllBuilds: true
+overrides:
+  "rollup@<4.59.0": ^4.59.0
