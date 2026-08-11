@@ -86,19 +86,19 @@ describe('consumeReview', () => {
 	it('grants the free review first and marks it used', async () => {
 		const d = db();
 		expect(await consumeReview(d, 'u1')).toEqual({ status: 'ok', used: 'free' });
-		expect(read(d, 'users/u1/billing')).toMatchObject({ freeUsed: true, credits: 0 });
+		expect(read(d, 'users/u1/billing/state')).toMatchObject({ freeUsed: true, credits: 0 });
 	});
 
 	it('spends a credit once the free review is gone', async () => {
 		const d = db();
-		seed(d, 'users/u1/billing', { freeUsed: true, credits: 3 });
+		seed(d, 'users/u1/billing/state', { freeUsed: true, credits: 3 });
 		expect(await consumeReview(d, 'u1')).toEqual({ status: 'ok', used: 'credit' });
-		expect(read(d, 'users/u1/billing')).toMatchObject({ freeUsed: true, credits: 2 });
+		expect(read(d, 'users/u1/billing/state')).toMatchObject({ freeUsed: true, credits: 2 });
 	});
 
 	it('blocks an account that is dry', async () => {
 		const d = db();
-		seed(d, 'users/u1/billing', { freeUsed: true, credits: 0 });
+		seed(d, 'users/u1/billing/state', { freeUsed: true, credits: 0 });
 		expect(await consumeReview(d, 'u1')).toEqual({ status: 'blocked' });
 	});
 
@@ -117,16 +117,16 @@ describe('consumeReview', () => {
 describe('refundReview', () => {
 	it('resets the free review', async () => {
 		const d = db();
-		seed(d, 'users/u1/billing', { freeUsed: true, credits: 0 });
+		seed(d, 'users/u1/billing/state', { freeUsed: true, credits: 0 });
 		await refundReview(d, 'u1', 'free');
-		expect(read(d, 'users/u1/billing')).toMatchObject({ freeUsed: false, credits: 0 });
+		expect(read(d, 'users/u1/billing/state')).toMatchObject({ freeUsed: false, credits: 0 });
 	});
 
 	it('restores a spent credit', async () => {
 		const d = db();
-		seed(d, 'users/u1/billing', { freeUsed: true, credits: 1 });
+		seed(d, 'users/u1/billing/state', { freeUsed: true, credits: 1 });
 		await refundReview(d, 'u1', 'credit');
-		expect(read(d, 'users/u1/billing')).toMatchObject({ freeUsed: true, credits: 2 });
+		expect(read(d, 'users/u1/billing/state')).toMatchObject({ freeUsed: true, credits: 2 });
 	});
 });
 
@@ -136,7 +136,7 @@ describe('creditReview', () => {
 		seed(d, 'payments/ref1', { uid: 'u1', amountKobo: 500000, status: 'initiated' });
 		expect(await creditReview(d, 'u1', 'ref1', 500000, 'NGN')).toEqual({ status: 'credited' });
 		expect(read(d, 'payments/ref1')).toMatchObject({ status: 'success', uid: 'u1' });
-		expect(read(d, 'users/u1/billing')).toMatchObject({ freeUsed: false, credits: 1 });
+		expect(read(d, 'users/u1/billing/state')).toMatchObject({ freeUsed: false, credits: 1 });
 	});
 
 	it('webhook/verify double-fire on the same reference credits exactly once', async () => {
@@ -146,7 +146,7 @@ describe('creditReview', () => {
 		await creditReview(d, 'u1', 'ref1', 500000, 'NGN');
 		const second = await creditReview(d, 'u1', 'ref1', 500000, 'NGN');
 		expect(second).toEqual({ status: 'noop' });
-		expect(read(d, 'users/u1/billing')).toMatchObject({ credits: 1 });
+		expect(read(d, 'users/u1/billing/state')).toMatchObject({ credits: 1 });
 
 		// and under genuine concurrency on a fresh reference
 		const [a, b] = await Promise.all([
@@ -155,7 +155,7 @@ describe('creditReview', () => {
 		]);
 		const verdicts = [a.status, b.status].sort();
 		expect(verdicts).toEqual(['credited', 'noop']);
-		expect(read(d, 'users/u2/billing')).toMatchObject({ credits: 1 });
+		expect(read(d, 'users/u2/billing/state')).toMatchObject({ credits: 1 });
 	});
 
 	it('never credits a reference that belongs to another user', async () => {
@@ -163,7 +163,7 @@ describe('creditReview', () => {
 		seed(d, 'payments/ref1', { uid: 'u1', amountKobo: 500000, status: 'initiated' });
 		await creditReview(d, 'u2', 'ref1', 500000, 'NGN');
 		expect(read(d, 'payments/ref1')).toMatchObject({ status: 'initiated' });
-		expect(read(d, 'users/u2/billing')).toBeUndefined();
+		expect(read(d, 'users/u2/billing/state')).toBeUndefined();
 	});
 
 	it('never credits a reference for a different amount than it was initialized for', async () => {
@@ -171,14 +171,14 @@ describe('creditReview', () => {
 		seed(d, 'payments/ref1', { uid: 'u1', amountKobo: 500000, status: 'initiated' });
 		await creditReview(d, 'u1', 'ref1', 1, 'NGN');
 		expect(read(d, 'payments/ref1')).toMatchObject({ status: 'initiated' });
-		expect(read(d, 'users/u1/billing')).toBeUndefined();
+		expect(read(d, 'users/u1/billing/state')).toBeUndefined();
 	});
 
 	it('credits a reference with no payment doc (webhook raced initialize)', async () => {
 		const d = db();
 		await creditReview(d, 'u1', 'ref-missing', 500000, 'NGN');
 		expect(read(d, 'payments/ref-missing')).toMatchObject({ status: 'success', uid: 'u1' });
-		expect(read(d, 'users/u1/billing')).toMatchObject({ credits: 1 });
+		expect(read(d, 'users/u1/billing/state')).toMatchObject({ credits: 1 });
 	});
 });
 

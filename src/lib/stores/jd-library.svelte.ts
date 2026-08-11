@@ -22,15 +22,20 @@ export interface JDEntry {
 class JDLibrary {
 	entries = $state<JDEntry[]>([]);
 
-	// whether localStorage has already been loaded this session
-	private loaded = false;
 	// whether we have already warned about a storage failure this session
 	private warnedAboutStorage = false;
 
-	// lazy-load from localStorage on first access
+	constructor() {
+		// load eagerly at construction (client only) rather than lazily inside
+		// the `list` getter: mutating $state from a getter Svelte reads during
+		// render triggers the state_unsafe_mutation warning. on the server
+		// browser is false and the store stays empty; the client module
+		// re-evaluates with window present, so entries are populated before the
+		// first render.
+		if (browser) this.load();
+	}
+
 	private load() {
-		if (this.loaded || !browser) return;
-		this.loaded = true;
 		try {
 			const raw = localStorage.getItem(KEY);
 			if (raw) {
@@ -64,12 +69,10 @@ class JDLibrary {
 	}
 
 	get list(): JDEntry[] {
-		this.load();
 		return this.entries;
 	}
 
 	save(label: string, content: string): void {
-		this.load();
 		const trimmedLabel = label.trim();
 		const trimmedContent = content.trim();
 		if (!trimmedContent) return;
@@ -88,13 +91,11 @@ class JDLibrary {
 	}
 
 	remove(id: string): void {
-		this.load();
 		this.entries = this.entries.filter((e) => e.id !== id);
 		this.persist();
 	}
 
 	clear(): void {
-		this.load();
 		this.entries = [];
 		this.persist();
 	}

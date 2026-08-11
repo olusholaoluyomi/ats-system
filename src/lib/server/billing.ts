@@ -6,7 +6,10 @@
 // and no credits and comes back 'blocked').
 //
 // state lives in two collections, both server-writable only (see firestore.rules):
-//   users/{uid}/billing  - { freeUsed: boolean, credits: number }
+//   users/{uid}/billing/state - the billing document ({ freeUsed, credits }),
+//                               a fixed subdocument of the per-user billing
+//                               collection (users/{uid}/billing is a collection
+//                               path, so the doc itself lives one level deeper)
 //   payments/{reference} - the ledger for a single checkout (initiated/success),
 //                          written by the payment routes and read by the webhook
 //
@@ -29,6 +32,8 @@ export interface NormalizedBilling {
 }
 
 export const DEFAULT_BILLING: NormalizedBilling = { freeUsed: false, credits: 0 };
+
+export const BILLING_DOC = 'state';
 
 export type ReviewUsed = 'free' | 'credit';
 
@@ -68,7 +73,7 @@ function toBillingDoc(raw: unknown): NormalizedBilling {
 // MUST be matched by exactly one refund or one successful analysis, otherwise
 // credits leak. see consumeAndRefund below.
 export async function consumeReview(db: Firestore, uid: string): Promise<ConsumeVerdict> {
-	const billingRef = db.doc(`users/${uid}/billing`);
+	const billingRef = db.doc(`users/${uid}/billing/${BILLING_DOC}`);
 	return db.runTransaction(async (tx: Transaction) => {
 		const snap = await tx.get(billingRef);
 		const billing = toBillingDoc(snap.exists ? snap.data() : undefined);
@@ -97,7 +102,7 @@ export async function refundReview(
 	uid: string,
 	used: ReviewUsed
 ): Promise<{ status: 'refunded' }> {
-	const billingRef = db.doc(`users/${uid}/billing`);
+	const billingRef = db.doc(`users/${uid}/billing/${BILLING_DOC}`);
 	return db.runTransaction(async (tx: Transaction) => {
 		const snap = await tx.get(billingRef);
 		const billing = toBillingDoc(snap.exists ? snap.data() : undefined);
@@ -131,7 +136,7 @@ export async function creditReview(
 	currency: string
 ): Promise<CreditVerdict> {
 	const paymentRef = db.doc(`payments/${reference}`);
-	const billingRef = db.doc(`users/${uid}/billing`);
+	const billingRef = db.doc(`users/${uid}/billing/${BILLING_DOC}`);
 	return db.runTransaction(async (tx: Transaction) => {
 		const paySnap = await tx.get(paymentRef);
 		const billSnap = await tx.get(billingRef);

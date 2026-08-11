@@ -44,7 +44,9 @@ class BillingStore {
 		try {
 			const { db } = await getFirebase();
 			const { getDoc, doc } = await import('firebase/firestore');
-			const snap = await getDoc(doc(db, 'users', authStore.user.uid, 'billing'));
+			// users/{uid}/billing is a collection path; the entitlements doc is
+			// the fixed 'state' subdocument (mirrors the server's billing module).
+			const snap = await getDoc(doc(db, 'users', authStore.user.uid, 'billing', 'state'));
 			const data = snap.exists() ? snap.data() : {};
 			this.freeUsed = data.freeUsed === true;
 			this.credits = typeof data.credits === 'number' ? data.credits : 0;

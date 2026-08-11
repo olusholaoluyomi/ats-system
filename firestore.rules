@@ -10,8 +10,9 @@ service cloud.firestore {
     // written ONLY by the admin SDK via the billing transactions on the server
     // (/api/analyze gate, /api/payment/*); clients may read their own doc so
     // the scanner can show the paywall, but never mutate it (or they could
-    // grant themselves unlimited free reviews).
-    match /users/{userId}/billing {
+    // grant themselves unlimited free reviews). the doc is the fixed 'state'
+    // subdocument of the per-user billing collection.
+    match /users/{userId}/billing/{billingDoc} {
       allow read: if request.auth != null && request.auth.uid == userId;
     }
 

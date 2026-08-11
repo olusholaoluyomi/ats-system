@@ -263,7 +263,18 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 				return json({ error: 'billing is not configured on this deploy' }, { status: 503 });
 			}
 			const { consumeReview, refundReview } = await import('$lib/server/billing');
-			const verdict = await consumeReview(db, identity.uid);
+			// a billing failure must never surface as a bare 500 mid-scan: log it
+			// and fail the request with a clean status so the client can react.
+			let verdict;
+			try {
+				verdict = await consumeReview(db, identity.uid);
+			} catch (err) {
+				logger.error('billing.consume_failed', {
+					uid: identity.uid,
+					error: err instanceof Error ? err.message : String(err)
+				});
+				return json({ error: 'billing is unavailable' }, { status: 503 });
+			}
 			if (verdict.status === 'blocked') {
 				const { parsePriceNg } = await import('$lib/server/paystack');
 				const priceNgn = parsePriceNg(env);
