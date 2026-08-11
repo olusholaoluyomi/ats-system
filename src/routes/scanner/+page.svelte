@@ -117,6 +117,18 @@
 			return;
 		}
 
+		// the first scan is free, every later one costs a paid credit. check the
+		// mirrored billing doc before firing the request so a dry account gets the
+		// paywall instantly instead of a wasted round-trip (and a flash of the
+		// scanning animation) that only ends in a 402. the server still enforces
+		// this via consumeReview, so a stale local mirror can never grant a free
+		// scan - it can only delay the prompt. refresh() mirrors the doc after a
+		// successful scan so this check is accurate on the very next click.
+		if (billingStore.enabled && !billingStore.loading && billingStore.freeUsed && billingStore.credits === 0) {
+			showPaywall = true;
+			return;
+		}
+
 		hasScanned = true;
 		const signal = scoresStore.startScoring();
 
@@ -154,6 +166,9 @@
 			if (llmResult.status === 'ok' && llmResult.results.length > 0) {
 				scoresStore.finishScoring(llmResult.results, resumeStore.file?.name);
 				scoresStore.finishAnalyzing(null, false);
+				// the server consumed a review for this scan; mirror it so the
+				// next scan click can pre-empt with the paywall (see above).
+				void billingStore.refresh();
 				return;
 			}
 
@@ -167,6 +182,9 @@
 			const retryAtMs =
 				llmResult.status === 'rate_limited' ? Date.now() + llmResult.retryAfterSec * 1000 : null;
 			scoresStore.finishAnalyzing(null, true, retryAtMs);
+			// mirror the billing doc (the server may have consumed or refunded the
+			// review for this call) so the next scan click pre-empts correctly.
+			void billingStore.refresh();
 		} catch (err) {
 			if (signal.aborted) return;
 			const msg = err instanceof Error ? err.message : 'scoring failed';
