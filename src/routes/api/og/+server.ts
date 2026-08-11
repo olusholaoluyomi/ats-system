@@ -230,7 +230,7 @@ export const GET: RequestHandler = async ({ url }) => {
 												}
 											}
 										},
-										'Free For Now · No Card · Try Before Pricing'
+										'Start for Free · Real Scores'
 									]
 								}
 							}
@@ -511,7 +511,7 @@ export const GET: RequestHandler = async ({ url }) => {
 													letterSpacing: '0.08em',
 													textTransform: 'uppercase'
 												},
-												children: 'Free For Now'
+												children: 'Free'
 											}
 										}
 									]

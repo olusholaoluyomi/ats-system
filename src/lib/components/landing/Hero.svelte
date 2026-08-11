@@ -255,7 +255,7 @@
 		<!-- trust badge -->
 		<div class="badge">
 			<span class="badge-dot"></span>
-			<span>Free For Now &bull; No Card Needed &bull; Try Before Pricing</span>
+			<span>Start for Free &bull; Real Scores &bull; No Fake Numbers</span>
 		</div>
 
 		<!-- encrypted text reveal tagline (cycles through phrases) -->
@@ -379,7 +379,7 @@
 			<div class="stat-divider"></div>
 			<div class="stat">
 				<span class="stat-number">100%</span>
-				<span class="stat-label">Free For Now</span>
+				<span class="stat-label">Free</span>
 			</div>
 		</div>
 	</div>

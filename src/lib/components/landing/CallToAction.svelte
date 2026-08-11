@@ -11,9 +11,8 @@
 			<span class="gradient-text">Start scoring.</span>
 		</h2>
 		<p class="cta-description">
-			Upload your resume and get real ATS scores in under 30 seconds. It's free right now - pricing
-			is coming, so lock in your score before anything changes. Just accurate, platform-specific
-			feedback.
+			Upload your resume and get real ATS scores in under 30 seconds — for free. Just accurate,
+			platform-specific feedback.
 		</p>
 		<div class="cta-actions">
 			<a href="/scanner" class="cta-button">

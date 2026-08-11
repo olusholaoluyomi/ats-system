@@ -40,7 +40,7 @@
 			icon: 'shield',
 			title: 'Privacy First',
 			description:
-				'Your resume file is parsed entirely in your browser. Only extracted text is sent for AI scoring. No paywall, no premium tiers.',
+				'Your resume file is parsed entirely in your browser. Only extracted text is sent for AI scoring.',
 			gradient: 'linear-gradient(135deg, #22c55e, #06b6d4)'
 		}
 	];
