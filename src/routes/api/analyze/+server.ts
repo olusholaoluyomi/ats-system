@@ -231,6 +231,58 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		'Cache-Control': 'no-store'
 	};
 
+	// ---- billing gate (firebase mode only) ----
+	// hosted paid-review model: the first full-score review per account is free,
+	// each subsequent one costs a paid credit. this runs BEFORE the cache lookup
+	// and the LLM call so the paywall cannot be dodged by resubmitting an
+	// identical resume (cache hit) or by falling through to the client's
+	// rule-based scorer. ldap/none modes have no wallet concept and skip the
+	// block entirely (payments are inert outside firebase mode).
+	//
+	// a review is consumed for every full-score call that passes the gate and
+	// refunded when it produced nothing (cache re-run or total LLM failure), so
+	// a paid user is never charged twice for the same resume or for an outage.
+	let refund = async (): Promise<void> => {};
+	if (resolveAuthMode(env) === 'firebase') {
+		const { verifyFirebaseIdToken } = await import('$lib/server/auth/token');
+		const identity = await verifyFirebaseIdToken(env, request.headers.get('authorization'));
+		if (!identity) {
+			return json({ error: 'authentication required' }, { status: 401 });
+		}
+
+		if (body.mode === 'full-score') {
+			const { getAdminFirestore } = await import('$lib/server/firebase-admin');
+			const db = await getAdminFirestore(env);
+			if (!db) {
+				return json({ error: 'billing is not configured on this deploy' }, { status: 503 });
+			}
+			const { consumeReview, refundReview } = await import('$lib/server/billing');
+			const verdict = await consumeReview(db, identity.uid);
+			if (verdict.status === 'blocked') {
+				const { parsePriceNg } = await import('$lib/server/paystack');
+				const priceNgn = parsePriceNg(env);
+				return json(
+					{
+						error: 'payment_required',
+						message: `Your free review is used up. Each additional review costs ₦${priceNgn}.`,
+						priceNgn
+					},
+					{ status: 402 }
+				);
+			}
+			refund = async () => {
+				try {
+					await refundReview(db, identity.uid, verdict.used);
+				} catch (err) {
+					logger.error('billing.refund_failed', {
+						uid: identity.uid,
+						error: err instanceof Error ? err.message : String(err)
+					});
+				}
+			};
+		}
+	}
+
 	// content-addressed cache: identical INPUTS return identical results, no
 	// LLM call needed. Keyed on the stable request inputs (mode + resume +
 	// job description) rather than a single rendered prompt string, since
@@ -247,6 +299,11 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	);
 	const cached = getCached(cacheKey);
 	if (cached) {
+		// the consumed review is refunded on a cache re-run: identical inputs
+		// get identical results with no LLM work, so a retried scan or a second
+		// look at the same resume must not bill twice. the gate above still ran,
+		// so an account that cannot pay stays blocked regardless of the cache.
+		await refund();
 		return json(
 			{ ...cached.parsed, _provider: cached.provider, _fallback: false, _cached: true },
 			{ headers: securityHeaders }
@@ -263,6 +320,8 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 			providers: buildProviders(keys).map((p) => p.name),
 			mode: body.mode
 		});
+		// give the consumed review back: an outage must never bill the user.
+		await refund();
 		return json({ error: 'all LLM providers failed', fallback: true }, { status: 503 });
 	}
 

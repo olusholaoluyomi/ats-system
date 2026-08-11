@@ -3,6 +3,7 @@ import type { LLMAnalysis, LLMRequestPayload, LLMResponse } from './types';
 import { generateFallbackAnalysis } from './fallback';
 import { incrementResumesAnalyzed } from '$lib/insights';
 import { logger } from '$lib/log';
+import { authStore } from '$stores/auth.svelte';
 
 const CLIENT_TIMEOUT_MS = 65_000;
 
@@ -10,11 +11,27 @@ const CLIENT_TIMEOUT_MS = 65_000;
 // from "user cancelled, do nothing" - the two need different downstream handling
 // rate_limited is treated like error for fallback purposes, but carries a retry
 // hint so the UI can tell users when the AI path will be available again
+// payment_required is NOT a fallback signal: the scanner must show the paywall
+// and must NOT fall through to the free rule-based scorer, or the pay-per-review
+// model is bypassed client-side.
 export type ScoreLLMResult =
 	| { status: 'ok'; results: ScoreResult[]; provider: string; fallback: boolean }
 	| { status: 'error' }
 	| { status: 'rate_limited'; retryAfterSec: number }
+	| { status: 'payment_required'; priceNgn: number }
 	| { status: 'cancelled' };
+
+// the analyze billing gate verifies a firebase ID token, so firebase-mode
+// clients attach it as a bearer header. ldap/none modes send nothing (the
+// server only enforces billing in firebase mode).
+async function authHeaders(): Promise<Record<string, string>> {
+	const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+	if (authStore.mode === 'firebase') {
+		const token = await authStore.getIdToken();
+		if (token) headers['Authorization'] = `Bearer ${token}`;
+	}
+	return headers;
+}
 
 // performs full LLM-powered ATS scoring via the server endpoint
 // caller can pass an AbortSignal to cancel an in-flight request (e.g. on rescan/reset)
@@ -34,7 +51,7 @@ export async function scoreLLM(
 	try {
 		const response = await fetch('/api/analyze', {
 			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
+			headers: await authHeaders(),
 			body: JSON.stringify({
 				mode: 'full-score',
 				resumeText,
@@ -58,6 +75,15 @@ export async function scoreLLM(
 							? Math.max(1, Number(headerVal))
 							: 60;
 				return { status: 'rate_limited', retryAfterSec };
+			}
+			if (response.status === 402) {
+				// the free review is used up and the account has no credits left.
+				// distinct from a generic error: the scanner shows the paywall and
+				// must NOT degrade to the rule-based scorer.
+				return {
+					status: 'payment_required',
+					priceNgn: typeof data.priceNgn === 'number' ? data.priceNgn : 5000
+				};
 			}
 			return { status: 'error' };
 		}
@@ -190,7 +216,7 @@ export async function analyzWithLLM(payload: LLMRequestPayload): Promise<LLMResp
 
 		const response = await fetch('/api/analyze', {
 			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
+			headers: await authHeaders(),
 			body: JSON.stringify(payload),
 			signal: controller.signal
 		});

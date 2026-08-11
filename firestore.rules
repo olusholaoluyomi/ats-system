@@ -6,6 +6,22 @@ service cloud.firestore {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
+    // per-account review entitlements (free-review-used flag + paid credits).
+    // written ONLY by the admin SDK via the billing transactions on the server
+    // (/api/analyze gate, /api/payment/*); clients may read their own doc so
+    // the scanner can show the paywall, but never mutate it (or they could
+    // grant themselves unlimited free reviews).
+    match /users/{userId}/billing {
+      allow read: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // ledger of initiated/settled Paystack checkouts, written and read only by
+    // the server (initialize/webhook/verify routes). clients get no access so
+    // a reference can't be forged or replayed from the browser.
+    match /payments/{paymentId} {
+      allow read, write: if false;
+    }
+
     // any authenticated user can create a scan log entry (write-only, no reads from client)
     match /scan_logs/{logId} {
       allow create: if request.auth != null;

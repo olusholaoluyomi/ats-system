@@ -51,6 +51,22 @@ class AuthStore {
 		return this.mode === 'ldap' ? (this.ldapUser?.sub ?? null) : null;
 	}
 
+	// fresh firebase ID token for server-side identity (Authorization: Bearer).
+	// used by the payment routes and the analyze billing gate so the server can
+	// trust the caller's uid without a session cookie. null outside firebase
+	// mode or when the token cannot be minted.
+	async getIdToken(): Promise<string | null> {
+		if (this.mode !== 'firebase' || !this.user) return null;
+		try {
+			return await this.user.getIdToken();
+		} catch (err) {
+			logger.warn('auth.get_id_token_failed', {
+				error: err instanceof Error ? err.message : String(err)
+			});
+			return null;
+		}
+	}
+
 	get isAuthenticated(): boolean {
 		if (this.mode === 'ldap') return this.ldapUser !== null;
 		if (this.mode === 'none') return false;

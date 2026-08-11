@@ -9,6 +9,7 @@
 	import { resumeStore } from '$stores/resume.svelte';
 	import { scoresStore } from '$stores/scores.svelte';
 	import { authStore } from '$stores/auth.svelte';
+	import { billingStore } from '$stores/billing.svelte';
 	import type { ScoringInput } from '$engine/scorer/types';
 
 	// load history once the user is allowed to use the scanner. authenticated
@@ -21,8 +22,37 @@
 		}
 	});
 
+	// mirror the account's review entitlements (free-review-used / credits) from
+	// the server-managed billing doc. refresh() resets itself on sign-out and
+	// no-ops on non-firebase modes, so this effect can just run on every tick.
+	$effect(() => {
+		if (billingStore.enabled) void billingStore.refresh();
+	});
+
+	// once the account is entitled again (e.g. a just-verified purchase), drop
+	// any paywall that a 402 response raised so the scan button is reachable.
+	$effect(() => {
+		if (billingStore.canReview) showPaywall = false;
+	});
+
 	// tracks whether results should be visible (scan clicked or loaded from history)
 	let hasScanned = $state(false);
+
+	// true once the server answered 402 (payment_required): the paywall is shown
+	// and the rule-based fallback is skipped so the paywall can't be bypassed.
+	let showPaywall = $state(false);
+	let paywallPrice = $state(5000);
+	let payingForReview = $state(false);
+	let paymentError = $state<string | null>(null);
+
+	// whether the account is currently dry (no free review, no credits).
+	const paywallVisible = $derived(
+		!scoresStore.hasResults &&
+			billingStore.enabled &&
+			!billingStore.loading &&
+			!billingStore.canReview &&
+			!billingStore.error
+	);
 
 	// component-local buffer for the paste-resume-text textarea
 	let pastedText = $state('');
@@ -91,6 +121,17 @@
 			// user cancelled mid-flight (rescan or reset) - leave state to the new handler
 			if (llmResult.status === 'cancelled' || signal.aborted) return;
 
+			// the account has no reviews left (server-side 402). show the paywall.
+			// this MUST NOT fall through to the rule-based scorer below, or the
+			// paid-review model is bypassed client-side.
+			if (llmResult.status === 'payment_required') {
+				scoresStore.cancelScoring();
+				paywallPrice = llmResult.priceNgn;
+				showPaywall = true;
+				void billingStore.refresh();
+				return;
+			}
+
 			if (llmResult.status === 'ok' && llmResult.results.length > 0) {
 				scoresStore.finishScoring(llmResult.results, resumeStore.file?.name);
 				scoresStore.finishAnalyzing(null, false);
@@ -119,6 +160,25 @@
 		resumeStore.reset();
 		scoresStore.reset();
 		hasScanned = false;
+		showPaywall = false;
+		paymentError = null;
+	}
+
+	// starts a Paystack checkout and redirects to the hosted payment page.
+	// on return the /payment/callback page verifies the charge and lands the
+	// credit; billingStore.refresh() then flips canReview so the user can scan.
+	async function handlePayForReview() {
+		if (payingForReview) return;
+		payingForReview = true;
+		paymentError = null;
+		try {
+			const url = await billingStore.payForReview();
+			window.location.href = url;
+		} catch (err) {
+			paymentError = err instanceof Error ? err.message : 'failed to start payment';
+		} finally {
+			payingForReview = false;
+		}
 	}
 
 	// auto-parse whenever a new file is set
@@ -370,6 +430,44 @@
 							{/if}
 						</button>
 					</div>
+
+					{#if showPaywall || paywallVisible}
+						<div class="paywall">
+							<svg
+								width="24"
+								height="24"
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="2"
+							>
+								<rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+								<path d="M7 11V7a5 5 0 0 1 10 0v4" />
+							</svg>
+							<div class="paywall-body">
+								<h3 class="paywall-title">Your free review is used up</h3>
+								<p class="paywall-text">
+									Each additional AI review costs <strong>₦{paywallPrice}</strong> — paid
+									once per scan, no subscription. Your first review was free.
+								</p>
+								{#if paymentError}
+									<div class="error">{paymentError}</div>
+								{/if}
+								<button
+									class="btn-scan"
+									onclick={handlePayForReview}
+									disabled={payingForReview || scoresStore.isScoring}
+								>
+									{#if payingForReview}
+										<span class="spinner-inline"></span>
+										Opening payment...
+									{:else}
+										Pay ₦{paywallPrice} to Scan
+									{/if}
+								</button>
+							</div>
+						</div>
+					{/if}
 
 					{#if scoresStore.error}
 						<div class="error">
@@ -920,6 +1018,51 @@
 		to {
 			transform: rotate(360deg);
 		}
+	}
+
+	/* pay-per-review paywall */
+	.paywall {
+		display: flex;
+		gap: 1rem;
+		align-items: flex-start;
+		margin-top: 1.5rem;
+		padding: 1.25rem 1.5rem;
+		background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(34, 211, 238, 0.06));
+		border: 1px solid rgba(139, 92, 246, 0.35);
+		border-radius: var(--radius-lg);
+	}
+
+	.paywall > svg {
+		flex-shrink: 0;
+		margin-top: 0.15rem;
+		color: var(--accent-text);
+	}
+
+	.paywall-body {
+		flex: 1;
+	}
+
+	.paywall-title {
+		font-size: 1rem;
+		font-weight: 700;
+		color: var(--text-primary);
+		margin-bottom: 0.35rem;
+	}
+
+	.paywall-text {
+		font-size: 0.875rem;
+		color: var(--text-secondary);
+		line-height: 1.55;
+		margin-bottom: 1rem;
+	}
+
+	.paywall-text strong {
+		color: var(--accent-text);
+	}
+
+	.paywall .btn-scan {
+		font-size: 0.9rem;
+		padding: 0.7rem 1.6rem;
 	}
 
 	@media (max-width: 640px) {
