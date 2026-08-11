@@ -98,18 +98,18 @@ describe('self-host scan history: localStorage backed', () => {
 		expect(store.history[0].passingCount).toBe(2);
 	});
 
-	it('cap of 5 entries: oldest are evicted FIFO style', async () => {
+	it('keeps every entry, newest first (no eviction)', async () => {
 		const store = await freshStore();
 		// 6 sequential saves; each writes a single-result entry.
 		for (let i = 0; i < 6; i++) {
 			store.finishScoring([stubResult(60 + i, true)] as never, `r${i}.pdf`);
 			await Promise.resolve();
 		}
-		expect(store.history).toHaveLength(5);
-		// newest first: r5 (idx 0) ... r1 (idx 4). r0 evicted.
+		expect(store.history).toHaveLength(6);
+		// newest first: r5 (idx 0) ... r0 (idx 5). nothing evicted.
 		expect(store.history[0].fileName).toBe('r5.pdf');
-		expect(store.history[4].fileName).toBe('r1.pdf');
-		expect(readStorage()).toHaveLength(5);
+		expect(store.history[5].fileName).toBe('r0.pdf');
+		expect(readStorage()).toHaveLength(6);
 	});
 
 	it('clearHistory wipes localStorage and the in-memory list', async () => {
@@ -157,7 +157,7 @@ describe('self-host scan history: localStorage backed', () => {
 		expect(snippet?.length).toBe(200);
 	});
 
-	it('entry id is unique per save (collision unlikely under MAX_HISTORY cap)', async () => {
+	it('entry id is unique per save', async () => {
 		const store = await freshStore();
 		store.finishScoring([stubResult(70, true)] as never);
 		await Promise.resolve();

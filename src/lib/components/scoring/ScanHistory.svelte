@@ -1,18 +1,25 @@
 <script lang="ts">
+	import { goto } from '$app/navigation';
 	import { scoresStore, type ScanHistoryEntry } from '$stores/scores.svelte';
 	import { scrollBehavior } from '$lib/a11y';
 
 	let expanded = $state(false);
 
+	// the dropdown is a preview of the 5 most recent scans; the full history
+	// lives on the /history page, reached via the View All button.
+	const PREVIEW_COUNT = 5;
+
 	const history = $derived(scoresStore.history);
-	const hasHistory = $derived(history.length > 0);
+	const visibleHistory = $derived(history.slice(0, PREVIEW_COUNT));
+	const hasHistory = $derived(visibleHistory.length > 0);
+	const hasMore = $derived(history.length > PREVIEW_COUNT);
 
 	// per-row average-score delta vs the chronologically prior scan;
-	// history is newest-first so history[i+1] is the previous one
+	// history is newest-first so visibleHistory[i+1] is the previous one
 	function deltaFor(index: number): number | null {
-		const prior = history[index + 1];
+		const prior = visibleHistory[index + 1];
 		if (!prior) return null;
-		return history[index].averageScore - prior.averageScore;
+		return visibleHistory[index].averageScore - prior.averageScore;
 	}
 
 	function formatDate(iso: string): string {
@@ -88,7 +95,7 @@
 
 		{#if expanded}
 			<div class="history-list">
-				{#each history as entry, i (entry.id)}
+				{#each visibleHistory as entry, i (entry.id)}
 					{@const delta = deltaFor(i)}
 					<button
 						class="history-entry"
@@ -137,22 +144,40 @@
 					</button>
 				{/each}
 
-				<button class="clear-btn" onclick={handleClear}>
-					<svg
-						width="12"
-						height="12"
-						viewBox="0 0 24 24"
-						fill="none"
-						stroke="currentColor"
-						stroke-width="2"
-					>
-						<polyline points="3,6 5,6 21,6" />
-						<path
-							d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
-						/>
-					</svg>
-					Clear History
-				</button>
+				<div class="history-actions">
+					{#if hasMore}
+						<button class="view-all-btn" onclick={() => goto('/history')}>
+							<svg
+								width="12"
+								height="12"
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="2"
+							>
+								<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+								<circle cx="12" cy="12" r="3" />
+							</svg>
+							View All History
+						</button>
+					{/if}
+					<button class="clear-btn" onclick={handleClear}>
+						<svg
+							width="12"
+							height="12"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+						>
+							<polyline points="3,6 5,6 21,6" />
+							<path
+								d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+							/>
+						</svg>
+						Clear History
+					</button>
+				</div>
 			</div>
 		{/if}
 	</div>
@@ -359,23 +384,46 @@
 		opacity: 0.6;
 	}
 
-	.clear-btn {
+	.history-actions {
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		gap: 0.4rem;
-		padding: 0.5rem;
+		gap: 0.5rem;
 		margin-top: 0.25rem;
+	}
+
+	.view-all-btn,
+	.clear-btn {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.4rem;
+		padding: 0.5rem 0.85rem;
 		background: none;
 		border: 1px solid transparent;
 		border-radius: var(--radius-sm);
-		color: var(--text-tertiary);
 		font-size: 0.7rem;
 		font-weight: 500;
 		cursor: pointer;
 		transition:
 			color 0.2s ease,
-			border-color 0.2s ease;
+			border-color 0.2s ease,
+			background 0.2s ease;
+		font-family: inherit;
+	}
+
+	.view-all-btn {
+		color: var(--accent-text);
+		border-color: var(--accent-border);
+	}
+
+	.view-all-btn:hover {
+		background: var(--accent-tint);
+		border-color: var(--accent-text);
+	}
+
+	.clear-btn {
+		color: var(--text-tertiary);
 	}
 
 	.clear-btn:hover {

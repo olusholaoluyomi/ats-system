@@ -8,14 +8,13 @@ import { logger } from '$lib/log';
 import { parseSampleRate, shouldSample } from '$lib/sampling';
 import { authStore } from './auth.svelte';
 
-const MAX_HISTORY = 5;
-
 // self-host history bucket. when firebase is not configured we persist scan
-// history to localStorage under this key (capped at MAX_HISTORY entries,
-// newest-first, same shape as the firestore documents) so installs without
-// firebase get session-spanning history on the same device. data size is
-// well under quota (5 entries x ~10kb = 50kb), localStorage is the right
-// fit per `jd-library.svelte.ts` precedent and best-practice guidance.
+// history to localStorage under this key (newest-first, same shape as the
+// firestore documents) so installs without firebase get session-spanning
+// history on the same device. all history is kept; the scanner dropdown shows
+// only the latest preview and points to the /history page for everything.
+// writes degrade gracefully if the quota is ever exceeded (see
+// writeLocalHistory).
 const LOCAL_HISTORY_KEY = 'ats_local_scan_history_v1';
 
 // in ldap self-host mode the local bucket is namespaced by the signed-in AD
@@ -187,14 +186,15 @@ class ScoresStore {
 
 	// load scan history. firestore for the authenticated user on hosted
 	// builds; localStorage on self-host (no firebase configured). both
-	// return up to MAX_HISTORY entries newest-first.
+	// return every entry newest-first (no cap - the full history page shows
+	// everything, the scanner dropdown shows a preview).
 	async loadHistory() {
 		if (!browser) return;
 
 		// self-host path: read from localStorage and return synchronously.
 		if (!firebaseConfigured) {
 			this.historyLoading = true;
-			this.scanHistory = readLocalHistory().slice(0, MAX_HISTORY);
+			this.scanHistory = readLocalHistory();
 			this.historyLoading = false;
 			return;
 		}
@@ -204,9 +204,9 @@ class ScoresStore {
 		this.historyLoading = true;
 		try {
 			const { db } = await getFirebase();
-			const { collection, query, orderBy, limit, getDocs } = await import('firebase/firestore');
+			const { collection, query, orderBy, getDocs } = await import('firebase/firestore');
 			const scansRef = collection(db, 'users', authStore.user.uid, 'scans');
-			const q = query(scansRef, orderBy('timestamp', 'desc'), limit(MAX_HISTORY));
+			const q = query(scansRef, orderBy('timestamp', 'desc'));
 			const snapshot = await getDocs(q);
 
 			this.scanHistory = snapshot.docs.map((d) => ({
@@ -224,8 +224,8 @@ class ScoresStore {
 	}
 
 	// save scan results. self-host writes to localStorage, hosted writes to
-	// firestore. both maintain the same MAX_HISTORY cap and newest-first
-	// ordering so consumers see identical shape across the two backends.
+	// firestore. both keep the newest-first ordering and retain every entry
+	// so the /history page can show the full record.
 	private async saveToHistory(results: ScoreResult[], fileName?: string) {
 		if (!browser || results.length === 0) return;
 
@@ -243,7 +243,7 @@ class ScoresStore {
 				...(fileName && { fileName }),
 				...(this.jobDescription && { jobDescriptionSnippet: this.jobDescription.slice(0, 200) })
 			};
-			const next = [entry, ...readLocalHistory()].slice(0, MAX_HISTORY);
+			const next = [entry, ...readLocalHistory()];
 			writeLocalHistory(next);
 			this.scanHistory = next;
 			logger.info('history.local_saved', { id: entry.id });
@@ -258,8 +258,7 @@ class ScoresStore {
 		try {
 			const uid = authStore.user.uid;
 			const { db } = await getFirebase();
-			const { collection, addDoc, getDocs, deleteDoc, doc, query, orderBy } =
-				await import('firebase/firestore');
+			const { collection, addDoc } = await import('firebase/firestore');
 			const scansRef = collection(db, 'users', uid, 'scans');
 			const entry: Omit<ScanHistoryEntry, 'id'> = {
 				timestamp: new Date().toISOString(),
@@ -280,22 +279,12 @@ class ScoresStore {
 			// write to top-level scan_logs for admin visibility
 			this.writeScanLog(sanitized, uid);
 
-			// prune old scans beyond the cap (one query, deletes only the overflow)
-			const allScansQuery = query(scansRef, orderBy('timestamp', 'desc'));
-			const allSnap = await getDocs(allScansQuery);
-			if (allSnap.size > MAX_HISTORY) {
-				const toDelete = allSnap.docs.slice(MAX_HISTORY);
-				for (const d of toDelete) {
-					await deleteDoc(doc(db, 'users', uid, 'scans', d.id));
-				}
-			}
-
 			// mutate local history in place rather than re-reading. firestore round
 			// trip avoided: 1 read query per scan saved, which is the difference
 			// between staying inside spark free tier (50k reads/day) and blowing it
 			// past 50k users. on next cold start loadHistory pulls the canonical set.
 			const newEntry: ScanHistoryEntry = { id: docRef.id, ...sanitized };
-			this.scanHistory = [newEntry, ...this.scanHistory].slice(0, MAX_HISTORY);
+			this.scanHistory = [newEntry, ...this.scanHistory];
 		} catch (err) {
 			logger.error('history.save_failed', {
 				error: err instanceof Error ? err.message : String(err)
