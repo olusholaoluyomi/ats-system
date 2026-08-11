@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { goto } from '$app/navigation';
 	import ResumeUploader from '$components/upload/ResumeUploader.svelte';
 	import JobDescriptionInput from '$components/upload/JobDescriptionInput.svelte';
 	import ScoreDashboard from '$components/scoring/ScoreDashboard.svelte';
@@ -107,6 +108,15 @@
 	async function handleScan() {
 		if (!resumeStore.isReady) return;
 
+		// scanning requires an account: firebase and ldap visitors who aren't
+		// signed in are sent to the sign-up/sign-in page instead of scanning.
+		// (the page-level auth gate covers the normal first-visit case; this
+		// guards a session that ended while the tab stayed open.)
+		if (authStore.mode !== 'none' && !authStore.isAuthenticated) {
+			await goto('/login');
+			return;
+		}
+
 		hasScanned = true;
 		const signal = scoresStore.startScoring();
 
@@ -120,6 +130,15 @@
 
 			// user cancelled mid-flight (rescan or reset) - leave state to the new handler
 			if (llmResult.status === 'cancelled' || signal.aborted) return;
+
+			// server-side auth failed (not signed in / token rejected). scanning
+			// requires sign-up, so route to the login page instead of falling
+			// through to the free rule-based scorer.
+			if (llmResult.status === 'auth_required') {
+				scoresStore.cancelScoring();
+				await goto('/login');
+				return;
+			}
 
 			// the account has no reviews left (server-side 402). show the paywall.
 			// this MUST NOT fall through to the rule-based scorer below, or the

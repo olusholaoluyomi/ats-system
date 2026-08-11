@@ -19,6 +19,11 @@ export type ScoreLLMResult =
 	| { status: 'error' }
 	| { status: 'rate_limited'; retryAfterSec: number }
 	| { status: 'payment_required'; priceNgn: number }
+	// server-side auth failed (401): firebase visitor not signed in / token
+	// rejected, or expired ldap session. NOT a fallback signal - scanning must
+	// require sign-up, so the caller routes to the login page instead of
+	// degrading to the free rule-based scorer.
+	| { status: 'auth_required' }
 	| { status: 'cancelled' };
 
 // the analyze billing gate verifies a firebase ID token, so firebase-mode
@@ -66,6 +71,12 @@ export async function scoreLLM(
 				status: response.status,
 				error: data.error ?? 'unknown error'
 			});
+			if (response.status === 401) {
+				// not signed in (or the identity token was rejected). scanning
+				// requires an account, so this must NOT degrade to rule-based
+				// scoring - the scanner routes the visitor to the login page.
+				return { status: 'auth_required' };
+			}
 			if (response.status === 429) {
 				const headerVal = response.headers.get('Retry-After');
 				const retryAfterSec =
