@@ -1,6 +1,7 @@
 import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { env } from '$env/dynamic/private';
+import { env as publicEnv } from '$env/dynamic/public';
 import { buildFullScoringPrompt, buildJDAnalysisPrompt } from '$engine/llm/prompts';
 import { logger } from '$lib/log';
 import { hashPrompt, getCached, setCached } from './cache';
@@ -126,7 +127,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	// requires a valid session too (defense in depth). public and unchanged in
 	// the hosted firebase deploy and anonymous self-host (resolveAuthMode is
 	// 'ldap' only when LDAP_URL is set, which neither of those configures).
-	if (resolveAuthMode(env) === 'ldap' && !locals.user) {
+	if (resolveAuthMode({ ...env, ...publicEnv }) === 'ldap' && !locals.user) {
 		return json({ error: 'authentication required' }, { status: 401 });
 	}
 
@@ -243,7 +244,12 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	// refunded when it produced nothing (cache re-run or total LLM failure), so
 	// a paid user is never charged twice for the same resume or for an outage.
 	let refund = async (): Promise<void> => {};
-	if (resolveAuthMode(env) === 'firebase') {
+	// merge public env: PUBLIC_-prefixed vars (PUBLIC_FIREBASE_PROJECT_ID) are
+	// excluded from $env/dynamic/private, so the gate must resolve the mode from
+	// both sources exactly like hooks.server.ts / +layout.server.ts do. without
+	// this the hosted deploy resolves 'none' and billing never engages.
+	const mergedEnv = { ...env, ...publicEnv };
+	if (resolveAuthMode(mergedEnv) === 'firebase') {
 		const { verifyFirebaseIdToken } = await import('$lib/server/auth/token');
 		const identity = await verifyFirebaseIdToken(env, request.headers.get('authorization'));
 		if (!identity) {

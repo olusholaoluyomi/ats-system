@@ -1,6 +1,7 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { env as privateEnv } from '$env/dynamic/private';
+import { env as publicEnv } from '$env/dynamic/public';
 import { randomUUID } from 'node:crypto';
 import { logger } from '$lib/log';
 import { resolveAuthMode } from '$lib/server/auth/config';
@@ -16,7 +17,10 @@ import {
 // self-host and anonymous 'none' mode have no concept of a wallet, so the
 // endpoint is inert there.
 export const POST: RequestHandler = async ({ request }) => {
-	if (resolveAuthMode(privateEnv) !== 'firebase') {
+	// resolve the mode from private + public env: PUBLIC_FIREBASE_PROJECT_ID only
+	// reaches the server through $env/dynamic/public (PUBLIC_ vars are stripped
+	// from the private module), same merge as hooks.server.ts.
+	if (resolveAuthMode({ ...privateEnv, ...publicEnv }) !== 'firebase') {
 		return json({ error: 'payments are only available in firebase mode' }, { status: 400 });
 	}
 

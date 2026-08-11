@@ -40,6 +40,19 @@ describe('resolveAuthMode: precedence', () => {
 	it('treats whitespace-only project id as unset', () => {
 		expect(resolveAuthMode({ PUBLIC_FIREBASE_PROJECT_ID: '  \n ' })).toBe('none');
 	});
+
+	it('hosted deploy resolves firebase only when the private and public env are merged', () => {
+		// SvelteKit strips PUBLIC_-prefixed vars from $env/dynamic/private; they
+		// only reach the server through $env/dynamic/public. server routes must
+		// resolve the mode from the merged record exactly like hooks.server.ts.
+		// a route that reads private env alone sees no project id and resolves
+		// 'none', silently skipping the billing gate (regression guard for the
+		// pay-per-review analyze/payment routes).
+		const privateEnv = { GEMINI_API_KEY: 'secret', LDAP_URL: undefined };
+		const publicEnv = { PUBLIC_FIREBASE_PROJECT_ID: 'ats-system-729c8' };
+		expect(resolveAuthMode(privateEnv)).toBe('none');
+		expect(resolveAuthMode({ ...privateEnv, ...publicEnv })).toBe('firebase');
+	});
 });
 
 describe('resolveLdapConfig: inert + defaults', () => {

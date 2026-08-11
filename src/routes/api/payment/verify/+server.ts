@@ -1,6 +1,7 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { env as privateEnv } from '$env/dynamic/private';
+import { env as publicEnv } from '$env/dynamic/public';
 import { logger } from '$lib/log';
 import { resolveAuthMode } from '$lib/server/auth/config';
 import { getPaystackSecret, verifyPaystack, CURRENCY } from '$lib/server/paystack';
@@ -12,7 +13,9 @@ import { getPaystackSecret, verifyPaystack, CURRENCY } from '$lib/server/paystac
 // was briefly down. creditReview is idempotent, so webhook + verify can both
 // fire on the same reference and exactly one lands the credit.
 export const GET: RequestHandler = async ({ request, url }) => {
-	if (resolveAuthMode(privateEnv) !== 'firebase') {
+	// same public/private env merge as hooks.server.ts: PUBLIC_FIREBASE_PROJECT_ID
+	// is not visible through $env/dynamic/private alone.
+	if (resolveAuthMode({ ...privateEnv, ...publicEnv }) !== 'firebase') {
 		return json({ error: 'payments are only available in firebase mode' }, { status: 400 });
 	}
 
