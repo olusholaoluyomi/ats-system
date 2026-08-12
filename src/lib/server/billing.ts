@@ -87,7 +87,11 @@ export async function consumeReview(db: Firestore, uid: string): Promise<Consume
 			});
 
 			if (paymentPathToDecrement) {
-				tx.set({ path: paymentPathToDecrement }, { scansRemaining: (await tx.get({ path: paymentPathToDecrement })).data().scansRemaining - 1, updatedAt: new Date() }, { merge: true });
+				const pRef = db.doc(paymentPathToDecrement);
+				const pSnap = await tx.get(pRef);
+				const pData = pSnap.exists ? (pSnap.data() as any) : {};
+				const remaining = typeof pData.scansRemaining === 'number' ? pData.scansRemaining : 0;
+				tx.set(pRef, { scansRemaining: remaining - 1, updatedAt: new Date() }, { merge: true });
 			}
 
 			return { status: 'ok', used };
