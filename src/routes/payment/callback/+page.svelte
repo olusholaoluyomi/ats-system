@@ -8,12 +8,16 @@
 	// Paystack redirects the browser back here after a checkout attempt with
 	// ?reference=... in the query string. we settle the charge with the server
 	// (which asks Paystack whether it really succeeded) and land the user back
-	// on the scanner. the webhook settles independently if this ever fails, so
-	// a slow redirect is not a lost payment — the account just gets credited a
-	// moment later via the webhook path.
+	// on the scanner. the webhook settles independently when the in-browser
+	// verify cannot confirm right away, so a slow confirmation is never a lost
+	// payment: /api/payment/verify short-circuits to success once the webhook
+	// credits, so polling it covers both the direct and the webhook path.
 
 	const reference = $derived(page.url.searchParams.get('reference'));
 	let status: 'verifying' | 'success' | 'failed' = $state('verifying');
+	// true once the fast retries are exhausted but the webhook may still be
+	// landing the credit; the page keeps watching and auto-redirects.
+	let slow = $state(false);
 	let error = $state<string | null>(null);
 
 	$effect(() => {
@@ -28,21 +32,49 @@
 			return;
 		}
 
-		void (async () => {
-			const { verifyPayment } = await import('$lib/payment');
-			const ok = await verifyPayment(ref);
-			if (!ok) {
-				// webhook may still land the credit; the scanner's billing refresh
-				// picks it up. do not block the user, just route back with a hint.
-				logger.warn('payment.callback_unverified', { reference: ref });
-				status = 'failed';
-				error =
-					"We couldn't confirm your payment just yet. If you were charged, your credit will arrive automatically in a moment — or retry below.";
-				return;
-			}
+		let cancelled = false;
+
+		const confirmAndGo = () => {
 			status = 'success';
 			void goto('/scanner', { replaceState: true });
+		};
+
+		const settle = async (): Promise<boolean> => {
+			const { verifyPayment } = await import('$lib/payment');
+			return verifyPayment(ref);
+		};
+
+		void (async () => {
+			// fast retries: the charge can still be settling in Paystack's view
+			// when the browser lands back, and the verify round-trip can fail
+			// transiently. give it a few tries before assuming the worst.
+			for (let attempt = 1; attempt <= 3; attempt++) {
+				if (cancelled) return;
+				if (await settle()) return confirmAndGo();
+				if (attempt < 3) await new Promise((r) => setTimeout(r, 2000));
+			}
+
+			// the webhook may still land the credit server-to-server. keep
+			// polling verify - it reports success once the webhook credits - and
+			// auto-redirect so "arrives automatically" is actually true.
+			slow = true;
+			const deadline = Date.now() + 90_000;
+			while (!cancelled && Date.now() < deadline) {
+				await new Promise((r) => setTimeout(r, 4000));
+				if (cancelled) return;
+				if (await settle()) return confirmAndGo();
+			}
+
+			if (cancelled) return;
+			logger.warn('payment.callback_unverified', { reference: ref });
+			status = 'failed';
+			error =
+				"We couldn't confirm your payment just yet. If you were charged, your credit will arrive automatically in a moment — or retry below.";
 		})();
+
+		return () => {
+			cancelled = true;
+		};
 	});
 </script>
 
@@ -55,7 +87,14 @@
 		{#if status === 'verifying'}
 			<div class="spinner-lg"></div>
 			<h1 class="pay-title">Confirming your payment…</h1>
-			<p class="pay-text">Just a moment while we verify your review credit.</p>
+			<p class="pay-text">
+				{#if slow}
+					Still confirming — if you were charged, your credit will be applied automatically and
+					we'll take you to the scanner.
+				{:else}
+					Just a moment while we verify your review credit.
+				{/if}
+			</p>
 		{:else if status === 'success'}
 			<div class="pay-check">✓</div>
 			<h1 class="pay-title">Payment confirmed</h1>
