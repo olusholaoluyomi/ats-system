@@ -167,7 +167,7 @@
 									<div class="transaction-amount">
 										{formatCurrency(payment.amountMinor || 0, payment.currency)}
 									</div>
-									<div class="transaction-date">{formatDate(payment.createdAt)}</div>
+									<div class="transaction-date">{formatDate(payment.createdAt || '')}</div>
 								</div>
 								<div class="transaction-details">
 									<div class="transaction-status {getStatusColor(payment.status)}">
