@@ -6,76 +6,60 @@ import { logger } from '$lib/log';
 import { resolveAuthMode } from '$lib/server/auth/config';
 
 export const GET: RequestHandler = async ({ request }) => {
-  if (
-    resolveAuthMode({ ...privateEnv, ...publicEnv }) !== 'firebase'
-  ) {
-    return json(
-      { error: 'payments are only available in firebase mode' },
-      { status: 400 }
-    );
-  }
+	if (resolveAuthMode({ ...privateEnv, ...publicEnv }) !== 'firebase') {
+		return json({ error: 'payments are only available in firebase mode' }, { status: 400 });
+	}
 
-  const { verifyFirebaseIdToken } = await import(
-    '$lib/server/auth/token'
-  );
-  const identity = await verifyFirebaseIdToken(
-    privateEnv,
-    request.headers.get('authorization')
-  );
-  if (!identity) {
-    return json({ error: 'authentication required' }, { status: 401 });
-  }
+	const { verifyFirebaseIdToken } = await import('$lib/server/auth/token');
+	const identity = await verifyFirebaseIdToken(privateEnv, request.headers.get('authorization'));
+	if (!identity) {
+		return json({ error: 'authentication required' }, { status: 401 });
+	}
 
-  try {
-    const { getAdminFirestore } = await import('$lib/server/firebase-admin');
-    const db = await getAdminFirestore(privateEnv);
-    if (!db) {
-      return json(
-        { error: 'billing is not configured on this deploy' },
-        { status: 503 }
-      );
-    }
+	try {
+		const { getAdminFirestore } = await import('$lib/server/firebase-admin');
+		const db = await getAdminFirestore(privateEnv);
+		if (!db) {
+			return json({ error: 'billing is not configured on this deploy' }, { status: 503 });
+		}
 
-    const q = db
-      .collection('payments')
-      .where('uid', '==', identity.uid)
-      .orderBy('createdAt', 'desc')
-      .limit(200);
-    const snap = await q.get();
+		const q = db
+			.collection('payments')
+			.where('uid', '==', identity.uid)
+			.orderBy('createdAt', 'desc')
+			.limit(200);
+		const snap = await q.get();
 
-    const payments = snap.docs.map((d) => {
-      const data = d.data() as Record<string, any>;
-      const created = data.createdAt;
-      let createdIso = null;
-      if (created && typeof (created as any).toDate === 'function') {
-        createdIso = (created as any).toDate().toISOString();
-      } else if (created instanceof Date) {
-        createdIso = created.toISOString();
-      } else if (typeof created === 'string') {
-        createdIso = created;
-      }
+		const payments = snap.docs.map((d) => {
+			const data = d.data() as Record<string, any>;
+			const created = data.createdAt;
+			let createdIso = null;
+			if (created && typeof (created as any).toDate === 'function') {
+				createdIso = (created as any).toDate().toISOString();
+			} else if (created instanceof Date) {
+				createdIso = created.toISOString();
+			} else if (typeof created === 'string') {
+				createdIso = created;
+			}
 
-      return {
-        reference: data.reference ?? d.id,
-        amountKobo:
-          typeof data.amountKobo === 'number' ? data.amountKobo : null,
-        currency: data.currency ?? null,
-        status: data.status ?? null,
-        createdAt: createdIso,
-        scansRemaining:
-          typeof data.scansRemaining === 'number' ? data.scansRemaining : null,
-        // scansAllowed is the configured scans per successful payment when it settled
-        scansAllowed:
-          typeof data.scansAllowed === 'number' ? data.scansAllowed : null
-      };
-    });
+			return {
+				reference: data.reference ?? d.id,
+				amountKobo: typeof data.amountKobo === 'number' ? data.amountKobo : null,
+				currency: data.currency ?? null,
+				status: data.status ?? null,
+				createdAt: createdIso,
+				scansRemaining: typeof data.scansRemaining === 'number' ? data.scansRemaining : null,
+				// scansAllowed is the configured scans per successful payment when it settled
+				scansAllowed: typeof data.scansAllowed === 'number' ? data.scansAllowed : null
+			};
+		});
 
-    return json({ ok: true, payments });
-  } catch (err) {
-    logger.error('payment.history_failed', {
-      uid: (identity as any)?.uid ?? 'unknown',
-      error: err instanceof Error ? err.message : String(err)
-    });
-    return json({ error: 'failed to load payment history' }, { status: 500 });
-  }
+		return json({ ok: true, payments });
+	} catch (err) {
+		logger.error('payment.history_failed', {
+			uid: (identity as any)?.uid ?? 'unknown',
+			error: err instanceof Error ? err.message : String(err)
+		});
+		return json({ error: 'failed to load payment history' }, { status: 500 });
+	}
 };

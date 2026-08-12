@@ -63,12 +63,13 @@ export async function consumeReview(db: Firestore, uid: string): Promise<Consume
 			// by reading all payments for the user and picking one with remaining
 			// scans. In production this pattern is acceptable for the small scale
 			// of per-user payment counts; optimize later if needed.
-			const paymentsColl = (db as any).collection
-				? (db as any).collection('payments')
-				: null;
+			const paymentsColl = (db as any).collection ? (db as any).collection('payments') : null;
 			let paymentPathToDecrement: string | null = null;
 			if (paymentsColl && typeof paymentsColl.where === 'function') {
-				const q = (db as any).collection('payments').where('uid', '==', uid).where('status', '==', 'success');
+				const q = (db as any)
+					.collection('payments')
+					.where('uid', '==', uid)
+					.where('status', '==', 'success');
 				const snap = await q.get();
 				for (const doc of snap.docs) {
 					const data = doc.data();
@@ -100,7 +101,11 @@ export async function consumeReview(db: Firestore, uid: string): Promise<Consume
 	});
 }
 
-export async function refundReview(db: Firestore, uid: string, used: ReviewUsed): Promise<{ status: 'refunded' }> {
+export async function refundReview(
+	db: Firestore,
+	uid: string,
+	used: ReviewUsed
+): Promise<{ status: 'refunded' }> {
 	const billingRef = db.doc(`users/${uid}/billing/${BILLING_DOC}`);
 	return db.runTransaction(async (tx: Transaction) => {
 		const snap = await tx.get(billingRef);
@@ -121,7 +126,13 @@ export async function refundReview(db: Firestore, uid: string, used: ReviewUsed)
 export type CreditVerdict = { status: 'credited' } | { status: 'noop' };
 
 // creditReview: when a payment settles, mark payment success and add multiple credits
-export async function creditReview(db: Firestore, uid: string, reference: string, amountKobo: number, currency: string): Promise<CreditVerdict> {
+export async function creditReview(
+	db: Firestore,
+	uid: string,
+	reference: string,
+	amountKobo: number,
+	currency: string
+): Promise<CreditVerdict> {
 	const paymentRef = db.doc(`payments/${reference}`);
 	const billingRef = db.doc(`users/${uid}/billing/${BILLING_DOC}`);
 	return db.runTransaction(async (tx: Transaction) => {

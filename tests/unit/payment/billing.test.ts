@@ -17,6 +17,12 @@ import {
 
 type DocData = Record<string, unknown>;
 
+interface QueryPredicate {
+	field: string;
+	op: string;
+	value: unknown;
+}
+
 class FakeTx {
 	constructor(private readonly store: Map<string, DocData>) {}
 
@@ -32,6 +38,44 @@ class FakeTx {
 	}
 }
 
+class FakeQuery {
+	constructor(
+		private readonly store: Map<string, DocData>,
+		private readonly collectionName: string,
+		private readonly predicates: QueryPredicate[] = []
+	) {}
+
+	where(field: string, op: string, value: unknown) {
+		return new FakeQuery(this.store, this.collectionName, [
+			...this.predicates,
+			{ field, op, value }
+		]);
+	}
+
+	async get() {
+		const docs: Array<{ ref: { path: string }; data: () => DocData }> = [];
+		for (const [path, data] of this.store.entries()) {
+			if (!path.startsWith(`${this.collectionName}/`)) continue;
+			if (this.matches(data)) docs.push({ ref: { path }, data: () => data });
+		}
+		return { docs };
+	}
+
+	private matches(data: DocData): boolean {
+		return this.predicates.every(({ field, op, value }) => {
+			const fieldVal = data[field];
+			switch (op) {
+				case '==':
+					return fieldVal === value;
+				case '>':
+					return typeof fieldVal === 'number' && typeof value === 'number' && fieldVal > value;
+				default:
+					return false;
+			}
+		});
+	}
+}
+
 class FakeDb {
 	readonly store = new Map<string, DocData>();
 	private tail: Promise<unknown> = Promise.resolve();
@@ -42,34 +86,7 @@ class FakeDb {
 
 	// emulate a minimal collection/where/get interface used by billing.consumeReview
 	collection(name: string) {
-		const self = this;
-		return {
-			where(field: string, op: string, value: unknown) {
-				return {
-					async get() {
-						// collect docs whose path starts with `${name}/` and match the predicate
-						const docs: Array<{ ref: { path: string }; data: () => DocData }> = [];
-						for (const [path, data] of self.store.entries()) {
-							if (!path.startsWith(`${name}/`)) continue;
-							const fieldVal = (data as any)[field];
-							let ok = false;
-							switch (op) {
-								case '==':
-									ok = fieldVal === value;
-									break;
-								case '>':
-									ok = typeof fieldVal === 'number' && typeof value === 'number' && fieldVal > value;
-									break;
-								default:
-									ok = false;
-							}
-							if (ok) docs.push({ ref: { path }, data: () => data });
-						}
-						return { docs };
-					}
-				};
-			}
-		};
+		return new FakeQuery(this.store, name);
 	}
 
 	// serialize transactions: each starts only after the previous one settled,

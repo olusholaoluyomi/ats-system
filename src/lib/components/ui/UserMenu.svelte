@@ -34,7 +34,12 @@
 
 	async function handleDeleteProfile() {
 		open = false;
-		if (!confirm('Delete your account and personal data? This will remove your profile and scans but keep payment records for audit. This action is irreversible.')) return;
+		if (
+			!confirm(
+				'Delete your account and personal data? This will remove your profile and scans but keep payment records for audit. This action is irreversible.'
+			)
+		)
+			return;
 		const token = await authStore.getIdToken();
 		if (!token) {
 			alert('You must be signed in to delete your account.');
@@ -88,22 +93,64 @@
 				{/if}
 			</div>
 			<div class="dropdown-divider"></div>
-			<a class="dropdown-item" on:click|preventDefault={goToScanner} href="/scanner">
-				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+			<a
+				class="dropdown-item"
+				onclick={(event) => {
+					event.preventDefault();
+					goToScanner();
+				}}
+				href="/scanner"
+			>
+				<svg
+					width="14"
+					height="14"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+				>
 					<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
 					<polyline points="14,2 14,8 20,8" />
 				</svg>
 				Scanner
 			</a>
-			<a class="dropdown-item" on:click|preventDefault={goToHistory} href="/history">
-				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+			<a
+				class="dropdown-item"
+				onclick={(event) => {
+					event.preventDefault();
+					goToHistory();
+				}}
+				href="/history"
+			>
+				<svg
+					width="14"
+					height="14"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+				>
 					<circle cx="12" cy="12" r="10" />
 					<polyline points="12,6 12,12 16,14" />
 				</svg>
 				Scan History
 			</a>
-			<a class="dropdown-item" on:click|preventDefault={goToTransactions} href="/transactions">
-				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+			<a
+				class="dropdown-item"
+				onclick={(event) => {
+					event.preventDefault();
+					goToTransactions();
+				}}
+				href="/transactions"
+			>
+				<svg
+					width="14"
+					height="14"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+				>
 					<path d="M3 3h18v4H3z" />
 					<path d="M5 11h14v10H5z" />
 				</svg>
@@ -111,7 +158,14 @@
 			</a>
 			<div class="dropdown-divider"></div>
 			<button class="dropdown-item" onclick={handleSignOut}>
-				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+				<svg
+					width="14"
+					height="14"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+				>
 					<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
 					<polyline points="16,17 21,12 16,7" />
 					<line x1="21" y1="12" x2="9" y2="12" />
@@ -119,7 +173,14 @@
 				Sign Out
 			</button>
 			<button class="dropdown-item danger" onclick={handleDeleteProfile}>
-				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+				<svg
+					width="14"
+					height="14"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+				>
 					<path d="M3 6h18" />
 					<path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
 					<path d="M10 11v6" />

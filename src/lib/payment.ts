@@ -55,7 +55,9 @@ export async function verifyPayment(reference: string): Promise<boolean> {
 export async function getPaymentHistory() {
 	const token = await authStore.getIdToken();
 	if (!token) return { ok: false, error: 'not-authenticated' };
-	const res = await fetch('/api/payment/history', { headers: { Authorization: `Bearer ${token}` } });
+	const res = await fetch('/api/payment/history', {
+		headers: { Authorization: `Bearer ${token}` }
+	});
 	const json = await res.json().catch(() => ({}));
 	if (!res.ok) return { ok: false, error: json.error ?? 'failed' };
 	return { ok: true, payments: json.payments ?? [] };

@@ -38,7 +38,10 @@ export const POST: RequestHandler = async ({ request }) => {
 		logger.info('account.deleted', { uid: identity.uid });
 		return json({ ok: true });
 	} catch (err) {
-		logger.error('account.delete_failed', { uid: identity.uid, error: err instanceof Error ? err.message : String(err) });
+		logger.error('account.delete_failed', {
+			uid: identity.uid,
+			error: err instanceof Error ? err.message : String(err)
+		});
 		return json({ error: 'failed to delete account' }, { status: 500 });
 	}
 };
