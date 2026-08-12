@@ -67,8 +67,8 @@
 					id: d.id,
 					reference: typeof data.reference === 'string' ? data.reference : d.id,
 					amountMinor: typeof data.amountMinor === 'number' ? data.amountMinor : null,
-					currency: typeof data.currency === 'string' ? data.currency : 'NGN',
-					status: typeof data.status === 'string' ? data.status : 'unknown',
+					currency: typeof data.currency === 'string' ? data.currency : null,
+					status: typeof data.status === 'string' ? data.status : null,
 					createdAt: createdIso,
 					scansAllowed: typeof data.scansAllowed === 'number' ? data.scansAllowed : null,
 					email: typeof data.email === 'string' ? data.email : null
@@ -100,7 +100,7 @@
 		return `${symbol}${(amount / 100).toFixed(2)}`;
 	}
 
-	function formatDate(isoString: string): string {
+	function formatDate(isoString: string | null): string {
 		if (!isoString) return 'Unknown';
 		return new Date(isoString).toLocaleDateString('en-US', {
 			year: 'numeric',
@@ -111,7 +111,7 @@
 		});
 	}
 
-	function getStatusColor(status: string): string {
+	function getStatusColor(status: string | null): string {
 		switch (status) {
 			case 'success':
 				return 'text-green-500';
