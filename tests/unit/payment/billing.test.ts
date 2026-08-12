@@ -40,6 +40,38 @@ class FakeDb {
 		return { path };
 	}
 
+	// emulate a minimal collection/where/get interface used by billing.consumeReview
+	collection(name: string) {
+		const self = this;
+		return {
+			where(field: string, op: string, value: unknown) {
+				return {
+					async get() {
+						// collect docs whose path starts with `${name}/` and match the predicate
+						const docs: Array<{ ref: { path: string }; data: () => DocData }> = [];
+						for (const [path, data] of self.store.entries()) {
+							if (!path.startsWith(`${name}/`)) continue;
+							const fieldVal = (data as any)[field];
+							let ok = false;
+							switch (op) {
+								case '==':
+									ok = fieldVal === value;
+									break;
+								case '>':
+									ok = typeof fieldVal === 'number' && typeof value === 'number' && fieldVal > value;
+									break;
+								default:
+									ok = false;
+							}
+							if (ok) docs.push({ ref: { path }, data: () => data });
+						}
+						return { docs };
+					}
+				};
+			}
+		};
+	}
+
 	// serialize transactions: each starts only after the previous one settled,
 	// so reads always observe committed state (the serializable outcome real
 	// Firestore produces via conflict detection + retry).
@@ -72,7 +104,7 @@ describe('evaluateBilling', () => {
 		expect(evaluateBilling({})).toBe('free');
 	});
 
-	it('falls back to credits once the free review is used', () => {
+	it('falls fallback to credits once the free review is used', () => {
 		expect(evaluateBilling({ freeUsed: true, credits: 2 })).toBe('credit');
 	});
 
@@ -97,8 +129,12 @@ describe('consumeReview', () => {
 	it('spends a credit once the free review is gone', async () => {
 		const d = db();
 		seed(d, 'users/u1/billing/state', { freeUsed: true, credits: 3 });
+		// seed a payment with scansRemaining so the ledger decrement path runs
+		seed(d, 'payments/p1', { uid: 'u1', status: 'success', scansRemaining: 2 });
 		expect(await consumeReview(d, 'u1')).toEqual({ status: 'ok', used: 'credit' });
 		expect(read(d, 'users/u1/billing/state')).toMatchObject({ freeUsed: true, credits: 2 });
+		// payment scansRemaining decremented by 1
+		expect(read(d, 'payments/p1')).toMatchObject({ scansRemaining: 1 });
 	});
 
 	it('blocks an account that is dry', async () => {
@@ -141,7 +177,9 @@ describe('creditReview', () => {
 		seed(d, 'payments/ref1', { uid: 'u1', amountKobo: 500000, status: 'initiated' });
 		expect(await creditReview(d, 'u1', 'ref1', 500000, 'NGN')).toEqual({ status: 'credited' });
 		expect(read(d, 'payments/ref1')).toMatchObject({ status: 'success', uid: 'u1' });
-		expect(read(d, 'users/u1/billing/state')).toMatchObject({ freeUsed: false, credits: 1 });
+		expect(read(d, 'users/u1/billing/state')).toMatchObject({ freeUsed: false, credits: 4 });
+		// and scansAllowed/scansRemaining recorded on the payment
+		expect(read(d, 'payments/ref1')).toMatchObject({ scansAllowed: 4, scansRemaining: 4 });
 	});
 
 	it('webhook/verify double-fire on the same reference credits exactly once', async () => {
@@ -151,7 +189,7 @@ describe('creditReview', () => {
 		await creditReview(d, 'u1', 'ref1', 500000, 'NGN');
 		const second = await creditReview(d, 'u1', 'ref1', 500000, 'NGN');
 		expect(second).toEqual({ status: 'noop' });
-		expect(read(d, 'users/u1/billing/state')).toMatchObject({ credits: 1 });
+		expect(read(d, 'users/u1/billing/state')).toMatchObject({ credits: 4 });
 
 		// and under genuine concurrency on a fresh reference
 		const [a, b] = await Promise.all([
@@ -160,7 +198,7 @@ describe('creditReview', () => {
 		]);
 		const verdicts = [a.status, b.status].sort();
 		expect(verdicts).toEqual(['credited', 'noop']);
-		expect(read(d, 'users/u2/billing/state')).toMatchObject({ credits: 1 });
+		expect(read(d, 'users/u2/billing/state')).toMatchObject({ credits: 4 });
 	});
 
 	it('never credits a reference that belongs to another user', async () => {
@@ -183,6 +221,6 @@ describe('creditReview', () => {
 		const d = db();
 		await creditReview(d, 'u1', 'ref-missing', 500000, 'NGN');
 		expect(read(d, 'payments/ref-missing')).toMatchObject({ status: 'success', uid: 'u1' });
-		expect(read(d, 'users/u1/billing/state')).toMatchObject({ credits: 1 });
+		expect(read(d, 'users/u1/billing/state')).toMatchObject({ credits: 4 });
 	});
 });
