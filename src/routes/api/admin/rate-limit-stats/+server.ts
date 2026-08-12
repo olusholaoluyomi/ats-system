@@ -1,6 +1,7 @@
 import { json, error } from '@sveltejs/kit';
 import { env as privateEnv } from '$env/dynamic/private';
 import { getRateLimitStats } from '../../analyze/rate-limiter';
+import { getQuotaState } from '../../analyze/provider-quota';
 import type { RequestHandler } from './$types';
 
 // admin-only observability surface for the in-process rate-limiter.
@@ -30,7 +31,8 @@ export const GET: RequestHandler = ({ request }) => {
 		throw error(401, 'unauthorized');
 	}
 
-	return json(getRateLimitStats(), {
-		headers: { 'Cache-Control': 'no-store' }
-	});
+	return json(
+		{ ...getRateLimitStats(), providerQuota: getQuotaState() },
+		{ headers: { 'Cache-Control': 'no-store' } }
+	);
 };

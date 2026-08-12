@@ -7,6 +7,7 @@ import { logger } from '$lib/log';
 import { hashPrompt, getCached, setCached } from './cache';
 import { checkRateLimit } from './rate-limiter';
 import { buildProviders, PROVIDER_ENV_KEYS } from './providers';
+import { isProviderExhausted, markProviderExhausted } from './provider-quota';
 import { resolveAuthMode } from '$lib/server/auth/config';
 
 // tries each provider in sequence until one succeeds and returns valid JSON.
@@ -26,6 +27,13 @@ async function callLLM(
 		const secret = env[provider.configKey] ?? '';
 		if (!secret) continue;
 
+		// Skip providers that have already exhausted their daily free-tier quota.
+		// They will be automatically re-enabled at the next UTC midnight.
+		if (isProviderExhausted(provider.name)) {
+			logger.warn('llm.provider_quota_exhausted', { provider: provider.name });
+			continue;
+		}
+
 		try {
 			const prompt = promptFor(provider.contextBudget);
 			const { url, init } = provider.buildRequest(prompt, secret);
@@ -43,6 +51,16 @@ async function callLLM(
 					status: response.status,
 					errorPreview: errBody.slice(0, 300)
 				});
+				// 429 = daily quota hit. Mark exhausted until UTC midnight so
+				// every subsequent request today skips this provider immediately
+				// instead of burning its full timeout retrying a depleted key.
+				if (response.status === 429) {
+					markProviderExhausted(provider.name);
+					logger.warn('llm.provider_daily_quota_hit', {
+						provider: provider.name,
+						message: 'marked exhausted until UTC midnight'
+					});
+				}
 				continue;
 			}
 
