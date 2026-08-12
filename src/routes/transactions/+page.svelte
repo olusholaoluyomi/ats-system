@@ -8,8 +8,8 @@
 		id: string;
 		reference: string;
 		amountMinor: number | null;
-		currency: string;
-		status: string;
+		currency: string | null;
+		status: string | null;
 		createdAt: string | null;
 		scansAllowed: number | null;
 		email: string | null;
@@ -88,7 +88,7 @@
 		}
 	});
 
-	function formatCurrency(amount: number, currency: string): string {
+	function formatCurrency(amount: number, currency: string | null): string {
 		const symbols: Record<string, string> = {
 			NGN: '₦',
 			USD: '$',
@@ -96,7 +96,7 @@
 			KES: 'KSh',
 			ZAR: 'R'
 		};
-		const symbol = symbols[currency] || currency;
+		const symbol = currency ? symbols[currency] || currency : '₦';
 		return `${symbol}${(amount / 100).toFixed(2)}`;
 	}
 
@@ -165,13 +165,13 @@
 							<div class="transaction-item">
 								<div class="transaction-info">
 									<div class="transaction-amount">
-										{formatCurrency(payment.amountMinor || 0, payment.currency)}
+										{formatCurrency(payment.amountMinor || 0, payment.currency || 'NGN')}
 									</div>
 									<div class="transaction-date">{formatDate(payment.createdAt || '')}</div>
 								</div>
 								<div class="transaction-details">
-									<div class="transaction-status {getStatusColor(payment.status)}">
-										{payment.status.toUpperCase()}
+									<div class="transaction-status {getStatusColor(payment.status || 'unknown')}">
+										{(payment.status || 'unknown').toUpperCase()}
 									</div>
 									<div class="transaction-ref">Ref: {payment.reference}</div>
 									{#if payment.scansAllowed}
