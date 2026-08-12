@@ -37,6 +37,8 @@ blob-report/
 .firebase/
 # service account keys must never be committed
 *firebase-adminsdk*.json
+firebase-adminsdk*.json
+service-account.json
 
 # misc
 *.log

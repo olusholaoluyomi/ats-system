@@ -134,7 +134,7 @@ export interface InitializeOptions {
 	email: string;
 	reference: string;
 	amountKobo: number;
-	currency?: string;
+	currency?: SupportedCurrency;
 	callbackUrl: string;
 	cancelUrl?: string;
 }

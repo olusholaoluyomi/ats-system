@@ -48,10 +48,10 @@ export const GET: RequestHandler = async ({ request, url }) => {
 			return json({ error: 'unknown payment reference' }, { status: 404 });
 		}
 		const payment = paymentSnap.data() as {
-			uid?: unknown;
-			amountMinor?: unknown;
-			currency?: unknown;
-			status?: unknown;
+			uid?: string;
+			amountMinor?: number;
+			currency?: string;
+			status?: string;
 		};
 
 		// a user may only settle their OWN checkout; someone else's reference

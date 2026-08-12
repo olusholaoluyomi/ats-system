@@ -83,7 +83,7 @@ export const POST: RequestHandler = async ({ request }) => {
 			logger.warn('payment.webhook_unknown_reference', { reference });
 			return json({ ok: true });
 		}
-		const paymentData = paymentSnap.data() as { uid?: unknown; currency?: unknown; amountMinor?: unknown };
+		const paymentData = paymentSnap.data() as { uid?: string; currency?: string; amountMinor?: number };
 		const uid = paymentData?.uid;
 		if (typeof uid !== 'string' || uid.length === 0) {
 			logger.warn('payment.webhook_reference_missing_uid', { reference });

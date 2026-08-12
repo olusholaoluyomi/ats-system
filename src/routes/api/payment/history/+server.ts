@@ -31,11 +31,11 @@ export const GET: RequestHandler = async ({ request }) => {
 		const snap = await q.get();
 
 		const payments = snap.docs.map((d) => {
-			const data = d.data() as Record<string, any>;
+			const data = d.data() as Record<string, unknown>;
 			const created = data.createdAt;
 			let createdIso = null;
-			if (created && typeof (created as any).toDate === 'function') {
-				createdIso = (created as any).toDate().toISOString();
+			if (created && typeof (created as { toDate?: () => Date }).toDate === 'function') {
+				createdIso = (created as { toDate: () => Date }).toDate().toISOString();
 			} else if (created instanceof Date) {
 				createdIso = created.toISOString();
 			} else if (typeof created === 'string') {
@@ -43,10 +43,10 @@ export const GET: RequestHandler = async ({ request }) => {
 			}
 
 			return {
-				reference: data.reference ?? d.id,
+				reference: typeof data.reference === 'string' ? data.reference : d.id,
 				amountMinor: typeof data.amountMinor === 'number' ? data.amountMinor : null,
-				currency: data.currency ?? null,
-				status: data.status ?? null,
+				currency: typeof data.currency === 'string' ? data.currency : null,
+				status: typeof data.status === 'string' ? data.status : null,
 				createdAt: createdIso,
 				// scansAllowed is the configured scans per successful payment when it settled
 				scansAllowed: typeof data.scansAllowed === 'number' ? data.scansAllowed : null
@@ -56,7 +56,7 @@ export const GET: RequestHandler = async ({ request }) => {
 		return json({ ok: true, payments });
 	} catch (err) {
 		logger.error('payment.history_failed', {
-			uid: (identity as any)?.uid ?? 'unknown',
+			uid: identity?.uid ?? 'unknown',
 			error: err instanceof Error ? err.message : String(err)
 		});
 		return json({ error: 'failed to load payment history' }, { status: 500 });

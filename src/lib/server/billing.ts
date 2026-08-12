@@ -108,7 +108,7 @@ export async function creditReview(
 		const billSnap = await tx.get(billingRef);
 
 		if (paySnap.exists) {
-			const payData = paySnap.data() as { status?: unknown; uid?: unknown; amountMinor?: unknown };
+			const payData = paySnap.data() as { status?: string; uid?: string; amountMinor?: number };
 			if (payData?.status === 'success') return { status: 'noop' };
 			if (payData?.uid && payData.uid !== uid) return { status: 'noop' };
 			if (payData?.amountMinor !== undefined && payData.amountMinor !== amountMinor) {

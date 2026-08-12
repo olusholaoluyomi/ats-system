@@ -4,10 +4,26 @@
 	import { authStore } from '$stores/auth.svelte';
 	import SeoHead from '$components/seo/SeoHead.svelte';
 
-	let payments = $state<any[]>([]);
+	interface Payment {
+		id: string;
+		reference: string;
+		amountMinor: number | null;
+		currency: string;
+		status: string;
+		createdAt: string | null;
+		scansAllowed: number | null;
+		email: string | null;
+	}
+
+	interface BillingState {
+		freeUsed: boolean;
+		credits: number;
+	}
+
+	let payments = $state<Payment[]>([]);
 	let loading = $state(true);
 	let error = $state<string | null>(null);
-	let billingState = $state({
+	let billingState = $state<BillingState>({
 		freeUsed: false,
 		credits: 0
 	});
@@ -36,11 +52,11 @@
 			const paymentsSnap = await getDocs(paymentsQuery);
 
 			payments = paymentsSnap.docs.map((d) => {
-				const data = d.data();
+				const data = d.data() as Record<string, unknown>;
 				const created = data.createdAt;
 				let createdIso = null;
-				if (created && typeof created.toDate === 'function') {
-					createdIso = created.toDate().toISOString();
+				if (created && typeof (created as { toDate?: () => Date }).toDate === 'function') {
+					createdIso = (created as { toDate: () => Date }).toDate().toISOString();
 				} else if (created instanceof Date) {
 					createdIso = created.toISOString();
 				} else if (typeof created === 'string') {
@@ -49,13 +65,13 @@
 
 				return {
 					id: d.id,
-					reference: data.reference ?? d.id,
+					reference: typeof data.reference === 'string' ? data.reference : d.id,
 					amountMinor: typeof data.amountMinor === 'number' ? data.amountMinor : null,
-					currency: data.currency ?? 'NGN',
-					status: data.status ?? 'unknown',
+					currency: typeof data.currency === 'string' ? data.currency : 'NGN',
+					status: typeof data.status === 'string' ? data.status : 'unknown',
 					createdAt: createdIso,
 					scansAllowed: typeof data.scansAllowed === 'number' ? data.scansAllowed : null,
-					email: data.email ?? null
+					email: typeof data.email === 'string' ? data.email : null
 				};
 			});
 
