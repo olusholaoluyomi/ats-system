@@ -1,6 +1,3 @@
-// client helpers for the pay-per-review flow. the heavy lifting (initialize,
-// verify, webhook) is server-side; these just call it with the user's firebase
-// ID token so the server can trust the caller.
 import { authStore } from '$stores/auth.svelte';
 import { logger } from '$lib/log';
 
@@ -9,8 +6,6 @@ export interface InitializePaymentResult {
 	reference: string;
 }
 
-// starts a Paystack checkout for one review. returns the hosted authorization
-// URL the caller should redirect the browser to.
 export async function initializePayment(): Promise<InitializePaymentResult> {
 	const token = await authStore.getIdToken();
 	if (!token) throw new Error('you must be signed in to purchase a review');
@@ -32,8 +27,6 @@ export async function initializePayment(): Promise<InitializePaymentResult> {
 	};
 }
 
-// confirms with the server (which asks Paystack) whether the charge settled.
-// returns true once the account has been credited.
 export async function verifyPayment(reference: string): Promise<boolean> {
 	const token = await authStore.getIdToken();
 	if (!token) return false;
