@@ -167,10 +167,7 @@
 					return;
 				}
 				const data = await res.json();
-				if (
-					typeof data.userCount === 'number' &&
-					typeof data.resumesAnalyzed === 'number'
-				) {
+				if (typeof data.userCount === 'number' && typeof data.resumesAnalyzed === 'number') {
 					hasAuthoritative = true;
 					applyStats({ userCount: data.userCount, resumesAnalyzed: data.resumesAnalyzed });
 				}

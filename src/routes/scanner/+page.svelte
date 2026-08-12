@@ -124,7 +124,12 @@
 		// this via consumeReview, so a stale local mirror can never grant a free
 		// scan - it can only delay the prompt. refresh() mirrors the doc after a
 		// successful scan so this check is accurate on the very next click.
-		if (billingStore.enabled && !billingStore.loading && billingStore.freeUsed && billingStore.credits === 0) {
+		if (
+			billingStore.enabled &&
+			!billingStore.loading &&
+			billingStore.freeUsed &&
+			billingStore.credits === 0
+		) {
 			showPaywall = true;
 			return;
 		}
@@ -484,8 +489,8 @@
 							<div class="paywall-body">
 								<h3 class="paywall-title">Your free review is used up</h3>
 								<p class="paywall-text">
-									Each additional AI review costs <strong>₦{paywallPrice}</strong> — paid
-									once per scan, no subscription. Your first review was free.
+									Each additional AI review costs <strong>₦{paywallPrice}</strong> — paid once per scan,
+									no subscription. Your first review was free.
 								</p>
 								{#if paymentError}
 									<div class="error">{paymentError}</div>

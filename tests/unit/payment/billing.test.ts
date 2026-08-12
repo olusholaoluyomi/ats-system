@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import type { Firestore } from 'firebase-admin/firestore';
-import { consumeReview, creditReview, evaluateBilling, refundReview } from '../../../src/lib/server/billing';
+import {
+	consumeReview,
+	creditReview,
+	evaluateBilling,
+	refundReview
+} from '../../../src/lib/server/billing';
 
 // the billing module is pure over a Firestore-like handle (doc/runTransaction),
 // so these tests drive it against an in-memory Map. Firestore's optimistic
@@ -181,4 +186,3 @@ describe('creditReview', () => {
 		expect(read(d, 'users/u1/billing/state')).toMatchObject({ credits: 1 });
 	});
 });
-

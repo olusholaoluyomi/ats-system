@@ -114,7 +114,10 @@ describe('initializePaystack', () => {
 		expect(result.authorization_url).toBe('https://checkout.paystack.com/x');
 		expect(result.reference).toBe('ref_1');
 
-		const [url, init] = fetchMock.mock.calls[0] as [string, { headers: Record<string, string>; body: string }];
+		const [url, init] = fetchMock.mock.calls[0] as [
+			string,
+			{ headers: Record<string, string>; body: string }
+		];
 		expect(url).toBe('https://api.paystack.co/transaction/initialize');
 		expect(init.headers.Authorization).toBe(`Bearer ${SECRET}`);
 		const payload = JSON.parse(init.body);
@@ -128,36 +131,45 @@ describe('initializePaystack', () => {
 
 	it('throws when the secret is not configured', async () => {
 		await expect(
-			initializePaystack({}, {
-				email: 'a@b.com',
-				reference: 'r',
-				amountKobo: 500000,
-				callbackUrl: 'https://site.example/payment/callback'
-			})
+			initializePaystack(
+				{},
+				{
+					email: 'a@b.com',
+					reference: 'r',
+					amountKobo: 500000,
+					callbackUrl: 'https://site.example/payment/callback'
+				}
+			)
 		).rejects.toThrow('PAYSTACK_SECRET_KEY not configured');
 	});
 
 	it('throws when Paystack returns a non-2xx response', async () => {
 		stubFetch({ ok: false });
 		await expect(
-			initializePaystack({ PAYSTACK_SECRET_KEY: SECRET }, {
-				email: 'a@b.com',
-				reference: 'r',
-				amountKobo: 500000,
-				callbackUrl: 'https://site.example/payment/callback'
-			})
+			initializePaystack(
+				{ PAYSTACK_SECRET_KEY: SECRET },
+				{
+					email: 'a@b.com',
+					reference: 'r',
+					amountKobo: 500000,
+					callbackUrl: 'https://site.example/payment/callback'
+				}
+			)
 		).rejects.toThrow('paystack request failed');
 	});
 
 	it('throws when the response carries no authorization_url', async () => {
 		stubFetch({ status: true, data: {} });
 		await expect(
-			initializePaystack({ PAYSTACK_SECRET_KEY: SECRET }, {
-				email: 'a@b.com',
-				reference: 'r',
-				amountKobo: 500000,
-				callbackUrl: 'https://site.example/payment/callback'
-			})
+			initializePaystack(
+				{ PAYSTACK_SECRET_KEY: SECRET },
+				{
+					email: 'a@b.com',
+					reference: 'r',
+					amountKobo: 500000,
+					callbackUrl: 'https://site.example/payment/callback'
+				}
+			)
 		).rejects.toThrow('no authorization_url');
 	});
 });

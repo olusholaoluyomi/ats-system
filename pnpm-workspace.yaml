@@ -4,4 +4,4 @@ onlyBuiltDependencies:
   - workerd
 overrides:
   jose: 4.15.5
-  "rollup@<4.59.0": ^4.59.0
+  'rollup@<4.59.0': ^4.59.0

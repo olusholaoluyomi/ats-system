@@ -18,17 +18,17 @@
 import type { Firestore, Transaction } from 'firebase-admin/firestore';
 
 export interface BillingDoc {
-  freeUsed?: boolean;
-  credits?: number;
-  [key: string]: unknown;
+	freeUsed?: boolean;
+	credits?: number;
+	[key: string]: unknown;
 }
 
 // normalized view of a billing doc: fields defaulted and coerced to their real
 // types. firestore doc shapes are untrusted, so every read passes through
 // toBillingDoc before any arithmetic touches `credits`.
 export interface NormalizedBilling {
-  freeUsed: boolean;
-  credits: number;
+	freeUsed: boolean;
+	credits: number;
 }
 
 export const DEFAULT_BILLING: NormalizedBilling = { freeUsed: false, credits: 0 };
@@ -37,34 +37,32 @@ export const BILLING_DOC = 'state';
 
 export type ReviewUsed = 'free' | 'credit';
 
-export type ConsumeVerdict =
-  | { status: 'ok'; used: ReviewUsed }
-  | { status: 'blocked' };
+export type ConsumeVerdict = { status: 'ok'; used: ReviewUsed } | { status: 'blocked' };
 
 // minimal structural view for pure decisions: both normalized billing docs and
 // untrusted firestore doc shapes satisfy this, so evaluateBilling stays usable
 // on either without an index-signature fight.
 interface BillingLike {
-  freeUsed?: unknown;
-  credits?: unknown;
+	freeUsed?: unknown;
+	credits?: unknown;
 }
 
 // pure decision helper: which entitlement does this billing doc grant next?
 export function evaluateBilling(billing: BillingLike | null | undefined): ReviewUsed | 'none' {
-  const freeUsed = billing?.freeUsed === true;
-  const credits = typeof billing?.credits === 'number' ? billing.credits : 0;
-  if (!freeUsed) return 'free';
-  if (credits > 0) return 'credit';
-  return 'none';
+	const freeUsed = billing?.freeUsed === true;
+	const credits = typeof billing?.credits === 'number' ? billing.credits : 0;
+	if (!freeUsed) return 'free';
+	if (credits > 0) return 'credit';
+	return 'none';
 }
 
 function toBillingDoc(raw: unknown): NormalizedBilling {
-  if (!raw || typeof raw !== 'object') return { ...DEFAULT_BILLING };
-  const rec = raw as BillingDoc;
-  return {
-    freeUsed: rec.freeUsed === true,
-    credits: typeof rec.credits === 'number' ? rec.credits : 0
-  };
+	if (!raw || typeof raw !== 'object') return { ...DEFAULT_BILLING };
+	const rec = raw as BillingDoc;
+	return {
+		freeUsed: rec.freeUsed === true,
+		credits: typeof rec.credits === 'number' ? rec.credits : 0
+	};
 }
 
 // atomically claims one review (the free one first, then a paid credit).
@@ -73,50 +71,50 @@ function toBillingDoc(raw: unknown): NormalizedBilling {
 // MUST be matched by exactly one refund or one successful analysis, otherwise
 // credits leak. see consumeAndRefund below.
 export async function consumeReview(db: Firestore, uid: string): Promise<ConsumeVerdict> {
-  const billingRef = db.doc(`users/${uid}/billing/${BILLING_DOC}`);
-  return db.runTransaction(async (tx: Transaction) => {
-    const snap = await tx.get(billingRef);
-    const billing = toBillingDoc(snap.exists ? snap.data() : undefined);
-    const used = evaluateBilling(billing);
-    if (used === 'free') {
-      tx.set(billingRef, { freeUsed: true, credits: billing.credits, updatedAt: new Date() });
-      return { status: 'ok', used };
-    }
-    if (used === 'credit') {
-      tx.set(billingRef, {
-        freeUsed: true,
-        credits: billing.credits - 1,
-        updatedAt: new Date()
-      });
-      return { status: 'ok', used };
-    }
-    return { status: 'blocked' };
-  });
+	const billingRef = db.doc(`users/${uid}/billing/${BILLING_DOC}`);
+	return db.runTransaction(async (tx: Transaction) => {
+		const snap = await tx.get(billingRef);
+		const billing = toBillingDoc(snap.exists ? snap.data() : undefined);
+		const used = evaluateBilling(billing);
+		if (used === 'free') {
+			tx.set(billingRef, { freeUsed: true, credits: billing.credits, updatedAt: new Date() });
+			return { status: 'ok', used };
+		}
+		if (used === 'credit') {
+			tx.set(billingRef, {
+				freeUsed: true,
+				credits: billing.credits - 1,
+				updatedAt: new Date()
+			});
+			return { status: 'ok', used };
+		}
+		return { status: 'blocked' };
+	});
 }
 
 // gives a consumed review back (credit restored, or freeUsed reset). called
 // when a scan turns out to have produced no result (cache hit / total LLM
 // failure) so an outage or a retried identical scan never bills the user.
 export async function refundReview(
-  db: Firestore,
-  uid: string,
-  used: ReviewUsed
+	db: Firestore,
+	uid: string,
+	used: ReviewUsed
 ): Promise<{ status: 'refunded' }> {
-  const billingRef = db.doc(`users/${uid}/billing/${BILLING_DOC}`);
-  return db.runTransaction(async (tx: Transaction) => {
-    const snap = await tx.get(billingRef);
-    const billing = toBillingDoc(snap.exists ? snap.data() : undefined);
-    if (used === 'free') {
-      tx.set(billingRef, { freeUsed: false, credits: billing.credits, updatedAt: new Date() });
-    } else {
-      tx.set(billingRef, {
-        freeUsed: true,
-        credits: billing.credits + 1,
-        updatedAt: new Date()
-      });
-    }
-    return { status: 'refunded' };
-  });
+	const billingRef = db.doc(`users/${uid}/billing/${BILLING_DOC}`);
+	return db.runTransaction(async (tx: Transaction) => {
+		const snap = await tx.get(billingRef);
+		const billing = toBillingDoc(snap.exists ? snap.data() : undefined);
+		if (used === 'free') {
+			tx.set(billingRef, { freeUsed: false, credits: billing.credits, updatedAt: new Date() });
+		} else {
+			tx.set(billingRef, {
+				freeUsed: true,
+				credits: billing.credits + 1,
+				updatedAt: new Date()
+			});
+		}
+		return { status: 'refunded' };
+	});
 }
 
 export type CreditVerdict = { status: 'credited' } | { status: 'noop' };
@@ -129,54 +127,54 @@ export type CreditVerdict = { status: 'credited' } | { status: 'noop' };
 // credit a reference that belongs to someone else or was initialized for a
 // different amount (both return a no-op verdict without writing anything).
 export async function creditReview(
-  db: Firestore,
-  uid: string,
-  reference: string,
-  amountKobo: number,
-  currency: string
+	db: Firestore,
+	uid: string,
+	reference: string,
+	amountKobo: number,
+	currency: string
 ): Promise<CreditVerdict> {
-  const paymentRef = db.doc(`payments/${reference}`);
-  const billingRef = db.doc(`users/${uid}/billing/${BILLING_DOC}`);
-  return db.runTransaction(async (tx: Transaction) => {
-    const paySnap = await tx.get(paymentRef);
-    const billSnap = await tx.get(billingRef);
+	const paymentRef = db.doc(`payments/${reference}`);
+	const billingRef = db.doc(`users/${uid}/billing/${BILLING_DOC}`);
+	return db.runTransaction(async (tx: Transaction) => {
+		const paySnap = await tx.get(paymentRef);
+		const billSnap = await tx.get(billingRef);
 
-    if (paySnap.exists) {
-      const payData = paySnap.data() as {
-        status?: unknown;
-        uid?: unknown;
-        amountKobo?: unknown;
-      };
-      // already settled by a racing webhook/verify call. the billing
-      // increment committed in the same transaction as this status flip,
-      // so no re-credit is needed.
-      if (payData?.status === 'success') return { status: 'noop' };
-      // guard rails: never credit a reference that belongs to someone else
-      // or was initialized for a different price.
-      if (payData?.uid && payData.uid !== uid) return { status: 'noop' };
-      if (payData?.amountKobo !== undefined && payData.amountKobo !== amountKobo) {
-        return { status: 'noop' };
-      }
-    }
+		if (paySnap.exists) {
+			const payData = paySnap.data() as {
+				status?: unknown;
+				uid?: unknown;
+				amountKobo?: unknown;
+			};
+			// already settled by a racing webhook/verify call. the billing
+			// increment committed in the same transaction as this status flip,
+			// so no re-credit is needed.
+			if (payData?.status === 'success') return { status: 'noop' };
+			// guard rails: never credit a reference that belongs to someone else
+			// or was initialized for a different price.
+			if (payData?.uid && payData.uid !== uid) return { status: 'noop' };
+			if (payData?.amountKobo !== undefined && payData.amountKobo !== amountKobo) {
+				return { status: 'noop' };
+			}
+		}
 
-    const billing = toBillingDoc(billSnap.exists ? billSnap.data() : undefined);
-    tx.set(
-      paymentRef,
-      {
-        uid,
-        reference,
-        amountKobo,
-        currency,
-        status: 'success',
-        updatedAt: new Date()
-      },
-      { merge: true }
-    );
-    tx.set(billingRef, {
-      freeUsed: billing.freeUsed === true,
-      credits: billing.credits + 1,
-      updatedAt: new Date()
-    });
-    return { status: 'credited' };
-  });
+		const billing = toBillingDoc(billSnap.exists ? billSnap.data() : undefined);
+		tx.set(
+			paymentRef,
+			{
+				uid,
+				reference,
+				amountKobo,
+				currency,
+				status: 'success',
+				updatedAt: new Date()
+			},
+			{ merge: true }
+		);
+		tx.set(billingRef, {
+			freeUsed: billing.freeUsed === true,
+			credits: billing.credits + 1,
+			updatedAt: new Date()
+		});
+		return { status: 'credited' };
+	});
 }
