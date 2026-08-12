@@ -1,4 +1,4 @@
-export { scoreLLM, analyzWithLLM } from './client';
+export { scoreLLM } from './client';
 export { generateFallbackAnalysis } from './fallback';
 export {
 	buildFullScoringPrompt,

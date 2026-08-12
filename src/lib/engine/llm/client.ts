@@ -1,6 +1,4 @@
 import type { ScoreResult, Suggestion, StructuredSuggestion } from '$engine/scorer/types';
-import type { LLMAnalysis, LLMRequestPayload, LLMResponse } from './types';
-import { generateFallbackAnalysis } from './fallback';
 import { incrementResumesAnalyzed } from '$lib/insights';
 import { logger } from '$lib/log';
 import { authStore } from '$stores/auth.svelte';
@@ -217,43 +215,4 @@ function normalizeStructuredSuggestion(raw: Record<string, unknown>): Structured
 		impact,
 		platforms: toStringArray(raw.platforms)
 	};
-}
-
-// legacy function for JD analysis and semantic matching
-export async function analyzWithLLM(payload: LLMRequestPayload): Promise<LLMResponse> {
-	try {
-		const controller = new AbortController();
-		const timeout = setTimeout(() => controller.abort(), CLIENT_TIMEOUT_MS);
-
-		const response = await fetch('/api/analyze', {
-			method: 'POST',
-			headers: await authHeaders(),
-			body: JSON.stringify(payload),
-			signal: controller.signal
-		});
-
-		clearTimeout(timeout);
-
-		if (!response.ok) {
-			if (response.status === 429) {
-				return {
-					success: true,
-					data: generateFallbackAnalysis(payload),
-					error: null,
-					fallback: true
-				};
-			}
-			throw new Error(`API error: ${response.status}`);
-		}
-
-		const data: LLMAnalysis = await response.json();
-		return { success: true, data, error: null, fallback: false };
-	} catch (error) {
-		return {
-			success: true,
-			data: generateFallbackAnalysis(payload),
-			error: error instanceof Error ? error.message : 'unknown error',
-			fallback: true
-		};
-	}
 }
