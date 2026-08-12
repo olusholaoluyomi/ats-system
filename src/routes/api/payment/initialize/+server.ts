@@ -10,8 +10,12 @@ import {
 	initializePaystack,
 	parsePriceNg,
 	validatePriceNg,
+	parseCurrency,
+	parsePriceForCurrency,
+	validatePriceForCurrency,
 	CURRENCY
 } from '$lib/server/paystack';
+import { SCANS_PER_PAYMENT } from '$lib/server/billing-config';
 
 // payments only exist in firebase mode (the hosted paid-review model). ldap
 // self-host and anonymous 'none' mode have no concept of a wallet, so the
@@ -37,16 +41,18 @@ export const POST: RequestHandler = async ({ request }) => {
 		return json({ error: 'payments are not configured on this deploy' }, { status: 503 });
 	}
 
-	const priceNgn = parsePriceNg(privateEnv);
+	const currency = parseCurrency(privateEnv);
+	const price = parsePriceForCurrency(privateEnv, currency);
 	try {
-		validatePriceNg(priceNgn);
+		validatePriceForCurrency(price, currency);
 	} catch (err) {
 		logger.error('payment.bad_price', {
+			currency,
 			error: err instanceof Error ? err.message : String(err)
 		});
 		return json({ error: 'payments are misconfigured on this deploy' }, { status: 503 });
 	}
-	const amountKobo = priceNgn * 100;
+	const amountMinor = currency === 'NGN' ? price * 100 : price * 100; // Paystack uses minor units
 
 	const reference = `ats_${identity.uid.slice(0, 10)}_${randomUUID()}`;
 	const origin = new URL(request.url).origin;
@@ -66,11 +72,12 @@ export const POST: RequestHandler = async ({ request }) => {
 			uid: identity.uid,
 			email: identity.email ?? null,
 			reference,
-			amountKobo,
-			currency: CURRENCY,
+			amountMinor,
+			currency,
 			status: 'initiated',
 			createdAt: new Date(),
-			updatedAt: new Date()
+			updatedAt: new Date(),
+			scansAllowed: SCANS_PER_PAYMENT
 		});
 	} catch (err) {
 		logger.error('payment.intent_write_failed', {
@@ -85,7 +92,8 @@ export const POST: RequestHandler = async ({ request }) => {
 		init = await initializePaystack(privateEnv, {
 			email: identity.email ?? `${identity.uid}@users.local`,
 			reference,
-			amountKobo,
+			amountKobo: amountMinor,
+			currency,
 			callbackUrl,
 			cancelUrl
 		});

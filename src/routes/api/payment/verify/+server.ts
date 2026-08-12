@@ -4,7 +4,7 @@ import { env as privateEnv } from '$env/dynamic/private';
 import { env as publicEnv } from '$env/dynamic/public';
 import { logger } from '$lib/log';
 import { resolveAuthMode } from '$lib/server/auth/config';
-import { getPaystackSecret, verifyPaystack, CURRENCY } from '$lib/server/paystack';
+import { getPaystackSecret, verifyPaystack, parseCurrency } from '$lib/server/paystack';
 
 // the user lands on /payment/callback?reference=... after Paystack redirects
 // them back; this endpoint settles the charge by asking Paystack (server-side)
@@ -49,7 +49,7 @@ export const GET: RequestHandler = async ({ request, url }) => {
 		}
 		const payment = paymentSnap.data() as {
 			uid?: unknown;
-			amountKobo?: unknown;
+			amountMinor?: unknown;
 			currency?: unknown;
 			status?: unknown;
 		};
@@ -67,7 +67,8 @@ export const GET: RequestHandler = async ({ request, url }) => {
 			return json({ success: true, reference });
 		}
 
-		const expectedKobo = typeof payment.amountKobo === 'number' ? payment.amountKobo : 0;
+		const expectedAmount = typeof payment.amountMinor === 'number' ? payment.amountMinor : 0;
+		const expectedCurrency = typeof payment.currency === 'string' ? payment.currency : 'NGN';
 		const verification = await verifyPaystack(privateEnv, reference);
 		if (!verification || !verification.paid) {
 			// not paid yet / not confirmable. the webhook will settle it when
@@ -77,13 +78,14 @@ export const GET: RequestHandler = async ({ request, url }) => {
 
 		// a settled charge for a different amount/currency than we initialized is
 		// either a config change mid-flight or a forged response — never credit it.
-		if (verification.amountKobo !== expectedKobo || verification.currency !== CURRENCY) {
+		if (verification.amountKobo !== expectedAmount || verification.currency !== expectedCurrency) {
 			logger.warn('payment.verify_amount_mismatch', {
 				reference,
 				uid: identity.uid,
 				chargedKobo: verification.amountKobo,
 				chargedCurrency: verification.currency,
-				expectedKobo
+				expectedAmount,
+				expectedCurrency
 			});
 			return json({ success: false, status: 'amount_mismatch' });
 		}
@@ -94,7 +96,7 @@ export const GET: RequestHandler = async ({ request, url }) => {
 			identity.uid,
 			reference,
 			verification.amountKobo,
-			CURRENCY
+			expectedCurrency
 		);
 		logger.info('payment.verified', { uid: identity.uid, reference, verdict: verdict.status });
 		return json({ success: true, reference });

@@ -42,9 +42,9 @@ function toBillingDoc(raw: unknown): NormalizedBilling {
 	};
 }
 
-// atomically claims one review. free first, then paid credits. when a paid
-// credit is spent we also decrement scansRemaining on one of the settled
-// payments owned by the user so the ledger stays in sync with the billing doc.
+// atomically claims one review. free first, then paid credits.
+// Simplified logic: billing.credits is the single source of truth for total available scans.
+// Each payment adds SCANS_PER_PAYMENT credits, each scan consumes 1 credit.
 export async function consumeReview(db: Firestore, uid: string): Promise<ConsumeVerdict> {
 	const billingRef = db.doc(`users/${uid}/billing/${BILLING_DOC}`);
 	return db.runTransaction(async (tx: Transaction) => {
@@ -56,45 +56,12 @@ export async function consumeReview(db: Firestore, uid: string): Promise<Consume
 			return { status: 'ok', used };
 		}
 		if (used === 'credit') {
-			// find one successful payment with scansRemaining > 0 and decrement it.
-			// Firestore transactions do not support queries inside tx.get on the
-			// Admin SDK in all environments, but our unit tests use a fake DB that
-			// models get(ref) only. To keep tests simple we scan predictable paths
-			// by reading all payments for the user and picking one with remaining
-			// scans. In production this pattern is acceptable for the small scale
-			// of per-user payment counts; optimize later if needed.
-			const paymentsColl = (db as any).collection ? (db as any).collection('payments') : null;
-			let paymentPathToDecrement: string | null = null;
-			if (paymentsColl && typeof paymentsColl.where === 'function') {
-				const q = (db as any)
-					.collection('payments')
-					.where('uid', '==', uid)
-					.where('status', '==', 'success');
-				const snap = await q.get();
-				for (const doc of snap.docs) {
-					const data = doc.data();
-					if (typeof data.scansRemaining === 'number' && data.scansRemaining > 0) {
-						paymentPathToDecrement = doc.ref.path;
-						break;
-					}
-				}
-			}
-
-			// decrement billing credits
+			// Simply decrement the total credits counter
 			tx.set(billingRef, {
 				freeUsed: true,
 				credits: billing.credits - 1,
 				updatedAt: new Date()
 			});
-
-			if (paymentPathToDecrement) {
-				const pRef = db.doc(paymentPathToDecrement);
-				const pSnap = await tx.get(pRef);
-				const pData = pSnap.exists ? (pSnap.data() as any) : {};
-				const remaining = typeof pData.scansRemaining === 'number' ? pData.scansRemaining : 0;
-				tx.set(pRef, { scansRemaining: remaining - 1, updatedAt: new Date() }, { merge: true });
-			}
-
 			return { status: 'ok', used };
 		}
 		return { status: 'blocked' };
@@ -113,6 +80,7 @@ export async function refundReview(
 		if (used === 'free') {
 			tx.set(billingRef, { freeUsed: false, credits: billing.credits, updatedAt: new Date() });
 		} else {
+			// Simply increment the total credits counter
 			tx.set(billingRef, {
 				freeUsed: true,
 				credits: billing.credits + 1,
@@ -130,7 +98,7 @@ export async function creditReview(
 	db: Firestore,
 	uid: string,
 	reference: string,
-	amountKobo: number,
+	amountMinor: number,
 	currency: string
 ): Promise<CreditVerdict> {
 	const paymentRef = db.doc(`payments/${reference}`);
@@ -140,31 +108,31 @@ export async function creditReview(
 		const billSnap = await tx.get(billingRef);
 
 		if (paySnap.exists) {
-			const payData = paySnap.data() as { status?: unknown; uid?: unknown; amountKobo?: unknown };
+			const payData = paySnap.data() as { status?: unknown; uid?: unknown; amountMinor?: unknown };
 			if (payData?.status === 'success') return { status: 'noop' };
 			if (payData?.uid && payData.uid !== uid) return { status: 'noop' };
-			if (payData?.amountKobo !== undefined && payData.amountKobo !== amountKobo) {
+			if (payData?.amountMinor !== undefined && payData.amountMinor !== amountMinor) {
 				return { status: 'noop' };
 			}
 		}
 
 		const billing = toBillingDoc(billSnap.exists ? billSnap.data() : undefined);
-		// set payment success and scansRemaining/scansAllowed
+		// set payment success and record how many scans this payment allows
 		tx.set(
 			paymentRef,
 			{
 				uid,
 				reference,
-				amountKobo,
+				amountMinor,
 				currency,
 				status: 'success',
-				scansRemaining: SCANS_PER_PAYMENT,
 				scansAllowed: SCANS_PER_PAYMENT,
 				updatedAt: new Date()
 			},
 			{ merge: true }
 		);
 
+		// Add the credits to the user's total balance
 		tx.set(billingRef, {
 			freeUsed: billing.freeUsed === true,
 			credits: billing.credits + SCANS_PER_PAYMENT,

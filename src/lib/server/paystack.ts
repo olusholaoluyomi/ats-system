@@ -15,7 +15,12 @@ export const PAYSTACK_API_BASE = 'https://api.paystack.co';
 
 // default price of one review in naira. overridable per deploy via
 // PAYSTACK_PRICE_NGN (kobo conversion happens at the call site).
-export const DEFAULT_PRICE_NGN = 5000;
+export const DEFAULT_PRICE_NGN = 10000;
+
+// supported currencies by Paystack
+export const SUPPORTED_CURRENCIES = ['NGN', 'USD', 'GHS', 'KES', 'ZAR'] as const;
+
+export type SupportedCurrency = (typeof SUPPORTED_CURRENCIES)[number];
 
 export const CURRENCY = 'NGN';
 
@@ -43,11 +48,40 @@ export function parsePriceNg(env: Env): number {
 	return Number.isFinite(n) && n > 0 ? n : DEFAULT_PRICE_NGN;
 }
 
+// get the configured currency, defaulting to NGN
+export function parseCurrency(env: Env): SupportedCurrency {
+	const raw = val(env, 'PAYSTACK_CURRENCY');
+	if (!raw) return 'NGN';
+	const upper = raw.toUpperCase();
+	if (SUPPORTED_CURRENCIES.includes(upper as SupportedCurrency)) {
+		return upper as SupportedCurrency;
+	}
+	return 'NGN';
+}
+
+// get price for a specific currency
+export function parsePriceForCurrency(env: Env, currency: SupportedCurrency): number {
+	const envKey = `PAYSTACK_PRICE_${currency}`;
+	const raw = val(env, envKey);
+	if (!raw) {
+		// fallback to NGN default if currency-specific price not set
+		return currency === 'NGN' ? DEFAULT_PRICE_NGN : DEFAULT_PRICE_NGN;
+	}
+	const n = Number.parseInt(raw, 10);
+	return Number.isFinite(n) && n > 0 ? n : DEFAULT_PRICE_NGN;
+}
+
 // a price of zero is a foot-gun: it would make every review "free" while the
 // payment flow still runs. refuse it loudly so the misconfiguration surfaces.
 export function validatePriceNg(priceNgn: number): void {
 	if (!Number.isFinite(priceNgn) || priceNgn <= 0) {
 		throw new Error(`invalid PAYSTACK_PRICE_NGN (${priceNgn}): must be a positive number of naira`);
+	}
+}
+
+export function validatePriceForCurrency(price: number, currency: SupportedCurrency): void {
+	if (!Number.isFinite(price) || price <= 0) {
+		throw new Error(`invalid price for ${currency} (${price}): must be a positive number`);
 	}
 }
 
@@ -100,6 +134,7 @@ export interface InitializeOptions {
 	email: string;
 	reference: string;
 	amountKobo: number;
+	currency?: string;
 	callbackUrl: string;
 	cancelUrl?: string;
 }
@@ -119,13 +154,14 @@ export async function initializePaystack(
 	const secret = getPaystackSecret(env);
 	if (!secret) throw new PaystackError('PAYSTACK_SECRET_KEY not configured', 503);
 
+	const currency = opts.currency || CURRENCY;
 	const data = await paystackFetch(secret, '/transaction/initialize', {
 		method: 'POST',
 		body: JSON.stringify({
 			email: opts.email,
 			amount: opts.amountKobo,
 			reference: opts.reference,
-			currency: CURRENCY,
+			currency,
 			callback_url: opts.callbackUrl,
 			...(opts.cancelUrl ? { cancel_url: opts.cancelUrl } : {})
 		})

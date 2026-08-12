@@ -44,11 +44,10 @@ export const GET: RequestHandler = async ({ request }) => {
 
 			return {
 				reference: data.reference ?? d.id,
-				amountKobo: typeof data.amountKobo === 'number' ? data.amountKobo : null,
+				amountMinor: typeof data.amountMinor === 'number' ? data.amountMinor : null,
 				currency: data.currency ?? null,
 				status: data.status ?? null,
 				createdAt: createdIso,
-				scansRemaining: typeof data.scansRemaining === 'number' ? data.scansRemaining : null,
 				// scansAllowed is the configured scans per successful payment when it settled
 				scansAllowed: typeof data.scansAllowed === 'number' ? data.scansAllowed : null
 			};

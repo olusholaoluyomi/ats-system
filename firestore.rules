@@ -14,13 +14,16 @@ service cloud.firestore {
     // subdocument of the per-user billing collection.
     match /users/{userId}/billing/{billingDoc} {
       allow read: if request.auth != null && request.auth.uid == userId;
+      // server-writable only for billing operations
+      allow write: if false;
     }
 
-    // ledger of initiated/settled Paystack checkouts, written and read only by
-    // the server (initialize/webhook/verify routes). clients get no access so
-    // a reference can't be forged or replayed from the browser.
+    // ledger of initiated/settled Paystack checkouts. written only by the server
+    // (initialize/webhook/verify routes). clients may read their own payments
+    // for payment history display, but never write (to prevent forgery).
     match /payments/{paymentId} {
-      allow read, write: if false;
+      allow read: if request.auth != null && resource.data.uid == request.auth.uid;
+      allow write: if false;
     }
 
     // any authenticated user can create a scan log entry (write-only, no reads from client)

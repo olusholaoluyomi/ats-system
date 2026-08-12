@@ -294,13 +294,16 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 				return json({ error: 'billing is unavailable' }, { status: 503 });
 			}
 			if (verdict.status === 'blocked') {
-				const { parsePriceNg } = await import('$lib/server/paystack');
-				const priceNgn = parsePriceNg(env);
+				const { parsePriceForCurrency, parseCurrency } = await import('$lib/server/paystack');
+				const currency = parseCurrency(env);
+				const price = parsePriceForCurrency(env, currency);
+				const currencySymbol = currency === 'NGN' ? '₦' : currency === 'USD' ? '$' : currency === 'GHS' ? 'GH₵' : currency === 'KES' ? 'KSh' : currency === 'ZAR' ? 'R' : currency;
 				return json(
 					{
 						error: 'payment_required',
-						message: `Your free review is used up. Each additional review costs ₦${priceNgn}.`,
-						priceNgn
+						message: `Your free review is used up. Each additional review costs ${currencySymbol}${price}.`,
+						price,
+						currency
 					},
 					{ status: 402 }
 				);

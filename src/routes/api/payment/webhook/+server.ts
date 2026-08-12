@@ -2,7 +2,7 @@ import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { env as privateEnv } from '$env/dynamic/private';
 import { logger } from '$lib/log';
-import { getPaystackSecret, parsePriceNg, validatePriceNg } from '$lib/server/paystack';
+import { getPaystackSecret, parseCurrency, parsePriceForCurrency, validatePriceForCurrency } from '$lib/server/paystack';
 
 // Paystack posts the charge result here (server-to-server, no client auth).
 // the x-paystack-signature header authenticates the call: HMAC-SHA512 of the
@@ -48,21 +48,24 @@ export const POST: RequestHandler = async ({ request }) => {
 	// price + currency are validated here, not inside the credit transaction,
 	// so a stale or forged reference can never mint a credit for the wrong
 	// amount. a mismatch is logged and acknowledged (200 stops Paystack retries).
-	const priceNgn = parsePriceNg(privateEnv);
+	const currency = parseCurrency(privateEnv);
+	const price = parsePriceForCurrency(privateEnv, currency);
 	try {
-		validatePriceNg(priceNgn);
+		validatePriceForCurrency(price, currency);
 	} catch (err) {
 		logger.error('payment.bad_price', {
+			currency,
 			error: err instanceof Error ? err.message : String(err)
 		});
 		return json({ ok: true });
 	}
-	if (Number(data.amount) !== priceNgn * 100 || data.currency !== 'NGN') {
+	if (Number(data.amount) !== price * 100 || data.currency !== currency) {
 		logger.warn('payment.webhook_amount_mismatch', {
 			reference,
 			amount: data.amount,
 			currency: data.currency,
-			expectedKobo: priceNgn * 100
+			expectedAmount: price * 100,
+			expectedCurrency: currency
 		});
 		return json({ ok: true });
 	}
@@ -80,14 +83,31 @@ export const POST: RequestHandler = async ({ request }) => {
 			logger.warn('payment.webhook_unknown_reference', { reference });
 			return json({ ok: true });
 		}
-		const uid = (paymentSnap.data() as { uid?: unknown })?.uid;
+		const paymentData = paymentSnap.data() as { uid?: unknown; currency?: unknown; amountMinor?: unknown };
+		const uid = paymentData?.uid;
 		if (typeof uid !== 'string' || uid.length === 0) {
 			logger.warn('payment.webhook_reference_missing_uid', { reference });
 			return json({ ok: true });
 		}
 
+		// Use the currency from the payment record, not the config
+		const paymentCurrency = typeof paymentData.currency === 'string' ? paymentData.currency : 'NGN';
+		const expectedAmount = typeof paymentData.amountMinor === 'number' ? paymentData.amountMinor : 0;
+
+		// Validate amount matches what we expect
+		if (Number(data.amount) !== expectedAmount || data.currency !== paymentCurrency) {
+			logger.warn('payment.webhook_amount_mismatch_with_record', {
+				reference,
+				amount: data.amount,
+				currency: data.currency,
+				expectedAmount,
+				expectedCurrency: paymentCurrency
+			});
+			return json({ ok: true });
+		}
+
 		const { creditReview } = await import('$lib/server/billing');
-		const verdict = await creditReview(db, uid, reference, Number(data.amount), 'NGN');
+		const verdict = await creditReview(db, uid, reference, Number(data.amount), paymentCurrency);
 		logger.info('payment.credited', { uid, reference, verdict: verdict.status });
 	} catch (err) {
 		logger.error('payment.webhook_credit_failed', {
