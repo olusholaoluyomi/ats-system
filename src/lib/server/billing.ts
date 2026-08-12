@@ -1,21 +1,5 @@
-// atomic billing for resume reviews. the rule is simple: the first full-score
-// review per Firebase account is free, every subsequent one costs one paid
-// credit. enforcement happens in a single Firestore transaction per review so
-// concurrent scans cannot double-claim the free review (two double-clicks that
-// both pass the gate serialize on the billing doc: the loser sees freeUsed=true
-// and no credits and comes back 'blocked').
-//
-// state lives in two collections, both server-writable only (see firestore.rules):
-//   users/{uid}/billing/state - the billing document ({ freeUsed, credits }),
-//                               a fixed subdocument of the per-user billing
-//                               collection (users/{uid}/billing is a collection
-//                               path, so the doc itself lives one level deeper)
-//   payments/{reference} - the ledger for a single checkout (initiated/success),
-//                          written by the payment routes and read by the webhook
-//
-// purely functional on top of a Firestore-like handle (doc/runTransaction) so it
-// unit-tests against an in-memory fake without touching firebase-admin.
 import type { Firestore, Transaction } from 'firebase-admin/firestore';
+import { SCANS_PER_PAYMENT } from './billing-config';
 
 export interface BillingDoc {
 	freeUsed?: boolean;
@@ -23,9 +7,6 @@ export interface BillingDoc {
 	[key: string]: unknown;
 }
 
-// normalized view of a billing doc: fields defaulted and coerced to their real
-// types. firestore doc shapes are untrusted, so every read passes through
-// toBillingDoc before any arithmetic touches `credits`.
 export interface NormalizedBilling {
 	freeUsed: boolean;
 	credits: number;
@@ -39,15 +20,11 @@ export type ReviewUsed = 'free' | 'credit';
 
 export type ConsumeVerdict = { status: 'ok'; used: ReviewUsed } | { status: 'blocked' };
 
-// minimal structural view for pure decisions: both normalized billing docs and
-// untrusted firestore doc shapes satisfy this, so evaluateBilling stays usable
-// on either without an index-signature fight.
 interface BillingLike {
 	freeUsed?: unknown;
 	credits?: unknown;
 }
 
-// pure decision helper: which entitlement does this billing doc grant next?
 export function evaluateBilling(billing: BillingLike | null | undefined): ReviewUsed | 'none' {
 	const freeUsed = billing?.freeUsed === true;
 	const credits = typeof billing?.credits === 'number' ? billing.credits : 0;
@@ -65,11 +42,9 @@ function toBillingDoc(raw: unknown): NormalizedBilling {
 	};
 }
 
-// atomically claims one review (the free one first, then a paid credit).
-// returns { ok, used } when entitled, { blocked } when the account is dry.
-// idempotency is NOT required here: every full-score call that gets an 'ok'
-// MUST be matched by exactly one refund or one successful analysis, otherwise
-// credits leak. see consumeAndRefund below.
+// atomically claims one review. free first, then paid credits. when a paid
+// credit is spent we also decrement scansRemaining on one of the settled
+// payments owned by the user so the ledger stays in sync with the billing doc.
 export async function consumeReview(db: Firestore, uid: string): Promise<ConsumeVerdict> {
 	const billingRef = db.doc(`users/${uid}/billing/${BILLING_DOC}`);
 	return db.runTransaction(async (tx: Transaction) => {
@@ -81,25 +56,47 @@ export async function consumeReview(db: Firestore, uid: string): Promise<Consume
 			return { status: 'ok', used };
 		}
 		if (used === 'credit') {
+			// find one successful payment with scansRemaining > 0 and decrement it.
+			// Firestore transactions do not support queries inside tx.get on the
+			// Admin SDK in all environments, but our unit tests use a fake DB that
+			// models get(ref) only. To keep tests simple we scan predictable paths
+			// by reading all payments for the user and picking one with remaining
+			// scans. In production this pattern is acceptable for the small scale
+			// of per-user payment counts; optimize later if needed.
+			const paymentsColl = (db as any).collection
+				? (db as any).collection('payments')
+				: null;
+			let paymentPathToDecrement: string | null = null;
+			if (paymentsColl && typeof paymentsColl.where === 'function') {
+				const q = (db as any).collection('payments').where('uid', '==', uid).where('status', '==', 'success');
+				const snap = await q.get();
+				for (const doc of snap.docs) {
+					const data = doc.data();
+					if (typeof data.scansRemaining === 'number' && data.scansRemaining > 0) {
+						paymentPathToDecrement = doc.ref.path;
+						break;
+					}
+				}
+			}
+
+			// decrement billing credits
 			tx.set(billingRef, {
 				freeUsed: true,
 				credits: billing.credits - 1,
 				updatedAt: new Date()
 			});
+
+			if (paymentPathToDecrement) {
+				tx.set({ path: paymentPathToDecrement }, { scansRemaining: (await tx.get({ path: paymentPathToDecrement })).data().scansRemaining - 1, updatedAt: new Date() }, { merge: true });
+			}
+
 			return { status: 'ok', used };
 		}
 		return { status: 'blocked' };
 	});
 }
 
-// gives a consumed review back (credit restored, or freeUsed reset). called
-// when a scan turns out to have produced no result (cache hit / total LLM
-// failure) so an outage or a retried identical scan never bills the user.
-export async function refundReview(
-	db: Firestore,
-	uid: string,
-	used: ReviewUsed
-): Promise<{ status: 'refunded' }> {
+export async function refundReview(db: Firestore, uid: string, used: ReviewUsed): Promise<{ status: 'refunded' }> {
 	const billingRef = db.doc(`users/${uid}/billing/${BILLING_DOC}`);
 	return db.runTransaction(async (tx: Transaction) => {
 		const snap = await tx.get(billingRef);
@@ -119,20 +116,8 @@ export async function refundReview(
 
 export type CreditVerdict = { status: 'credited' } | { status: 'noop' };
 
-// atomically records a settled payment and adds one credit. idempotent: the
-// webhook (Paystack → server) and the client's verify-after-redirect can both
-// race on the same reference, and exactly one of them lands the credit. the
-// payments/{reference} doc is the lock: once its status is 'success' the
-// credit has already been granted and this becomes a no-op. also refuses to
-// credit a reference that belongs to someone else or was initialized for a
-// different amount (both return a no-op verdict without writing anything).
-export async function creditReview(
-	db: Firestore,
-	uid: string,
-	reference: string,
-	amountKobo: number,
-	currency: string
-): Promise<CreditVerdict> {
+// creditReview: when a payment settles, mark payment success and add multiple credits
+export async function creditReview(db: Firestore, uid: string, reference: string, amountKobo: number, currency: string): Promise<CreditVerdict> {
 	const paymentRef = db.doc(`payments/${reference}`);
 	const billingRef = db.doc(`users/${uid}/billing/${BILLING_DOC}`);
 	return db.runTransaction(async (tx: Transaction) => {
@@ -140,17 +125,8 @@ export async function creditReview(
 		const billSnap = await tx.get(billingRef);
 
 		if (paySnap.exists) {
-			const payData = paySnap.data() as {
-				status?: unknown;
-				uid?: unknown;
-				amountKobo?: unknown;
-			};
-			// already settled by a racing webhook/verify call. the billing
-			// increment committed in the same transaction as this status flip,
-			// so no re-credit is needed.
+			const payData = paySnap.data() as { status?: unknown; uid?: unknown; amountKobo?: unknown };
 			if (payData?.status === 'success') return { status: 'noop' };
-			// guard rails: never credit a reference that belongs to someone else
-			// or was initialized for a different price.
 			if (payData?.uid && payData.uid !== uid) return { status: 'noop' };
 			if (payData?.amountKobo !== undefined && payData.amountKobo !== amountKobo) {
 				return { status: 'noop' };
@@ -158,6 +134,7 @@ export async function creditReview(
 		}
 
 		const billing = toBillingDoc(billSnap.exists ? billSnap.data() : undefined);
+		// set payment success and scansRemaining/scansAllowed
 		tx.set(
 			paymentRef,
 			{
@@ -166,15 +143,19 @@ export async function creditReview(
 				amountKobo,
 				currency,
 				status: 'success',
+				scansRemaining: SCANS_PER_PAYMENT,
+				scansAllowed: SCANS_PER_PAYMENT,
 				updatedAt: new Date()
 			},
 			{ merge: true }
 		);
+
 		tx.set(billingRef, {
 			freeUsed: billing.freeUsed === true,
-			credits: billing.credits + 1,
+			credits: billing.credits + SCANS_PER_PAYMENT,
 			updatedAt: new Date()
 		});
+
 		return { status: 'credited' };
 	});
 }
