@@ -4,7 +4,7 @@ import { env as privateEnv } from '$env/dynamic/private';
 import { env as publicEnv } from '$env/dynamic/public';
 import { logger } from '$lib/log';
 import { resolveAuthMode } from '$lib/server/auth/config';
-import { getPaystackSecret, verifyPaystack, parseCurrency } from '$lib/server/paystack';
+import { getPaystackSecret, verifyPaystack } from '$lib/server/paystack';
 
 // the user lands on /payment/callback?reference=... after Paystack redirects
 // them back; this endpoint settles the charge by asking Paystack (server-side)

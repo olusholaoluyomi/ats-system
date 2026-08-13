@@ -8,12 +8,8 @@ import { resolveAuthMode } from '$lib/server/auth/config';
 import {
 	getPaystackSecret,
 	initializePaystack,
-	parsePriceNg,
-	validatePriceNg,
-	parseCurrency,
 	parsePriceForCurrency,
 	validatePriceForCurrency,
-	CURRENCY
 } from '$lib/server/paystack';
 import { SCANS_PER_PAYMENT } from '$lib/server/billing-config';
 
