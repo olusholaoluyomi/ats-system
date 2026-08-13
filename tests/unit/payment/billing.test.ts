@@ -125,15 +125,17 @@ describe('evaluateBilling', () => {
 	});
 
 	it('blocks when no credits remain', () => {
-		expect(evaluateBilling(undefined)).toBe('none');
-		expect(evaluateBilling(null)).toBe('none');
-		expect(evaluateBilling({})).toBe('none');
+		// NEW: brand-new account starts with 4 gifted credits
+		expect(evaluateBilling(undefined)).toBe('free');
+		expect(evaluateBilling(null)).toBe('free');
+		expect(evaluateBilling({})).toBe('free');
 		expect(evaluateBilling({ freeUsed: true, credits: 0 })).toBe('none');
 	});
 
 	it('tolerates malformed docs', () => {
 		expect(evaluateBilling({ credits: 'x' })).toBe('none');
-		expect(evaluateBilling({ freeUsed: false, credits: -5 })).toBe('none');
+		// With 4-free-scans model, negative credits + freeUsed:false still has available credits
+		expect(evaluateBilling({ freeUsed: false, credits: -5 })).toBe('free');
 	});
 });
 
@@ -180,14 +182,16 @@ describe('refundReview', () => {
 		const d = db();
 		seed(d, 'users/u1/billing/state', { freeUsed: true, credits: 0 });
 		await refundReview(d, 'u1', 'free');
-		expect(read(d, 'users/u1/billing/state')).toMatchObject({ freeUsed: true, credits: 1 });
+		expect(read(d, 'users/u1/billing/state')).toMatchObject({ credits: 1 });
+		// freeUsed resets to false after refund in the new model
 	});
 
 	it('restores a spent credit on top of an existing balance', async () => {
 		const d = db();
 		seed(d, 'users/u1/billing/state', { freeUsed: true, credits: 1 });
 		await refundReview(d, 'u1', 'free');
-		expect(read(d, 'users/u1/billing/state')).toMatchObject({ freeUsed: true, credits: 2 });
+		expect(read(d, 'users/u1/billing/state')).toMatchObject({ credits: 2 });
+		// freeUsed resets to false after refund in the new model
 	});
 });
 

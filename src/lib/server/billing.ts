@@ -26,10 +26,13 @@ interface BillingLike {
 }
 
 export function evaluateBilling(billing: BillingLike | null | undefined): ReviewUsed | 'none' {
-	const freeUsed = billing?.freeUsed === true;
-	const credits = typeof billing?.credits === 'number' ? billing.credits : 0;
+	if (billing == null) return 'free'; // brand-new account, no doc yet → 4 gifted credits
+	// If credits field is missing/undefined, treat as new account with 4 gifted credits
+	if (billing.credits === undefined) return 'free';
+	if (typeof billing.credits !== 'number') return 'none';
+	const freeUsed = billing.freeUsed === true;
 	if (!freeUsed) return 'free';
-	if (credits > 0) return 'free';
+	if (billing.credits > 0) return 'free';
 	return 'none';
 }
 
@@ -78,7 +81,8 @@ export async function refundReview(
 		const snap = await tx.get(billingRef);
 		const billing = toBillingDoc(snap.exists ? snap.data() : undefined);
 		if (used === 'free') {
-			tx.set(billingRef, { freeUsed: false, credits: billing.credits, updatedAt: new Date() });
+			// Restore the credit that was consumed from the free allocation
+			tx.set(billingRef, { freeUsed: false, credits: billing.credits + 1, updatedAt: new Date() });
 		} else {
 			// Simply increment the total credits counter
 			tx.set(billingRef, {
