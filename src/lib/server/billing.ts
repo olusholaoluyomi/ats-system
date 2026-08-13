@@ -1,5 +1,5 @@
 import type { Firestore, Transaction } from 'firebase-admin/firestore';
-import { SCANS_PER_PAYMENT } from './billing-config';
+import { PLANS, SCANS_PER_PAYMENT } from './billing-config';
 
 export interface BillingDoc {
 	freeUsed?: boolean;
@@ -12,7 +12,7 @@ export interface NormalizedBilling {
 	credits: number;
 }
 
-export const DEFAULT_BILLING: NormalizedBilling = { freeUsed: false, credits: 0 };
+export const DEFAULT_BILLING: NormalizedBilling = { freeUsed: true, credits: 4 };
 
 export const BILLING_DOC = 'state';
 
@@ -29,7 +29,7 @@ export function evaluateBilling(billing: BillingLike | null | undefined): Review
 	const freeUsed = billing?.freeUsed === true;
 	const credits = typeof billing?.credits === 'number' ? billing.credits : 0;
 	if (!freeUsed) return 'free';
-	if (credits > 0) return 'credit';
+	if (credits > 0) return 'free';
 	return 'none';
 }
 
@@ -52,7 +52,7 @@ export async function consumeReview(db: Firestore, uid: string): Promise<Consume
 		const billing = toBillingDoc(snap.exists ? snap.data() : undefined);
 		const used = evaluateBilling(billing);
 		if (used === 'free') {
-			tx.set(billingRef, { freeUsed: true, credits: billing.credits, updatedAt: new Date() });
+			tx.set(billingRef, { freeUsed: true, credits: billing.credits - 1, updatedAt: new Date() });
 			return { status: 'ok', used };
 		}
 		if (used === 'credit') {
