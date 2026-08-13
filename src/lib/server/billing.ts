@@ -1,5 +1,5 @@
 import type { Firestore, Transaction } from 'firebase-admin/firestore';
-import { PLANS, SCANS_PER_PAYMENT } from './billing-config';
+import { SCANS_PER_PAYMENT } from './billing-config';
 
 export interface BillingDoc {
 	freeUsed?: boolean;
