@@ -115,43 +115,41 @@ function read(db_: Firestore, path: string): DocData | undefined {
 }
 
 describe('evaluateBilling', () => {
-	it('grants the free review to a brand-new account', () => {
-		expect(evaluateBilling(undefined)).toBe('free');
-		expect(evaluateBilling(null)).toBe('free');
-		expect(evaluateBilling({})).toBe('free');
+	// note: evaluateBilling only looks at `credits` now (see DEFAULT_BILLING and
+	// the note in billing.ts) - `freeUsed` is retained on the doc for legacy
+	// records but no longer affects eligibility. a brand-new account has no
+	// doc at all yet, so this only checks docs that already carry a balance.
+	it('allows a review while credits remain', () => {
+		expect(evaluateBilling({ credits: 4 })).toBe('free');
+		expect(evaluateBilling({ freeUsed: true, credits: 2 })).toBe('free');
 	});
 
-	it('falls fallback to credits once the free review is used', () => {
-		expect(evaluateBilling({ freeUsed: true, credits: 2 })).toBe('credit');
-	});
-
-	it('blocks when the free review is used and no credits remain', () => {
+	it('blocks when no credits remain', () => {
+		expect(evaluateBilling(undefined)).toBe('none');
+		expect(evaluateBilling(null)).toBe('none');
+		expect(evaluateBilling({})).toBe('none');
 		expect(evaluateBilling({ freeUsed: true, credits: 0 })).toBe('none');
 	});
 
 	it('tolerates malformed docs', () => {
-		expect(evaluateBilling({ credits: 'x' })).toBe('free');
-		expect(evaluateBilling({ freeUsed: true })).toBe('none');
-		expect(evaluateBilling({ freeUsed: false, credits: -5 })).toBe('free');
+		expect(evaluateBilling({ credits: 'x' })).toBe('none');
+		expect(evaluateBilling({ freeUsed: false, credits: -5 })).toBe('none');
 	});
 });
 
 describe('consumeReview', () => {
-	it('grants the free review first and marks it used', async () => {
+	it('a brand-new account starts with 4 gifted credits and spends one per scan', async () => {
 		const d = db();
 		expect(await consumeReview(d, 'u1')).toEqual({ status: 'ok', used: 'free' });
-		expect(read(d, 'users/u1/billing/state')).toMatchObject({ freeUsed: true, credits: 0 });
+		// DEFAULT_BILLING seeds 4 credits for an account with no doc yet; one scan spends one.
+		expect(read(d, 'users/u1/billing/state')).toMatchObject({ freeUsed: true, credits: 3 });
 	});
 
-	it('spends a credit once the free review is gone', async () => {
+	it('spends a credit until the balance is exhausted', async () => {
 		const d = db();
 		seed(d, 'users/u1/billing/state', { freeUsed: true, credits: 3 });
-		// seed a payment with scansRemaining so the ledger decrement path runs
-		seed(d, 'payments/p1', { uid: 'u1', status: 'success', scansRemaining: 2 });
-		expect(await consumeReview(d, 'u1')).toEqual({ status: 'ok', used: 'credit' });
+		expect(await consumeReview(d, 'u1')).toEqual({ status: 'ok', used: 'free' });
 		expect(read(d, 'users/u1/billing/state')).toMatchObject({ freeUsed: true, credits: 2 });
-		// payment scansRemaining decremented by 1
-		expect(read(d, 'payments/p1')).toMatchObject({ scansRemaining: 1 });
 	});
 
 	it('blocks an account that is dry', async () => {
@@ -160,53 +158,65 @@ describe('consumeReview', () => {
 		expect(await consumeReview(d, 'u1')).toEqual({ status: 'blocked' });
 	});
 
-	it('double-click race: only one of two concurrent consumes wins the free review', async () => {
+	it('double-click race: only one of two concurrent consumes wins the last credit', async () => {
 		const d = db();
+		// seed exactly one credit so the race has a real winner/loser, unlike a
+		// brand-new account which starts with 4 and can absorb two concurrent hits.
+		seed(d, 'users/u1/billing/state', { freeUsed: true, credits: 1 });
 		const [a, b] = await Promise.all([consumeReview(d, 'u1'), consumeReview(d, 'u1')]);
 		const ok = [a, b].filter((v) => v.status === 'ok');
 		const blocked = [a, b].filter((v) => v.status === 'blocked');
 		expect(ok).toHaveLength(1);
 		expect(blocked).toHaveLength(1);
-		// the winner was charged 'free', not a credit
 		expect(ok[0].used).toBe('free');
+		expect(read(d, 'users/u1/billing/state')).toMatchObject({ credits: 0 });
 	});
 });
 
 describe('refundReview', () => {
-	it('resets the free review', async () => {
+	// refundReview always restores exactly the one credit consumeReview spent -
+	// there is no separate 'free' vs 'credit' outcome to distinguish anymore.
+	it('restores a credit after a failed scan', async () => {
 		const d = db();
 		seed(d, 'users/u1/billing/state', { freeUsed: true, credits: 0 });
 		await refundReview(d, 'u1', 'free');
-		expect(read(d, 'users/u1/billing/state')).toMatchObject({ freeUsed: false, credits: 0 });
+		expect(read(d, 'users/u1/billing/state')).toMatchObject({ freeUsed: true, credits: 1 });
 	});
 
-	it('restores a spent credit', async () => {
+	it('restores a spent credit on top of an existing balance', async () => {
 		const d = db();
 		seed(d, 'users/u1/billing/state', { freeUsed: true, credits: 1 });
-		await refundReview(d, 'u1', 'credit');
+		await refundReview(d, 'u1', 'free');
 		expect(read(d, 'users/u1/billing/state')).toMatchObject({ freeUsed: true, credits: 2 });
 	});
 });
 
 describe('creditReview', () => {
-	it('mints a credit and marks the payment settled', async () => {
+	// note: a fresh account (no existing billing doc) starts from DEFAULT_BILLING's
+	// 4 gifted credits, so crediting SCANS_PER_PAYMENT (4) on top lands at 8 - this
+	// is the correct outcome of "give all users 4 free scans", not a bug: a brand
+	// new user who buys a pack before ever scanning ends up with gift + purchase.
+	it('mints credits and marks the payment settled', async () => {
 		const d = db();
-		seed(d, 'payments/ref1', { uid: 'u1', amountKobo: 500000, status: 'initiated' });
+		// production payment docs are always written with `amountMinor` by
+		// /api/payment/initialize; that's the field creditReview's mismatch
+		// guard reads, so tests must seed the same field name.
+		seed(d, 'payments/ref1', { uid: 'u1', amountMinor: 500000, status: 'initiated' });
 		expect(await creditReview(d, 'u1', 'ref1', 500000, 'NGN')).toEqual({ status: 'credited' });
 		expect(read(d, 'payments/ref1')).toMatchObject({ status: 'success', uid: 'u1' });
-		expect(read(d, 'users/u1/billing/state')).toMatchObject({ freeUsed: false, credits: 4 });
-		// and scansAllowed/scansRemaining recorded on the payment
-		expect(read(d, 'payments/ref1')).toMatchObject({ scansAllowed: 4, scansRemaining: 4 });
+		expect(read(d, 'users/u1/billing/state')).toMatchObject({ freeUsed: true, credits: 8 });
+		// scansAllowed records how many scans this specific payment granted
+		expect(read(d, 'payments/ref1')).toMatchObject({ scansAllowed: 4 });
 	});
 
 	it('webhook/verify double-fire on the same reference credits exactly once', async () => {
 		const d = db();
-		seed(d, 'payments/ref1', { uid: 'u1', amountKobo: 500000, status: 'initiated' });
+		seed(d, 'payments/ref1', { uid: 'u1', amountMinor: 500000, status: 'initiated' });
 
 		await creditReview(d, 'u1', 'ref1', 500000, 'NGN');
 		const second = await creditReview(d, 'u1', 'ref1', 500000, 'NGN');
 		expect(second).toEqual({ status: 'noop' });
-		expect(read(d, 'users/u1/billing/state')).toMatchObject({ credits: 4 });
+		expect(read(d, 'users/u1/billing/state')).toMatchObject({ credits: 8 });
 
 		// and under genuine concurrency on a fresh reference
 		const [a, b] = await Promise.all([
@@ -215,12 +225,12 @@ describe('creditReview', () => {
 		]);
 		const verdicts = [a.status, b.status].sort();
 		expect(verdicts).toEqual(['credited', 'noop']);
-		expect(read(d, 'users/u2/billing/state')).toMatchObject({ credits: 4 });
+		expect(read(d, 'users/u2/billing/state')).toMatchObject({ credits: 8 });
 	});
 
 	it('never credits a reference that belongs to another user', async () => {
 		const d = db();
-		seed(d, 'payments/ref1', { uid: 'u1', amountKobo: 500000, status: 'initiated' });
+		seed(d, 'payments/ref1', { uid: 'u1', amountMinor: 500000, status: 'initiated' });
 		await creditReview(d, 'u2', 'ref1', 500000, 'NGN');
 		expect(read(d, 'payments/ref1')).toMatchObject({ status: 'initiated' });
 		expect(read(d, 'users/u2/billing/state')).toBeUndefined();
@@ -228,7 +238,7 @@ describe('creditReview', () => {
 
 	it('never credits a reference for a different amount than it was initialized for', async () => {
 		const d = db();
-		seed(d, 'payments/ref1', { uid: 'u1', amountKobo: 500000, status: 'initiated' });
+		seed(d, 'payments/ref1', { uid: 'u1', amountMinor: 500000, status: 'initiated' });
 		await creditReview(d, 'u1', 'ref1', 1, 'NGN');
 		expect(read(d, 'payments/ref1')).toMatchObject({ status: 'initiated' });
 		expect(read(d, 'users/u1/billing/state')).toBeUndefined();
@@ -238,6 +248,6 @@ describe('creditReview', () => {
 		const d = db();
 		await creditReview(d, 'u1', 'ref-missing', 500000, 'NGN');
 		expect(read(d, 'payments/ref-missing')).toMatchObject({ status: 'success', uid: 'u1' });
-		expect(read(d, 'users/u1/billing/state')).toMatchObject({ credits: 4 });
+		expect(read(d, 'users/u1/billing/state')).toMatchObject({ credits: 8 });
 	});
 });

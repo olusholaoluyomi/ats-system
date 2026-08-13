@@ -2,7 +2,12 @@ import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { env as privateEnv } from '$env/dynamic/private';
 import { logger } from '$lib/log';
-import { getPaystackSecret, parseCurrency, parsePriceForCurrency, validatePriceForCurrency } from '$lib/server/paystack';
+import {
+	getPaystackSecret,
+	parseCurrency,
+	parsePriceForCurrency,
+	validatePriceForCurrency
+} from '$lib/server/paystack';
 
 // Paystack posts the charge result here (server-to-server, no client auth).
 // the x-paystack-signature header authenticates the call: HMAC-SHA512 of the
