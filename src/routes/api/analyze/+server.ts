@@ -312,7 +312,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 				return json(
 					{
 						error: 'payment_required',
-						message: `Your free review is used up. Each additional review costs ${currencySymbol}${price}.`,
+						message: `Your free reviews are used up. Each additional review costs ${currencySymbol}${price}.`,
 						price,
 						currency
 					},
