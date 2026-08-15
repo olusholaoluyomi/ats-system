@@ -86,7 +86,7 @@ export async function scoreLLM(
 				return { status: 'rate_limited', retryAfterSec };
 			}
 			if (response.status === 402) {
-				// the free review is used up and the account has no credits left.
+				// the free reviews are used up and the account has no credits left.
 				// distinct from a generic error: the scanner shows the paywall and
 				// must NOT degrade to the rule-based scorer.
 				return {

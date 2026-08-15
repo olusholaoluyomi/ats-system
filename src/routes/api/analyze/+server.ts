@@ -251,9 +251,9 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	};
 
 	// ---- billing gate (firebase mode only) ----
-	// hosted paid-review model: the first full-score review per account is free,
+	// hosted paid-review model: the first 4 full-score reviews per account are free,
 	// each subsequent one costs a paid credit. this runs BEFORE the cache lookup
-	// and the LLM call so the paywall cannot be dodged by resubmitting an
+		// and the LLM call so the paywall cannot be dodged by resubmitting an
 	// identical resume (cache hit) or by falling through to the client's
 	// rule-based scorer. ldap/none modes have no wallet concept and skip the
 	// block entirely (payments are inert outside firebase mode).

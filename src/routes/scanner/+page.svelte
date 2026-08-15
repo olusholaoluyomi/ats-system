@@ -46,7 +46,7 @@
 	let payingForReview = $state(false);
 	let paymentError = $state<string | null>(null);
 
-	// whether the account is currently dry (no free review, no credits).
+	// whether the account is currently dry (no free reviews, no credits).
 	const paywallVisible = $derived(
 		!scoresStore.hasResults &&
 			billingStore.enabled &&
@@ -117,7 +117,7 @@
 			return;
 		}
 
-		// the first scan is free, every later one costs a paid credit. check the
+		// the first 4 scans are free, every later one costs a paid credit. check the
 		// mirrored billing doc before firing the request so a dry account gets the
 		// paywall instantly instead of a wasted round-trip (and a flash of the
 		// scanning animation) that only ends in a 402. the server still enforces
