@@ -12,7 +12,11 @@ import {
 	parsePriceForCurrency,
 	validatePriceForCurrency
 } from '$lib/server/paystack';
-import { SCANS_PER_PAYMENT } from '$lib/server/billing-config';
+import {
+	SCANS_PER_PAYMENT,
+	PRICE_PER_4_SCANS,
+	MONTHLY_SUBSCRIPTION_PRICE
+} from '$lib/server/billing-config';
 
 // payments only exist in firebase mode (the hosted paid-review model). ldap
 // self-host and anonymous 'none' mode have no concept of a wallet, so the
@@ -38,8 +42,14 @@ export const POST: RequestHandler = async ({ request }) => {
 		return json({ error: 'payments are not configured on this deploy' }, { status: 503 });
 	}
 
+	// Parse request body to get payment type
+	const body = await request.json().catch(() => ({}));
+	const paymentType = body.payment_type || 'one-time'; // 'one-time' or 'monthly'
+
 	const currency = parseCurrency(privateEnv);
-	const price = parsePriceForCurrency(privateEnv, currency);
+	const price =
+		paymentType === 'monthly' ? MONTHLY_SUBSCRIPTION_PRICE : PRICE_PER_4_SCANS;
+
 	try {
 		validatePriceForCurrency(price, currency);
 	} catch (err) {
@@ -72,9 +82,10 @@ export const POST: RequestHandler = async ({ request }) => {
 			amountMinor,
 			currency,
 			status: 'initiated',
+			isSubscription: paymentType === 'monthly',
 			createdAt: new Date(),
 			updatedAt: new Date(),
-			scansAllowed: SCANS_PER_PAYMENT
+			scansAllowed: paymentType === 'monthly' ? null : SCANS_PER_PAYMENT
 		});
 	} catch (err) {
 		logger.error('payment.intent_write_failed', {
@@ -92,7 +103,8 @@ export const POST: RequestHandler = async ({ request }) => {
 			amountKobo: amountMinor,
 			currency,
 			callbackUrl,
-			cancelUrl
+			cancelUrl,
+			plan: paymentType === 'monthly' ? process.env.PAYSTACK_MONTHLY_PLAN_CODE : undefined
 		});
 	} catch (err) {
 		logger.error('payment.initialize_failed', {
