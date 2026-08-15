@@ -11,7 +11,9 @@ import { authStore } from './auth.svelte';
 
 class BillingStore {
 	freeUsed = $state(false);
-	credits = $state(0);
+	credits = $state(4);
+	subscriptionType = $state<'free' | 'one-time' | 'monthly'>('free');
+	subscriptionExpiresAt = $state<Date | null>(null);
 	loading = $state(true);
 	error = $state<string | null>(null);
 
@@ -22,6 +24,11 @@ class BillingStore {
 
 	// whether the current account can run a review right now (free or paid).
 	get canReview(): boolean {
+		// Monthly subscribers can always review
+		if (this.subscriptionType === 'monthly' && this.subscriptionExpiresAt) {
+			return this.subscriptionExpiresAt > new Date();
+		}
+		// Free tier or one-time: check credits
 		return !this.freeUsed || this.credits > 0;
 	}
 
@@ -36,7 +43,9 @@ class BillingStore {
 		}
 		if (!authStore.isAuthenticated || !authStore.user) {
 			this.freeUsed = false;
-			this.credits = 0;
+			this.credits = 4;
+			this.subscriptionType = 'free';
+			this.subscriptionExpiresAt = null;
 			this.loading = false;
 			return;
 		}
@@ -49,7 +58,14 @@ class BillingStore {
 			const snap = await getDoc(doc(db, 'users', authStore.user.uid, 'billing', 'state'));
 			const data = snap.exists() ? snap.data() : {};
 			this.freeUsed = data.freeUsed === true;
-			this.credits = typeof data.credits === 'number' ? data.credits : 0;
+			this.credits = typeof data.credits === 'number' ? data.credits : 4;
+			this.subscriptionType = (data.subscriptionType as 'free' | 'one-time' | 'monthly') || 'free';
+			this.subscriptionExpiresAt =
+				data.subscriptionExpiresAt && typeof data.subscriptionExpiresAt === 'string'
+					? new Date(data.subscriptionExpiresAt)
+					: data.subscriptionExpiresAt instanceof Date
+						? data.subscriptionExpiresAt
+						: null;
 			this.error = null;
 		} catch (err) {
 			this.error = err instanceof Error ? err.message : 'failed to load billing';
@@ -62,9 +78,9 @@ class BillingStore {
 	}
 
 	// starts a checkout and returns the Paystack authorization URL to redirect to.
-	async payForReview(): Promise<string> {
+	async payForReview(paymentType: 'one-time' | 'monthly' = 'one-time'): Promise<string> {
 		const { initializePayment } = await import('$lib/payment');
-		const { authorizationUrl } = await initializePayment();
+		const { authorizationUrl } = await initializePayment(paymentType);
 		return authorizationUrl;
 	}
 }

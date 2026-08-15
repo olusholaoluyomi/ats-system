@@ -45,6 +45,7 @@
 	let paywallPrice = $state(10000);
 	let payingForReview = $state(false);
 	let paymentError = $state<string | null>(null);
+	let selectedPaymentType = $state<'one-time' | 'monthly'>('one-time');
 
 	// whether the account is currently dry (no free reviews, no credits).
 	const paywallVisible = $derived(
@@ -214,7 +215,7 @@
 		payingForReview = true;
 		paymentError = null;
 		try {
-			const url = await billingStore.payForReview();
+			const url = await billingStore.payForReview(selectedPaymentType);
 			window.location.href = url;
 		} catch (err) {
 			paymentError = err instanceof Error ? err.message : 'failed to start payment';
@@ -487,11 +488,34 @@
 								<path d="M7 11V7a5 5 0 0 1 10 0v4" />
 							</svg>
 							<div class="paywall-body">
-								<h3 class="paywall-title">Your free reviews are used up</h3>
-								<p class="paywall-text">
-									Each additional AI review costs <strong>₦{paywallPrice}</strong> — paid once per scan,
-									no subscription. Your first 4 reviews were free.
-								</p>
+								<h3 class="paywall-title">
+									{billingStore.credits > 0
+										? `You have ${billingStore.credits} free review${billingStore.credits > 1 ? 's' : ''} left`
+										: 'Your free reviews are used up'}
+								</h3>
+								<p class="paywall-text">Choose a plan to continue scanning:</p>
+								<div class="payment-options">
+									<button
+										class="payment-option {selectedPaymentType === 'one-time' ? 'selected' : ''}"
+										onclick={() => (selectedPaymentType = 'one-time')}
+									>
+										<div class="option-header">
+											<span class="option-title">Pay-Per-Use</span>
+											<span class="option-price">₦10,000</span>
+										</div>
+										<div class="option-description">4 scans • No subscription</div>
+									</button>
+									<button
+										class="payment-option {selectedPaymentType === 'monthly' ? 'selected' : ''}"
+										onclick={() => (selectedPaymentType = 'monthly')}
+									>
+										<div class="option-header">
+											<span class="option-title">Monthly Subscription</span>
+											<span class="option-price">₦50,000</span>
+										</div>
+										<div class="option-description">Unlimited scans • 30 days</div>
+									</button>
+								</div>
 								{#if paymentError}
 									<div class="error">{paymentError}</div>
 								{/if}
@@ -504,7 +528,9 @@
 										<span class="spinner-inline"></span>
 										Opening payment...
 									{:else}
-										Pay ₦{paywallPrice} to Scan
+										{selectedPaymentType === 'monthly'
+											? 'Subscribe ₦50,000'
+											: 'Pay ₦10,000 for 4 Scans'}
 									{/if}
 								</button>
 							</div>
@@ -1105,6 +1131,59 @@
 	.paywall .btn-scan {
 		font-size: 0.9rem;
 		padding: 0.7rem 1.6rem;
+	}
+
+	.payment-options {
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+		margin-bottom: 1rem;
+	}
+
+	.payment-option {
+		display: flex;
+		flex-direction: column;
+		gap: 0.25rem;
+		padding: 0.75rem 1rem;
+		background: var(--glass-bg);
+		border: 1px solid var(--glass-border);
+		border-radius: var(--radius-md);
+		cursor: pointer;
+		transition:
+			border-color 0.2s ease,
+			background 0.2s ease;
+	}
+
+	.payment-option:hover {
+		border-color: var(--accent-border);
+	}
+
+	.payment-option.selected {
+		border-color: var(--accent-text);
+		background: rgba(139, 92, 246, 0.1);
+	}
+
+	.option-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+	}
+
+	.option-title {
+		font-weight: 600;
+		color: var(--text-primary);
+		font-size: 0.9rem;
+	}
+
+	.option-price {
+		font-weight: 700;
+		color: var(--accent-text);
+		font-size: 0.9rem;
+	}
+
+	.option-description {
+		font-size: 0.8rem;
+		color: var(--text-secondary);
 	}
 
 	@media (max-width: 640px) {

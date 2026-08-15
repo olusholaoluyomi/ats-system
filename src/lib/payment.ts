@@ -6,13 +6,16 @@ export interface InitializePaymentResult {
 	reference: string;
 }
 
-export async function initializePayment(): Promise<InitializePaymentResult> {
+export async function initializePayment(
+	paymentType: 'one-time' | 'monthly' = 'one-time'
+): Promise<InitializePaymentResult> {
 	const token = await authStore.getIdToken();
 	if (!token) throw new Error('you must be signed in to purchase a review');
 
 	const response = await fetch('/api/payment/initialize', {
 		method: 'POST',
-		headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
+		headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+		body: JSON.stringify({ payment_type: paymentType })
 	});
 	const data = await response.json().catch(() => ({}));
 	if (!response.ok) {
