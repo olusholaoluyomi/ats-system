@@ -154,7 +154,7 @@
 					<path d="M3 3h18v4H3z" />
 					<path d="M5 11h14v10H5z" />
 				</svg>
-				Transaction History
+				Subscriptions
 			</a>
 			<div class="dropdown-divider"></div>
 			<button class="dropdown-item" onclick={handleSignOut}>

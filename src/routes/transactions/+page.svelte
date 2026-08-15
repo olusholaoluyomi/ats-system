@@ -12,12 +12,16 @@
 		status: string | null;
 		createdAt: string | null;
 		scansAllowed: number | null;
+		isSubscription: boolean | null;
 		email: string | null;
 	}
 
 	interface BillingState {
 		freeUsed: boolean;
 		credits: number;
+		subscriptionType: 'free' | 'one-time' | 'monthly';
+		subscriptionExpiresAt: Date | null;
+		reviewsThisMonth: number;
 	}
 
 	let payments = $state<Payment[]>([]);
@@ -25,7 +29,10 @@
 	let error = $state<string | null>(null);
 	let billingState = $state<BillingState>({
 		freeUsed: false,
-		credits: 0
+		credits: 4,
+		subscriptionType: 'free',
+		subscriptionExpiresAt: null,
+		reviewsThisMonth: 0
 	});
 
 	onMount(async () => {
@@ -72,6 +79,7 @@
 					status: typeof data.status === 'string' ? data.status : null,
 					createdAt: createdIso,
 					scansAllowed: typeof data.scansAllowed === 'number' ? data.scansAllowed : null,
+					isSubscription: data.isSubscription === true,
 					email: typeof data.email === 'string' ? data.email : null
 				};
 			});
@@ -79,11 +87,19 @@
 			// Update billing state
 			billingState = {
 				freeUsed: billing.freeUsed === true,
-				credits: typeof billing.credits === 'number' ? billing.credits : 0
+				credits: typeof billing.credits === 'number' ? billing.credits : 4,
+				subscriptionType: (billing.subscriptionType as 'free' | 'one-time' | 'monthly') || 'free',
+				subscriptionExpiresAt:
+					billing.subscriptionExpiresAt && typeof billing.subscriptionExpiresAt === 'string'
+						? new Date(billing.subscriptionExpiresAt)
+						: billing.subscriptionExpiresAt instanceof Date
+							? billing.subscriptionExpiresAt
+							: null,
+				reviewsThisMonth: typeof billing.reviewsThisMonth === 'number' ? billing.reviewsThisMonth : 0
 			};
 		} catch (err) {
-			error = err instanceof Error ? err.message : 'Failed to load transactions';
-			console.error('Error loading transactions:', err);
+			error = err instanceof Error ? err.message : 'Failed to load subscriptions';
+			console.error('Error loading subscriptions:', err);
 		} finally {
 			loading = false;
 		}
@@ -124,40 +140,84 @@
 				return 'text-gray-500';
 		}
 	}
+
+	function isPaymentStuck(payment: Payment): boolean {
+		if (payment.status !== 'initiated' || !payment.createdAt) return false;
+		const createdAt = new Date(payment.createdAt);
+		const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);
+		return createdAt < thirtyMinutesAgo;
+	}
+
+	async function retryPayment(reference: string) {
+		try {
+			const response = await fetch('/api/payment/initialize', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					Authorization: `Bearer ${authStore.user?.uid}`
+				},
+				body: JSON.stringify({ reference })
+			});
+			const data = await response.json();
+			if (data.authorization_url) {
+				window.location.href = data.authorization_url;
+			}
+		} catch (err) {
+			console.error('Failed to retry payment:', err);
+		}
+	}
 </script>
 
 <SeoHead
-	title="Payment History | ATS Screener"
-	description="View your payment history and remaining scan credits."
+	title="Subscriptions | ATS Screener"
+	description="View your subscription status and payment history."
 />
 
-<main class="transactions-page">
+<main class="subscriptions-page">
 	<div class="container">
 		<div class="header">
-			<h1>Payment History</h1>
+			<h1>Subscriptions</h1>
 			<a href="/scanner" class="back-link">← Back to Scanner</a>
 		</div>
 
 		{#if loading}
-			<div class="loading">Loading transactions...</div>
+			<div class="loading">Loading subscriptions...</div>
 		{:else if error}
 			<div class="error">
 				<p>{error}</p>
 				<button onclick={() => window.location.reload()}>Retry</button>
 			</div>
 		{:else}
-			<div class="billing-summary">
+			<div class="subscription-summary">
 				<div class="summary-card">
-					<h3>Current Balance</h3>
-					<p class="credits-display">{billingState.credits} scan credits</p>
-					<p class="free-status">
-						{billingState.freeUsed ? 'Free review used' : 'Free review available'}
+					<h3>Current Plan</h3>
+					<p class="plan-type">
+						{billingState.subscriptionType === 'monthly'
+							? 'Monthly Subscription'
+							: billingState.subscriptionType === 'one-time'
+								? 'Pay-Per-Use'
+								: 'Free Plan'}
 					</p>
+					{#if billingState.subscriptionType === 'monthly'}
+						<p class="plan-details">
+							Unlimited reviews until {billingState.subscriptionExpiresAt
+								? formatDate(billingState.subscriptionExpiresAt.toISOString())
+								: 'N/A'}
+						</p>
+						<p class="reviews-count">
+							Reviews this month: {billingState.reviewsThisMonth}
+						</p>
+					{:else}
+						<p class="credits-display">{billingState.credits} scan credits remaining</p>
+						<p class="free-status">
+							{billingState.freeUsed ? 'Free credits used' : 'Free credits available'}
+						</p>
+					{/if}
 				</div>
 			</div>
 
 			<div class="transactions-list">
-				<h2>Transactions</h2>
+				<h2>Payment History</h2>
 				{#if payments.length === 0}
 					<p class="no-transactions">No payment history found.</p>
 				{:else}
@@ -177,10 +237,17 @@
 										{(payment.status || 'unknown').toUpperCase()}
 									</div>
 									<div class="transaction-ref">Ref: {payment.reference}</div>
-									{#if payment.scansAllowed}
+									{#if payment.isSubscription}
+										<div class="transaction-type">Monthly Subscription</div>
+									{:else if payment.scansAllowed}
 										<div class="transaction-scans">
 											{payment.scansAllowed} scans included
 										</div>
+									{/if}
+									{#if isPaymentStuck(payment)}
+										<button class="retry-btn" onclick={() => retryPayment(payment.reference)}>
+											Retry Payment
+										</button>
 									{/if}
 								</div>
 							</div>
@@ -193,7 +260,7 @@
 </main>
 
 <style>
-	.transactions-page {
+	.subscriptions-page {
 		min-height: 100vh;
 		padding: 2rem;
 		background: var(--bg-primary);
@@ -250,7 +317,7 @@
 		cursor: pointer;
 	}
 
-	.billing-summary {
+	.subscription-summary {
 		margin-bottom: 2rem;
 	}
 
@@ -269,10 +336,29 @@
 		font-weight: 500;
 	}
 
+	.plan-type {
+		font-size: 1.5rem;
+		font-weight: 700;
+		color: var(--text-primary);
+		margin: 0.5rem 0;
+	}
+
+	.plan-details {
+		color: var(--text-secondary);
+		font-size: 0.9rem;
+		margin: 0.5rem 0;
+	}
+
 	.credits-display {
 		font-size: 2rem;
 		font-weight: 700;
 		color: var(--text-primary);
+		margin: 0.5rem 0;
+	}
+
+	.reviews-count {
+		color: var(--text-secondary);
+		font-size: 0.9rem;
 		margin: 0.5rem 0;
 	}
 
@@ -349,9 +435,22 @@
 		font-family: monospace;
 	}
 
-	.transaction-scans {
+	.transaction-scans,
+	.transaction-type {
 		font-size: 0.8rem;
 		color: var(--text-tertiary);
+	}
+
+	.retry-btn {
+		margin-top: 0.5rem;
+		padding: 0.4rem 0.8rem;
+		background: var(--gradient-primary);
+		color: var(--btn-text);
+		border: none;
+		border-radius: var(--radius-md);
+		cursor: pointer;
+		font-size: 0.8rem;
+		font-weight: 600;
 	}
 
 	.text-green-500 {
