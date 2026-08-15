@@ -52,6 +52,7 @@ export const GET: RequestHandler = async ({ request, url }) => {
 			amountMinor?: number;
 			currency?: string;
 			status?: string;
+			isSubscription?: boolean;
 		};
 
 		// a user may only settle their OWN checkout; someone else's reference
@@ -91,14 +92,21 @@ export const GET: RequestHandler = async ({ request, url }) => {
 		}
 
 		const { creditReview } = await import('$lib/server/billing');
+		const isSubscription = payment.isSubscription === true;
 		const verdict = await creditReview(
 			db,
 			identity.uid,
 			reference,
 			verification.amountKobo,
-			expectedCurrency
+			expectedCurrency,
+			isSubscription
 		);
-		logger.info('payment.verified', { uid: identity.uid, reference, verdict: verdict.status });
+		logger.info('payment.verified', {
+			uid: identity.uid,
+			reference,
+			verdict: verdict.status,
+			isSubscription
+		});
 		return json({ success: true, reference });
 	} catch (err) {
 		logger.error('payment.verify_failed', {

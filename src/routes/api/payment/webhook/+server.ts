@@ -92,6 +92,7 @@ export const POST: RequestHandler = async ({ request }) => {
 			uid?: string;
 			currency?: string;
 			amountMinor?: number;
+			isSubscription?: boolean;
 		};
 		const uid = paymentData?.uid;
 		if (typeof uid !== 'string' || uid.length === 0) {
@@ -117,8 +118,16 @@ export const POST: RequestHandler = async ({ request }) => {
 		}
 
 		const { creditReview } = await import('$lib/server/billing');
-		const verdict = await creditReview(db, uid, reference, Number(data.amount), paymentCurrency);
-		logger.info('payment.credited', { uid, reference, verdict: verdict.status });
+		const isSubscription = paymentData.isSubscription === true;
+		const verdict = await creditReview(
+			db,
+			uid,
+			reference,
+			Number(data.amount),
+			paymentCurrency,
+			isSubscription
+		);
+		logger.info('payment.credited', { uid, reference, verdict: verdict.status, isSubscription });
 	} catch (err) {
 		logger.error('payment.webhook_credit_failed', {
 			reference,
