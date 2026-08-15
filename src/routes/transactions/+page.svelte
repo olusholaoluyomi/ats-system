@@ -165,10 +165,7 @@
 							<div class="transaction-item">
 								<div class="transaction-info">
 									<div class="transaction-amount">
-										{formatCurrency(
-											payment.amountMinor || 0,
-											payment.currency || 'NGN'
-										)}
+										{formatCurrency(payment.amountMinor || 0, payment.currency || 'NGN')}
 									</div>
 									<div class="transaction-date">
 										{formatDate(payment.createdAt || '')}
