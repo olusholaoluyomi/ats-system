@@ -1,7 +1,7 @@
 /**
  * Firestore Migration Script
  * Usage: node scripts/migrate-firestore.cjs
- * 
+ *
  * This script will:
  * 1. Check all payment documents and ensure they have required fields
  * 2. Check all billing documents and ensure they have required fields
@@ -69,7 +69,7 @@ async function migratePayments() {
 
 	try {
 		const paymentsSnap = await db.collection('payments').get();
-		
+
 		if (paymentsSnap.empty) {
 			console.log('❌ No payments found. Nothing to migrate.');
 			return { updated: 0, total: 0 };
@@ -94,7 +94,9 @@ async function migratePayments() {
 
 			if (!data.updatedAt && data.createdAt) {
 				updates.push({ field: 'updatedAt', value: data.createdAt });
-				console.log(`   ➕ Adding updatedAt: ${data.createdAt.toDate?.toISOString() || data.createdAt}`);
+				console.log(
+					`   ➕ Adding updatedAt: ${data.createdAt.toDate?.toISOString() || data.createdAt}`
+				);
 			}
 
 			if (data.status === 'success' && typeof data.amountMinor !== 'number') {
@@ -108,7 +110,7 @@ async function migratePayments() {
 			if (updates.length > 0) {
 				try {
 					const updateData = {};
-					updates.forEach(u => {
+					updates.forEach((u) => {
 						updateData[u.field] = u.value;
 					});
 
@@ -136,7 +138,7 @@ async function migrateBilling() {
 
 	try {
 		const billingSnap = await db.collectionGroup('billing').get();
-		
+
 		if (billingSnap.empty) {
 			console.log('❌ No billing documents found. Nothing to migrate.');
 			return { updated: 0, total: 0 };
@@ -172,7 +174,7 @@ async function migrateBilling() {
 			if (updates.length > 0) {
 				try {
 					const updateData = {};
-					updates.forEach(u => {
+					updates.forEach((u) => {
 						updateData[u.field] = u.value;
 					});
 
@@ -242,7 +244,6 @@ async function runMigration() {
 		console.log(`   - Insights: ensured`);
 		console.log('\n💡 Your database is now up to date with the latest schema!');
 		console.log('💡 Try refreshing the scanner page to see your updated credits.');
-
 	} catch (error) {
 		console.error('❌ Migration failed:', error.message);
 		console.error(error.stack);

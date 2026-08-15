@@ -10,7 +10,7 @@ import {
 	initializePaystack,
 	parseCurrency,
 	parsePriceForCurrency,
-	validatePriceForCurrency,
+	validatePriceForCurrency
 } from '$lib/server/paystack';
 import { SCANS_PER_PAYMENT } from '$lib/server/billing-config';
 
