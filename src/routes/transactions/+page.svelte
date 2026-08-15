@@ -36,7 +36,8 @@
 
 		try {
 			const { db } = await getFirebase();
-			const { collection, query, where, orderBy, getDocs, doc, getDoc } = await import('firebase/firestore');
+			const { collection, query, where, orderBy, getDocs, doc, getDoc } =
+				await import('firebase/firestore');
 
 			// Get billing info
 			const billingRef = doc(db, 'users', authStore.user!.uid, 'billing', 'state');
@@ -165,10 +166,7 @@
 							<div class="transaction-item">
 								<div class="transaction-info">
 									<div class="transaction-amount">
-										{formatCurrency(
-											payment.amountMinor || 0,
-											payment.currency || 'NGN'
-										)}
+										{formatCurrency(payment.amountMinor || 0, payment.currency || 'NGN')}
 									</div>
 									<div class="transaction-date">
 										{formatDate(payment.createdAt || '')}

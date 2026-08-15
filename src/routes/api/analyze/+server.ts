@@ -176,9 +176,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	const limit = checkRateLimit(ip);
 	if (!limit.allowed) {
 		const reasonMsg =
-			limit.reason === 'minute'
-				? 'too many requests this minute'
-				: 'daily limit reached';
+			limit.reason === 'minute' ? 'too many requests this minute' : 'daily limit reached';
 		return json(
 			{
 				error: `rate limit exceeded: ${reasonMsg}. retry after ${limit.retryAfterSec}s.`,
@@ -299,7 +297,18 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 				const { parsePriceForCurrency, parseCurrency } = await import('$lib/server/paystack');
 				const currency = parseCurrency(env);
 				const price = parsePriceForCurrency(env, currency);
-				const currencySymbol = currency === 'NGN' ? '₦' : currency === 'USD' ? '$' : currency === 'GHS' ? 'GH₵' : currency === 'KES' ? 'KSh' : currency === 'ZAR' ? 'R' : currency;
+				const currencySymbol =
+					currency === 'NGN'
+						? '₦'
+						: currency === 'USD'
+							? '$'
+							: currency === 'GHS'
+								? 'GH₵'
+								: currency === 'KES'
+									? 'KSh'
+									: currency === 'ZAR'
+										? 'R'
+										: currency;
 				return json(
 					{
 						error: 'payment_required',

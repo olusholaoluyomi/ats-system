@@ -88,7 +88,11 @@ export const POST: RequestHandler = async ({ request }) => {
 			logger.warn('payment.webhook_unknown_reference', { reference });
 			return json({ ok: true });
 		}
-		const paymentData = paymentSnap.data() as { uid?: string; currency?: string; amountMinor?: number };
+		const paymentData = paymentSnap.data() as {
+			uid?: string;
+			currency?: string;
+			amountMinor?: number;
+		};
 		const uid = paymentData?.uid;
 		if (typeof uid !== 'string' || uid.length === 0) {
 			logger.warn('payment.webhook_reference_missing_uid', { reference });
@@ -97,7 +101,8 @@ export const POST: RequestHandler = async ({ request }) => {
 
 		// Use the currency from the payment record, not the config
 		const paymentCurrency = typeof paymentData.currency === 'string' ? paymentData.currency : 'NGN';
-		const expectedAmount = typeof paymentData.amountMinor === 'number' ? paymentData.amountMinor : 0;
+		const expectedAmount =
+			typeof paymentData.amountMinor === 'number' ? paymentData.amountMinor : 0;
 
 		// Validate amount matches what we expect
 		if (Number(data.amount) !== expectedAmount || data.currency !== paymentCurrency) {
@@ -112,13 +117,7 @@ export const POST: RequestHandler = async ({ request }) => {
 		}
 
 		const { creditReview } = await import('$lib/server/billing');
-		const verdict = await creditReview(
-			db,
-			uid,
-			reference,
-			Number(data.amount),
-			paymentCurrency
-		);
+		const verdict = await creditReview(db, uid, reference, Number(data.amount), paymentCurrency);
 		logger.info('payment.credited', { uid, reference, verdict: verdict.status });
 	} catch (err) {
 		logger.error('payment.webhook_credit_failed', {
