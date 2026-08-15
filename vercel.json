@@ -1,15 +1,15 @@
 {
-	'buildCommand': 'pnpm build',
-	'devCommand': 'pnpm dev',
-	'installCommand': 'pnpm install',
-	crons: [],
-	headers: [
+	"buildCommand": "pnpm build",
+	"devCommand": "pnpm dev",
+	"installCommand": "pnpm install",
+	"crons": [],
+	"headers": [
 		{
-			source: '/(.*)',
-			headers: [
+			"source": "/(.*)",
+			"headers": [
 				{
-					key: 'Cache-Control',
-					value: 'no-store, no-cache, must-revalidate, max-age=0'
+					"key": "Cache-Control",
+					"value": "no-store, no-cache, must-revalidate, max-age=0"
 				}
 			]
 		}
