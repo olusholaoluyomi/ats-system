@@ -176,7 +176,9 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	const limit = checkRateLimit(ip);
 	if (!limit.allowed) {
 		const reasonMsg =
-			limit.reason === 'minute' ? 'too many requests this minute' : 'daily limit reached';
+			limit.reason === 'minute'
+				? 'too many requests this minute'
+				: 'daily limit reached';
 		return json(
 			{
 				error: `rate limit exceeded: ${reasonMsg}. retry after ${limit.retryAfterSec}s.`,

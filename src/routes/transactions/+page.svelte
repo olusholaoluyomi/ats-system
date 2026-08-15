@@ -165,9 +165,14 @@
 							<div class="transaction-item">
 								<div class="transaction-info">
 									<div class="transaction-amount">
-										{formatCurrency(payment.amountMinor || 0, payment.currency || 'NGN')}
+										{formatCurrency(
+											payment.amountMinor || 0,
+											payment.currency || 'NGN'
+										)}
 									</div>
-									<div class="transaction-date">{formatDate(payment.createdAt || '')}</div>
+									<div class="transaction-date">
+										{formatDate(payment.createdAt || '')}
+									</div>
 								</div>
 								<div class="transaction-details">
 									<div class="transaction-status {getStatusColor(payment.status || 'unknown')}">
@@ -175,7 +180,9 @@
 									</div>
 									<div class="transaction-ref">Ref: {payment.reference}</div>
 									{#if payment.scansAllowed}
-										<div class="transaction-scans">{payment.scansAllowed} scans included</div>
+										<div class="transaction-scans">
+											{payment.scansAllowed} scans included
+										</div>
 									{/if}
 								</div>
 							</div>

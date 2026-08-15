@@ -112,7 +112,13 @@ export const POST: RequestHandler = async ({ request }) => {
 		}
 
 		const { creditReview } = await import('$lib/server/billing');
-		const verdict = await creditReview(db, uid, reference, Number(data.amount), paymentCurrency);
+		const verdict = await creditReview(
+			db,
+			uid,
+			reference,
+			Number(data.amount),
+			paymentCurrency
+		);
 		logger.info('payment.credited', { uid, reference, verdict: verdict.status });
 	} catch (err) {
 		logger.error('payment.webhook_credit_failed', {
