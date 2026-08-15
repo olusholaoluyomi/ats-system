@@ -137,6 +137,7 @@ export interface InitializeOptions {
 	currency?: SupportedCurrency;
 	callbackUrl: string;
 	cancelUrl?: string;
+	plan?: string; // For subscription plans
 }
 
 export interface InitializeResult {
@@ -155,16 +156,24 @@ export async function initializePaystack(
 	if (!secret) throw new PaystackError('PAYSTACK_SECRET_KEY not configured', 503);
 
 	const currency = opts.currency || CURRENCY;
+	const body: Record<string, unknown> = {
+		email: opts.email,
+		reference: opts.reference,
+		currency,
+		callback_url: opts.callbackUrl,
+		...(opts.cancelUrl ? { cancel_url: opts.cancelUrl } : {})
+	};
+
+	// If plan is provided, use subscription mode
+	if (opts.plan) {
+		body.plan = opts.plan;
+	} else {
+		body.amount = opts.amountKobo;
+	}
+
 	const data = await paystackFetch(secret, '/transaction/initialize', {
 		method: 'POST',
-		body: JSON.stringify({
-			email: opts.email,
-			amount: opts.amountKobo,
-			reference: opts.reference,
-			currency,
-			callback_url: opts.callbackUrl,
-			...(opts.cancelUrl ? { cancel_url: opts.cancelUrl } : {})
-		})
+		body: JSON.stringify(body)
 	});
 
 	const authorizationUrl = data.authorization_url;

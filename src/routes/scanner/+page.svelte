@@ -42,7 +42,7 @@
 	// true once the server answered 402 (payment_required): the paywall is shown
 	// and the rule-based fallback is skipped so the paywall can't be bypassed.
 	let showPaywall = $state(false);
-	let paywallPrice = $state(5000);
+	let paywallPrice = $state(10000);
 	let payingForReview = $state(false);
 	let paymentError = $state<string | null>(null);
 
