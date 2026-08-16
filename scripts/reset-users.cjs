@@ -66,26 +66,25 @@ async function resetAllUsers() {
 	console.log('🔄 Resetting all users to 4 free reviews...\n');
 
 	try {
-		// Get all users
-		const usersSnap = await db.collection('users').get();
+		// Get all billing documents (billing is a top-level collection)
+		const billingSnap = await db.collection('billing').get();
 
-		if (usersSnap.empty) {
-			console.log('❌ No users found. Nothing to reset.');
+		if (billingSnap.empty) {
+			console.log('❌ No billing documents found. Nothing to reset.');
 			return { updated: 0, total: 0 };
 		}
 
-		console.log(`📊 Found ${usersSnap.size} user(s)\n`);
+		console.log(`📊 Found ${billingSnap.size} billing document(s)\n`);
 
 		let updated = 0;
 
-		for (const userDoc of usersSnap.docs) {
-			const userId = userDoc.id;
-			console.log(`📄 Resetting user: ${userId}`);
+		for (const billingDoc of billingSnap.docs) {
+			const billingId = billingDoc.id;
+			console.log(`📄 Resetting billing: ${billingId}`);
 
 			try {
 				// Reset billing state
-				const billingRef = db.doc(`users/${userId}/billing/state`);
-				await billingRef.set({
+				await billingDoc.ref.update({
 					freeUsed: false,
 					credits: 4,
 					subscriptionType: 'free',
@@ -93,14 +92,14 @@ async function resetAllUsers() {
 					reviewsThisMonth: 0,
 					updatedAt: new Date()
 				});
-				console.log(`   ✅ Reset user ${userId} to 4 free reviews`);
+				console.log(`   ✅ Reset billing ${billingId} to 4 free reviews`);
 				updated++;
 			} catch (error) {
-				console.log(`   ❌ Failed to reset user ${userId}:`, error.message);
+				console.log(`   ❌ Failed to reset billing ${billingId}:`, error.message);
 			}
 		}
 
-		return { updated, total: usersSnap.size };
+		return { updated, total: billingSnap.size };
 	} catch (error) {
 		console.error('❌ Error resetting users:', error.message);
 		throw error;
