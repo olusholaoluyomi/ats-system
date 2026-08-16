@@ -342,7 +342,7 @@
 				</div>
 			{/if}
 
-			{#if scoresStore.llmFallback}
+			{#if scoresStore.llmFallback && scoresStore.llmRetryAtMs !== null}
 				<div class="fallback-toast">
 					<div class="fallback-toast-left">
 						<svg
