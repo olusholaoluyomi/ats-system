@@ -282,6 +282,27 @@ export const PROVIDER_ENV_KEYS = [
 
 export function buildProviders(env: Record<string, string>): LLMProvider[] {
 	const providers: LLMProvider[] = [];
+
+	// 1. Gemini (always first — primary cloud LLM)
+	if (env.GEMINI_API_KEY) {
+		providers.push(buildGoogleProvider('gemini-3.5-flash-lite', 'gemini-3.5-flash-lite'));
+	}
+
+	// 2. Groq (cross-vendor fallback for Google outages)
+	if (env.GROQ_API_KEY) {
+		providers.push(buildGroqProvider('groq-llama-3.3-70b', 'llama-3.3-70b-versatile'));
+	}
+
+	// 3. Cerebras (replacement for Groq when it shuts down 2026-08-16)
+	if (env.CEREBRAS_API_KEY) {
+		providers.push(buildCerebrasProvider('cerebras-llama-3.3-70b', 'llama-3.3-70b'));
+	}
+
+	// 4. Ollama (last — self-hosted local daemon, only if explicitly configured)
+	// Ollama is intentionally placed last so the cloud chain always runs first.
+	// When OLLAMA_BASE_URL is set, a self-hoster who also has cloud keys still
+	// defaults to the cloud chain; Ollama only serves as a final fallback for
+	// forks running purely on local models with no cloud keys.
 	if (env.OLLAMA_BASE_URL) {
 		const model = env.OLLAMA_MODEL || 'llama3.2';
 		// OLLAMA_API_KEY is optional. when set we attach Authorization: Bearer
@@ -303,32 +324,6 @@ export function buildProviders(env: Record<string, string>): LLMProvider[] {
 			})
 		);
 	}
-	if (env.GEMINI_API_KEY) {
-		// exactly one Google model. a second Gemini leg on the same key does NOT buy a
-		// second quota pool - when the key is exhausted it is exhausted for every model
-		// on it - so stacking them just burns latency before the real fallback.
-		// 500 RPD / 250K TPM / 15 RPM against ~130 scans/day of observed demand.
-		// the full Flash tiers are unusable no matter how good they are: 20 RPD.
-		// Gemma 4 31B looks tempting on paper (14,400 RPD) but measured ~110s per call,
-		// returned markdown-fenced output instead of JSON, and its free tier trains on
-		// submitted data - disqualifying for resume text. deliberately excluded.
-		providers.push(buildGoogleProvider('gemini-3.5-flash-lite', 'gemini-3.5-flash-lite'));
-	}
-	if (env.GROQ_API_KEY) {
-		// cross-vendor last resort so a total Google outage still scores.
-		// EXPIRES 2026-08-16: llama-3.3-70b-versatile shuts down then. measured against
-		// the real capped prompt (6,000 char resume + 4,000 char JD), nothing left on the
-		// Groq free tier can replace it: input alone is 5,981 tokens on llama and 6,115 on
-		// qwen, the surviving models cap at 8,000 TPM and Groq reserves input + max_tokens
-		// up front, and the response needs 1,944. qwen 413s at Requested 8015 / Limit 8000
-		// even with max_tokens down at 1,900, and both gpt-oss sizes 400 on json_object
-		// with this prompt. Cerebras below is the replacement leg.
-		providers.push(buildGroqProvider('groq-llama-3.3-70b', 'llama-3.3-70b-versatile'));
-	}
-	if (env.CEREBRAS_API_KEY) {
-		// same llama-3.3-70b the prompt is already tuned against, on a free tier whose
-		// per-minute ceiling is not the binding constraint Groq's became.
-		providers.push(buildCerebrasProvider('cerebras-llama-3.3-70b', 'llama-3.3-70b'));
-	}
+
 	return providers;
 }
