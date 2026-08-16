@@ -12,8 +12,6 @@
 	import { authStore } from '$stores/auth.svelte';
 	import { billingStore } from '$stores/billing.svelte';
 	import type { ScoringInput } from '$engine/scorer/types';
-	import { SUPPORTED_CURRENCIES, CURRENCY } from '$lib/server/paystack';
-
 	// load history once the user is allowed to use the scanner. authenticated
 	// users on hosted firebase pull from firestore; self-host installs (auth
 	// disabled) pull from localStorage. scoresStore.loadHistory handles the
