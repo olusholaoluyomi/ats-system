@@ -9,7 +9,6 @@ import {
 	getPaystackSecret,
 	initializePaystack,
 	parseCurrency,
-	parsePriceForCurrency,
 	validatePriceForCurrency
 } from '$lib/server/paystack';
 import {
