@@ -12,6 +12,8 @@
 	import { authStore } from '$stores/auth.svelte';
 	import { billingStore } from '$stores/billing.svelte';
 	import type { ScoringInput } from '$engine/scorer/types';
+	import { MONTHLY_SUBSCRIPTION_PRICE } from '$lib/server/billing-config';
+
 	// load history once the user is allowed to use the scanner. authenticated
 	// users on hosted firebase pull from firestore; self-host installs (auth
 	// disabled) pull from localStorage. scoresStore.loadHistory handles the
@@ -528,8 +530,8 @@
 										Opening payment...
 									{:else}
 										{selectedPaymentType === 'monthly'
-											? `Subscribe ₦${paywallPrice.toLocaleString()}`
-											: `Pay ₦${paywallPrice.toLocaleString()} for 4 Scans`}
+											? `Subscribe ₦${MONTHLY_SUBSCRIPTION_PRICE.toLocaleString('en-NG')}`
+											: `Pay ₦${paywallPrice.toLocaleString('en-NG')} for 4 Scans`}
 									{/if}
 								</button>
 							</div>
