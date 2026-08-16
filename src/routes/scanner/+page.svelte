@@ -528,7 +528,7 @@
 										Opening payment...
 									{:else}
 {selectedPaymentType === 'monthly'
-? 'Subscribe ₦{paywallPrice.toLocaleString()}'
+? `Subscribe ₦${paywallPrice.toLocaleString()}`
 : `Pay ₦${paywallPrice.toLocaleString()} for 4 Scans`}
 									{/if}
 								</button>
