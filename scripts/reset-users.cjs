@@ -55,8 +55,8 @@ try {
 		credential: admin.cert(serviceAccount)
 	});
 	console.log('✅ Initialized Firebase Admin');
-	db = getFirestore(app, 'ats-system-729c8-firebase-adminsdk-fbsvc-845fc8685a');
-	console.log('✅ Got Firestore instance with database ID');
+	db = getFirestore(app);
+	console.log('✅ Got Firestore instance');
 } catch (error) {
 	console.error('❌ Failed to initialize Firebase Admin:', error.message);
 	process.exit(1);
