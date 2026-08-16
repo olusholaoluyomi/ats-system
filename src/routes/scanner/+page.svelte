@@ -12,7 +12,7 @@
 	import { authStore } from '$stores/auth.svelte';
 	import { billingStore } from '$stores/billing.svelte';
 	import type { ScoringInput } from '$engine/scorer/types';
-	import { MONTHLY_SUBSCRIPTION_PRICE } from '$lib/server/billing-config';
+	import { MONTHLY_SUBSCRIPTION_PRICE } from '$lib/pricing';
 
 	// load history once the user is allowed to use the scanner. authenticated
 	// users on hosted firebase pull from firestore; self-host installs (auth
