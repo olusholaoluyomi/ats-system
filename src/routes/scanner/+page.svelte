@@ -527,9 +527,9 @@
 										<span class="spinner-inline"></span>
 										Opening payment...
 									{:else}
-{selectedPaymentType === 'monthly'
-? `Subscribe ₦${paywallPrice.toLocaleString()}`
-: `Pay ₦${paywallPrice.toLocaleString()} for 4 Scans`}
+										{selectedPaymentType === 'monthly'
+											? `Subscribe ₦${paywallPrice.toLocaleString()}`
+											: `Pay ₦${paywallPrice.toLocaleString()} for 4 Scans`}
 									{/if}
 								</button>
 							</div>

@@ -96,7 +96,7 @@
 							? billing.subscriptionExpiresAt
 							: null,
 				reviewsThisMonth:
-			typeof billing.reviewsThisMonth === 'number' ? billing.reviewsThisMonth : 0
+					typeof billing.reviewsThisMonth === 'number' ? billing.reviewsThisMonth : 0
 			};
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'Failed to load subscriptions';

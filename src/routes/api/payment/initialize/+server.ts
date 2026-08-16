@@ -46,9 +46,7 @@ export const POST: RequestHandler = async ({ request }) => {
 	const paymentType = body.payment_type || 'one-time'; // 'one-time' or 'monthly'
 
 	const currency = parseCurrency(privateEnv);
-	const price =
-		paymentType === 'monthly' ? MONTHLY_SUBSCRIPTION_PRICE
-		: PRICE_PER_4_SCANS;
+	const price = paymentType === 'monthly' ? MONTHLY_SUBSCRIPTION_PRICE : PRICE_PER_4_SCANS;
 
 	try {
 		validatePriceForCurrency(price, currency);
