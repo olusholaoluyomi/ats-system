@@ -127,6 +127,15 @@ export async function scoreLLM(
 			if (external?.aborted) return { status: 'cancelled' };
 			logger.warn('llm.client_timeout', { timeoutMs: CLIENT_TIMEOUT_MS });
 		}
+		// if the server returned a structured failure (with per-provider reasons),
+		// forward those details instead of a generic 'error' status
+		if (err instanceof Object && 'failureReasons' in err) {
+			return {
+				status: 'error',
+				failureReasons: (err as { failureReasons: unknown }).failureReasons,
+				triedProviders: (err as { triedProviders: unknown }).triedProviders
+			};
+		}
 		return { status: 'error' };
 	} finally {
 		clearTimeout(timeout);

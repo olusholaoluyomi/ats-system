@@ -180,6 +180,29 @@
 			}
 
 			// all LLM providers failed (or rate-limited), fall back to deterministic rule-based scoring
+			if (llmResult.status === 'error') {
+				// surface per-provider failure reasons if the server sent them
+				const failureReasons = llmResult.failureReasons
+					? llmResult.failureReasons.map(
+							(fr: any) =>
+								`${fr.provider}: ${fr.error}${fr.httpStatus ? ` (HTTP ${fr.httpStatus})` : ''}${fr.retryAfterSec ? `; retry in ${fr.retryAfterSec}s` : ''}`
+						)
+					: [];
+				if (failureReasons.length > 0) {
+					scoresStore.setError(
+						`All LLM providers failed${failureReasons.length > 1 ? ' — showing last:' : ''} ${failureReasons.join('; ')}`
+					);
+				} else {
+					scoresStore.setError('All LLM providers failed');
+				}
+			} else if (llmResult.status === 'rate_limited') {
+				// all providers rate-limited or otherwise failed; surface the retry hint
+				scoresStore.setError(
+					`LLM rate-limited${llmResult.retryAfterSec ? ` — re-available in ${llmResult.retryAfterSec}s` : ''}`
+				);
+			}
+
+			// fall back to deterministic rule-based scoring
 			const { scoreResume } = await import('$engine/scorer/engine');
 			const input = buildScoringInput();
 			const results = scoreResume(input);
@@ -187,7 +210,9 @@
 			scoresStore.finishScoring(results, resumeStore.file?.name);
 			// when rate-limited, surface the retry timestamp so the toast can show a countdown
 			const retryAtMs =
-				llmResult.status === 'rate_limited' ? Date.now() + llmResult.retryAfterSec * 1000 : null;
+				llmResult.status === 'rate_limited'
+					? Date.now() + (llmResult.retryAfterSec ?? 0) * 1000
+					: null;
 			scoresStore.finishAnalyzing(null, true, retryAtMs);
 			// mirror the billing doc (the server may have consumed or refunded the
 			// review for this call) so the next scan click pre-empts correctly.
