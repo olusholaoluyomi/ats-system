@@ -18,9 +18,11 @@ const { getFirestore } = require('firebase-admin/firestore');
 const possiblePaths = [
 	path.resolve(__dirname, '../ats-system-729c8-firebase-adminsdk-fbsvc-845fc8685a.json'),
 	path.resolve(__dirname, '../firebase-adminsdk.json'),
+	path.resolve(__dirname, '../serviceAccountKey.json'),
 	path.resolve(__dirname, '../service-account.json'),
 	path.resolve(process.cwd(), 'ats-system-729c8-firebase-adminsdk-fbsvc-845fc8685a.json'),
 	path.resolve(process.cwd(), 'firebase-adminsdk.json'),
+	path.resolve(process.cwd(), 'serviceAccountKey.json'),
 	path.resolve(process.cwd(), 'service-account.json'),
 	process.env.GOOGLE_APPLICATION_CREDENTIALS
 ];
