@@ -16,6 +16,19 @@
 // index-juggling. extracted into its own module so the chain composition can
 // be unit-tested without mounting the whole route handler.
 
+import { json, error, type RequestHandler } from '@sveltejs/kit';
+import { env as privateEnv } from '$env/dynamic/private';
+import { env as publicEnv } from '$env/dynamic/public';
+import { logger } from '$lib/log';
+import { resolveAuthMode } from '$lib/server/auth/config';
+import { buildFullScoringPrompt, buildJDAnalysisPrompt } from '$engine/llm/prompts';
+import { hashPrompt, getCached, setCached } from '$routes/api/analyze/cache';
+import {
+	isProviderExhausted,
+	markProviderExhausted,
+	checkRateLimit
+} from '$routes/api/analyze/provider-quota';
+
 export interface LLMProviderFailure {
 	provider: string;
 	error: string;

@@ -14,7 +14,11 @@ const CLIENT_TIMEOUT_MS = 65_000;
 // model is bypassed client-side.
 export type ScoreLLMResult =
 	| { status: 'ok'; results: ScoreResult[]; provider: string; fallback: boolean }
-	| { status: 'error' }
+	| {
+			status: 'error';
+			failureReasons?: unknown;
+			triedProviders?: unknown;
+	  }
 	| { status: 'rate_limited'; retryAfterSec: number }
 	| { status: 'payment_required'; priceNgn: number }
 	// server-side auth failed (401): firebase visitor not signed in / token
