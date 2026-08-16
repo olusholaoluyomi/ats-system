@@ -91,7 +91,7 @@ export async function scoreLLM(
 				// must NOT degrade to the rule-based scorer.
 				return {
 					status: 'payment_required',
-					priceNgn: typeof data.priceNgn === 'number' ? data.priceNgn : 5000
+					priceNgn: typeof data.priceNgn === 'number' ? data.priceNgn : 10000
 				};
 			}
 			return { status: 'error' };
