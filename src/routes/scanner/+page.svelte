@@ -511,7 +511,7 @@
 									>
 										<div class="option-header">
 											<span class="option-title">Monthly Subscription</span>
-											<span class="option-price">₦50,000</span>
+											<span class="option-price">₦{paywallPrice.toLocaleString()}</span>
 										</div>
 										<div class="option-description">Unlimited scans • 30 days</div>
 									</button>
@@ -529,7 +529,7 @@
 										Opening payment...
 									{:else}
 {selectedPaymentType === 'monthly'
-? 'Subscribe ₦50,000'
+? 'Subscribe ₦{paywallPrice.toLocaleString()}'
 : `Pay ₦${paywallPrice.toLocaleString()} for 4 Scans`}
 									{/if}
 								</button>
