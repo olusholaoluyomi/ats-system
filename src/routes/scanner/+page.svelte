@@ -12,6 +12,7 @@
 	import { authStore } from '$stores/auth.svelte';
 	import { billingStore } from '$stores/billing.svelte';
 	import type { ScoringInput } from '$engine/scorer/types';
+	import type { LLMFailureReason } from '$engine/llm/client';
 	import { MONTHLY_SUBSCRIPTION_PRICE } from '$lib/pricing';
 
 	// load history once the user is allowed to use the scanner. authenticated
@@ -183,7 +184,7 @@
 			if (llmResult.status === 'error') {
 				// surface per-provider failure reasons if the server sent them
 				const failureReasons = llmResult.failureReasons
-					? llmResult.failureReasons.map(
+					? (llmResult.failureReasons as LLMFailureReason[]).map(
 							(fr: any) =>
 								`${fr.provider}: ${fr.error}${fr.httpStatus ? ` (HTTP ${fr.httpStatus})` : ''}${fr.retryAfterSec ? `; retry in ${fr.retryAfterSec}s` : ''}`
 						)

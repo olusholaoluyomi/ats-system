@@ -12,12 +12,19 @@ const CLIENT_TIMEOUT_MS = 65_000;
 // payment_required is NOT a fallback signal: the scanner must show the paywall
 // and must NOT fall through to the free rule-based scorer, or the pay-per-review
 // model is bypassed client-side.
+export interface LLMFailureReason {
+	provider?: string;
+	error?: string;
+	httpStatus?: number;
+	retryAfterSec?: number;
+}
+
 export type ScoreLLMResult =
 	| { status: 'ok'; results: ScoreResult[]; provider: string; fallback: boolean }
 	| {
 			status: 'error';
-			failureReasons?: unknown;
-			triedProviders?: unknown;
+			failureReasons?: LLMFailureReason[];
+			triedProviders?: string[];
 	  }
 	| { status: 'rate_limited'; retryAfterSec: number }
 	| { status: 'payment_required'; priceNgn: number }
@@ -136,8 +143,10 @@ export async function scoreLLM(
 		if (err instanceof Object && 'failureReasons' in err) {
 			return {
 				status: 'error',
-				failureReasons: (err as { failureReasons: unknown }).failureReasons,
-				triedProviders: (err as { triedProviders: unknown }).triedProviders
+				failureReasons: (err as { failureReasons: LLMFailureReason[]; triedProviders?: string[] })
+					.failureReasons,
+				triedProviders: (err as { failureReasons: LLMFailureReason[]; triedProviders?: string[] })
+					.triedProviders
 			};
 		}
 		return { status: 'error' };

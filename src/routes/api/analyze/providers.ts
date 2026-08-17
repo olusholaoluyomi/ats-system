@@ -22,12 +22,9 @@ import { env as publicEnv } from '$env/dynamic/public';
 import { logger } from '$lib/log';
 import { resolveAuthMode } from '$lib/server/auth/config';
 import { buildFullScoringPrompt, buildJDAnalysisPrompt } from '$engine/llm/prompts';
-import { hashPrompt, getCached, setCached } from '$routes/api/analyze/cache';
-import {
-	isProviderExhausted,
-	markProviderExhausted,
-	checkRateLimit
-} from '$routes/api/analyze/provider-quota';
+import { hashPrompt, getCached, setCached } from './cache';
+import { isProviderExhausted, markProviderExhausted } from './provider-quota';
+import { checkRateLimit } from './rate-limiter';
 
 export interface LLMProviderFailure {
 	provider: string;
@@ -551,7 +548,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	// requires a valid session too (defense in depth). public and unchanged in
 	// the hosted firebase deploy and anonymous self-host (resolveAuthMode is
 	// 'ldap' only when LDAP_URL is set, which neither of those configures).
-	if (resolveAuthMode({ ...env, ...publicEnv }) === 'ldap' && !locals.user) {
+	if (resolveAuthMode({ ...privateEnv, ...publicEnv }) === 'ldap' && !locals.user) {
 		return json({ error: 'authentication required' }, { status: 401 });
 	}
 
@@ -562,7 +559,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	// running Ollama behind a reverse-proxy or hosted Ollama-compatible API.
 	// driven off PROVIDER_ENV_KEYS so adding a provider cannot leave its key behind here
 	const keys: Record<string, string> = Object.fromEntries(
-		PROVIDER_ENV_KEYS.map((k) => [k, env[k] ?? ''])
+		PROVIDER_ENV_KEYS.map((k) => [k, privateEnv[k] ?? ''])
 	);
 
 	// at least one provider must be configured. cloud-hosted instances set
@@ -672,17 +669,17 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	// excluded from $env/dynamic/private, so the gate must resolve the mode from
 	// both sources exactly like hooks.server.ts / +layout.server.ts do. without
 	// this the hosted deploy resolves 'none' and billing never engages.
-	const mergedEnv = { ...env, ...publicEnv };
+	const mergedEnv = { ...privateEnv, ...publicEnv };
 	if (resolveAuthMode(mergedEnv) === 'firebase') {
 		const { verifyFirebaseIdToken } = await import('$lib/server/auth/token');
-		const identity = await verifyFirebaseIdToken(env, request.headers.get('authorization'));
+		const identity = await verifyFirebaseIdToken(privateEnv, request.headers.get('authorization'));
 		if (!identity) {
 			return json({ error: 'authentication required' }, { status: 401 });
 		}
 
 		if (body.mode === 'full-score') {
 			const { getAdminFirestore } = await import('$lib/server/firebase-admin');
-			const db = await getAdminFirestore(env);
+			const db = await getAdminFirestore(privateEnv);
 			if (!db) {
 				return json({ error: 'billing is not configured on this deploy' }, { status: 503 });
 			}
@@ -701,8 +698,8 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 			}
 			if (verdict.status === 'blocked') {
 				const { parsePriceForCurrency, parseCurrency } = await import('$lib/server/paystack');
-				const currency = parseCurrency(env);
-				const price = parsePriceForCurrency(env, currency);
+				const currency = parseCurrency(privateEnv);
+				const price = parsePriceForCurrency(privateEnv, currency);
 				const currencySymbol =
 					currency === 'NGN'
 						? '₦'
@@ -782,7 +779,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 
 	// if we got here with failures (all providers exhausted), return the error
 	// with detailed failure reasons instead of just "all LLM providers failed"
-	if ('failures' in result && result.failures.length > 0) {
+	if ('failures' in result) {
 		return json(
 			{
 				error: 'all LLM providers failed',
@@ -799,13 +796,13 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 			},
 			{ status: 503 }
 		);
+	} else {
+		// single provider succeeded
+		setCached(cacheKey, result.parsed, result.provider);
+
+		return json(
+			{ ...result.parsed, _provider: result.provider, _fallback: false, _cached: false },
+			{ headers: securityHeaders }
+		);
 	}
-
-	// single provider succeeded
-	setCached(cacheKey, result.parsed, result.provider);
-
-	return json(
-		{ ...result.parsed, _provider: result.provider, _fallback: false, _cached: false },
-		{ headers: securityHeaders }
-	);
 };
