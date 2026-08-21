@@ -150,11 +150,6 @@
 	}
 
 	async function retryPayment(reference: string) {
-		// Check authentication before fetch
-		if (!authStore.isAuthenticated) {
-			window.location.href = '/login';
-			return;
-		}
 		try {
 			const response = await fetch('/api/payment/initialize', {
 				method: 'POST',
@@ -165,16 +160,20 @@
 				body: JSON.stringify({ reference })
 			});
 			if (response.status === 401) {
-				// Token expired during fetch - re-authenticate
-				window.location.href = '/login';
+				// Token expired - show error, don't redirect
+				error = 'Session expired. Please login again to retry payment.';
+				console.error('Payment retry failed: session expired');
 				return;
 			}
-			const data = await response.json();
-			if (data.authorization_url) {
-				window.location.href = data.authorization_url;
+			if (response.ok) {
+				const data = await response.json();
+				if (data.authorization_url) {
+					window.location.href = data.authorization_url;
+				}
 			}
 		} catch (err) {
 			console.error('Failed to retry payment:', err);
+			error = 'Failed to retry payment. Please try again.';
 		}
 	}
 </script>
