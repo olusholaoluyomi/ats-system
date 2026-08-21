@@ -150,6 +150,11 @@
 	}
 
 	async function retryPayment(reference: string) {
+		// Re-authenticate before retrying
+		if (!authStore.isAuthenticated) {
+			window.location.href = '/login';
+			return;
+		}
 		try {
 			const response = await fetch('/api/payment/initialize', {
 				method: 'POST',
