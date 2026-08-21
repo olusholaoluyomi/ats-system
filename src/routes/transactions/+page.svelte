@@ -150,11 +150,6 @@
 	}
 
 	async function retryPayment(reference: string) {
-		// Re-authenticate before retrying
-		if (!authStore.isAuthenticated) {
-			window.location.href = '/login';
-			return;
-		}
 		try {
 			const response = await fetch('/api/payment/initialize', {
 				method: 'POST',
@@ -164,6 +159,11 @@
 				},
 				body: JSON.stringify({ reference })
 			});
+			if (response.status === 401) {
+				// Token expired - re-authenticate
+				window.location.href = '/login';
+				return;
+			}
 			const data = await response.json();
 			if (data.authorization_url) {
 				window.location.href = data.authorization_url;
