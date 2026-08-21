@@ -286,9 +286,9 @@ export function buildOllamaProvider(
 }
 
 // composes the provider chain from whatever's configured in env. ordering is
-// intentional: when Ollama is configured we put it first so a self-hoster who
-// also has cloud keys still defaults to local. callers without any of the
-// three configured will see an empty array and the route returns 503.
+// intentional: cloud providers run first (Gemini, Groq, Cerebras), with Ollama
+// last as a fallback. callers without any of the providers configured will see
+// an empty array and the route returns 503.
 // every env var buildProviders reads. the route copies exactly these out of $env, so a
 // name missing here silently disables a whole leg no matter how the var is configured
 export const PROVIDER_ENV_KEYS = [
@@ -320,7 +320,7 @@ export function buildProviders(env: Record<string, string>): LLMProvider[] {
 	}
 
 	// 4. Ollama (last — self-hosted local daemon, only if explicitly configured)
-	// Ollama is intentionally placed last so the cloud chain always runs first.
+	// Ollama is intentionally placed last as a final fallback after the cloud chain.
 	// When OLLAMA_BASE_URL is set, a self-hoster who also has cloud keys still
 	// defaults to the cloud chain; Ollama only serves as a final fallback for
 	// forks running purely on local models with no cloud keys.

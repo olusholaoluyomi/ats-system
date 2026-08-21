@@ -49,7 +49,7 @@ describe('buildProviders: chain composition', () => {
 		expect(chain[0].name).toBe('ollama-gemma3:1b');
 	});
 
-	it('all-three env composes [ollama, flash-lite, groq] - Ollama prepends', () => {
+	it('all-three env composes [flash-lite, groq, ollama] - Ollama appends as fallback', () => {
 		const chain = buildProviders({
 			OLLAMA_BASE_URL: 'http://127.0.0.1:11434',
 			OLLAMA_MODEL: 'llama3.2',
@@ -57,9 +57,9 @@ describe('buildProviders: chain composition', () => {
 			GROQ_API_KEY: 'fake-groq'
 		});
 		expect(chain.map((p) => p.name)).toEqual([
-			'ollama-llama3.2',
 			'gemini-3.5-flash-lite',
-			'groq-llama-3.3-70b'
+			'groq-llama-3.3-70b',
+			'ollama-llama3.2'
 		]);
 	});
 
@@ -353,10 +353,10 @@ describe('PROVIDER_ENV_KEYS covers every leg', () => {
 	// guards the hardcoded env above from going stale when a provider is added
 	it('builds one leg per vendor from a fully populated env', () => {
 		expect(buildProviders(EVERY_PROVIDER_ENV).map((p) => p.name)).toEqual([
-			'ollama-llama3.2',
 			'gemini-3.5-flash-lite',
 			'groq-llama-3.3-70b',
-			'cerebras-llama-3.3-70b'
+			'cerebras-llama-3.3-70b',
+			'ollama-llama3.2'
 		]);
 	});
 
