@@ -92,38 +92,50 @@ export async function consumeReview(db: Firestore, uid: string): Promise<Consume
 		const billing = toBillingDoc(snap.exists ? snap.data() : undefined);
 		const used = evaluateBilling(billing);
 		if (used === 'free') {
-			tx.set(billingRef, {
+			const updateData: Record<string, unknown> = {
 				freeUsed: true,
 				credits: billing.credits - 1,
 				subscriptionType: billing.subscriptionType,
-				subscriptionExpiresAt: billing.subscriptionExpiresAt,
 				reviewsThisMonth: billing.reviewsThisMonth,
 				updatedAt: new Date()
-			});
+			};
+			// Only include subscriptionExpiresAt if it's defined
+			if (billing.subscriptionExpiresAt !== undefined) {
+				updateData.subscriptionExpiresAt = billing.subscriptionExpiresAt;
+			}
+			tx.set(billingRef, updateData);
 			return { status: 'ok', used };
 		}
 		if (used === 'credit') {
 			// Simply decrement the total credits counter
-			tx.set(billingRef, {
+			const updateData: Record<string, unknown> = {
 				freeUsed: true,
 				credits: billing.credits - 1,
 				subscriptionType: billing.subscriptionType,
-				subscriptionExpiresAt: billing.subscriptionExpiresAt,
 				reviewsThisMonth: billing.reviewsThisMonth,
 				updatedAt: new Date()
-			});
+			};
+			// Only include subscriptionExpiresAt if it's defined
+			if (billing.subscriptionExpiresAt !== undefined) {
+				updateData.subscriptionExpiresAt = billing.subscriptionExpiresAt;
+			}
+			tx.set(billingRef, updateData);
 			return { status: 'ok', used };
 		}
 		if (used === 'subscription') {
 			// Increment monthly review counter for tracking
-			tx.set(billingRef, {
+			const updateData: Record<string, unknown> = {
 				freeUsed: true,
 				credits: billing.credits,
 				subscriptionType: 'monthly',
-				subscriptionExpiresAt: billing.subscriptionExpiresAt,
 				reviewsThisMonth: billing.reviewsThisMonth + 1,
 				updatedAt: new Date()
-			});
+			};
+			// Only include subscriptionExpiresAt if it's defined
+			if (billing.subscriptionExpiresAt !== undefined) {
+				updateData.subscriptionExpiresAt = billing.subscriptionExpiresAt;
+			}
+			tx.set(billingRef, updateData);
 			return { status: 'ok', used };
 		}
 		return { status: 'blocked' };
@@ -141,34 +153,46 @@ export async function refundReview(
 		const billing = toBillingDoc(snap.exists ? snap.data() : undefined);
 		if (used === 'free') {
 			// Restore the credit that was consumed from the free allocation
-			tx.set(billingRef, {
+			const updateData: Record<string, unknown> = {
 				freeUsed: false,
 				credits: billing.credits + 1,
 				subscriptionType: billing.subscriptionType,
-				subscriptionExpiresAt: billing.subscriptionExpiresAt,
 				reviewsThisMonth: billing.reviewsThisMonth,
 				updatedAt: new Date()
-			});
+			};
+			// Only include subscriptionExpiresAt if it's defined
+			if (billing.subscriptionExpiresAt !== undefined) {
+				updateData.subscriptionExpiresAt = billing.subscriptionExpiresAt;
+			}
+			tx.set(billingRef, updateData);
 		} else if (used === 'subscription') {
 			// Decrement monthly review counter
-			tx.set(billingRef, {
+			const updateData: Record<string, unknown> = {
 				freeUsed: true,
 				credits: billing.credits,
 				subscriptionType: 'monthly',
-				subscriptionExpiresAt: billing.subscriptionExpiresAt,
 				reviewsThisMonth: Math.max(0, billing.reviewsThisMonth - 1),
 				updatedAt: new Date()
-			});
+			};
+			// Only include subscriptionExpiresAt if it's defined
+			if (billing.subscriptionExpiresAt !== undefined) {
+				updateData.subscriptionExpiresAt = billing.subscriptionExpiresAt;
+			}
+			tx.set(billingRef, updateData);
 		} else {
 			// Simply increment the total credits counter
-			tx.set(billingRef, {
+			const updateData: Record<string, unknown> = {
 				freeUsed: true,
 				credits: billing.credits + 1,
 				subscriptionType: billing.subscriptionType,
-				subscriptionExpiresAt: billing.subscriptionExpiresAt,
 				reviewsThisMonth: billing.reviewsThisMonth,
 				updatedAt: new Date()
-			});
+			};
+			// Only include subscriptionExpiresAt if it's defined
+			if (billing.subscriptionExpiresAt !== undefined) {
+				updateData.subscriptionExpiresAt = billing.subscriptionExpiresAt;
+			}
+			tx.set(billingRef, updateData);
 		}
 		return { status: 'refunded' };
 	});
@@ -255,7 +279,7 @@ export async function creditReview(
 				freeUsed: billing.freeUsed === true,
 				credits: billing.credits + SCANS_PER_PAYMENT,
 				subscriptionType: billing.subscriptionType || 'one-time',
-				subscriptionExpiresAt: billing.subscriptionExpiresAt,
+				...(billing.subscriptionExpiresAt !== undefined && { subscriptionExpiresAt: billing.subscriptionExpiresAt }),
 				reviewsThisMonth: billing.reviewsThisMonth,
 				updatedAt: new Date()
 			});
