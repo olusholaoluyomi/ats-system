@@ -31,12 +31,22 @@ export async function getAdminFirestore(
 
 function ensureAdminApp(env: Record<string, string | undefined>): boolean {
 	const creds = parseServiceAccount(env.FIREBASE_SERVICE_ACCOUNT);
-	if (!creds) return false;
+	if (!creds) {
+		console.error('Firebase Admin: Failed to parse FIREBASE_SERVICE_ACCOUNT env var');
+		console.error('Env var present:', !!env.FIREBASE_SERVICE_ACCOUNT);
+		console.error('Env var length:', env.FIREBASE_SERVICE_ACCOUNT?.length || 0);
+		return false;
+	}
 	if (getApps().length === 0) {
-		initializeApp({
-			credential: cert(creds),
-			projectId: creds.projectId
-		});
+		try {
+			initializeApp({
+				credential: cert(creds),
+				projectId: creds.projectId
+			});
+		} catch (error) {
+			console.error('Firebase Admin: Failed to initialize app:', error);
+			return false;
+		}
 	}
 	return true;
 }

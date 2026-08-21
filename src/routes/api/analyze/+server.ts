@@ -278,6 +278,10 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 			const { getAdminFirestore } = await import('$lib/server/firebase-admin');
 			const db = await getAdminFirestore(env);
 			if (!db) {
+				logger.error('billing.firestore_init_failed', {
+					uid: identity.uid,
+					reason: 'getAdminFirestore returned null'
+				});
 				return json({ error: 'billing is not configured on this deploy' }, { status: 503 });
 			}
 			const { consumeReview, refundReview } = await import('$lib/server/billing');
@@ -289,7 +293,8 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 			} catch (err) {
 				logger.error('billing.consume_failed', {
 					uid: identity.uid,
-					error: err instanceof Error ? err.message : String(err)
+					error: err instanceof Error ? err.message : String(err),
+					stack: err instanceof Error ? err.stack : undefined
 				});
 				return json({ error: 'billing is unavailable' }, { status: 503 });
 			}
