@@ -55,10 +55,11 @@ class AuthStore {
 	// used by the payment routes and the analyze billing gate so the server can
 	// trust the caller's uid without a session cookie. null outside firebase
 	// mode or when the token cannot be minted.
-	async getIdToken(): Promise<string | null> {
+	async getIdToken(forceRefresh = false): Promise<string | null> {
 		if (this.mode !== 'firebase' || !this.user) return null;
 		try {
-			return await this.user.getIdToken();
+			// forceRefresh=true ensures we get a fresh token even if the cached one is expired
+			return await this.user.getIdToken(forceRefresh);
 		} catch (err) {
 			logger.warn('auth.get_id_token_failed', {
 				error: err instanceof Error ? err.message : String(err)

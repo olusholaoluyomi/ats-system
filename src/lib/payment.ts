@@ -1,4 +1,4 @@
-import { authStore } from '$stores/auth.svelte';
+import { authStore } from '$lib/stores/auth.svelte';
 import { logger } from '$lib/log';
 
 export interface InitializePaymentResult {
@@ -9,7 +9,7 @@ export interface InitializePaymentResult {
 export async function initializePayment(
 	paymentType: 'one-time' | 'monthly' = 'one-time'
 ): Promise<InitializePaymentResult> {
-	const token = await authStore.getIdToken();
+	let token = await authStore.getIdToken();
 	if (!token) throw new Error('you must be signed in to purchase a review');
 
 	const response = await fetch('/api/payment/initialize', {
@@ -18,6 +18,32 @@ export async function initializePayment(
 		body: JSON.stringify({ payment_type: paymentType })
 	});
 	const data = await response.json().catch(() => ({}));
+
+	// If we get a 401 (unauthorized), try refreshing the token and retry once
+	if (response.status === 401) {
+		logger.info('payment.token_expired_refreshing');
+		const freshToken = await authStore.getIdToken(true); // force refresh
+		if (!freshToken) throw new Error('failed to refresh authentication token');
+
+		const retryResponse = await fetch('/api/payment/initialize', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${freshToken}` },
+			body: JSON.stringify({ payment_type: paymentType })
+		});
+		const retryData = await retryResponse.json().catch(() => ({}));
+
+		if (!retryResponse.ok) {
+			throw new Error((retryData.error as string) ?? 'failed to start payment');
+		}
+		if (typeof retryData.authorization_url !== 'string' || retryData.authorization_url.length === 0) {
+			throw new Error('payment provider returned no checkout link');
+		}
+		return {
+			authorizationUrl: retryData.authorization_url as string,
+			reference: typeof retryData.reference === 'string' ? retryData.reference : ''
+		};
+	}
+
 	if (!response.ok) {
 		throw new Error((data.error as string) ?? 'failed to start payment');
 	}
