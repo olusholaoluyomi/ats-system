@@ -27,7 +27,10 @@ export async function initializePayment(
 
 		const retryResponse = await fetch('/api/payment/initialize', {
 			method: 'POST',
-			headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${freshToken}` },
+			headers: {
+				'Content-Type': 'application/json',
+				Authorization: `Bearer ${freshToken}`
+			},
 			body: JSON.stringify({ payment_type: paymentType })
 		});
 		const retryData = await retryResponse.json().catch(() => ({}));
@@ -35,7 +38,10 @@ export async function initializePayment(
 		if (!retryResponse.ok) {
 			throw new Error((retryData.error as string) ?? 'failed to start payment');
 		}
-		if (typeof retryData.authorization_url !== 'string' || retryData.authorization_url.length === 0) {
+		if (
+			typeof retryData.authorization_url !== 'string' ||
+			retryData.authorization_url.length === 0
+		) {
 			throw new Error('payment provider returned no checkout link');
 		}
 		return {

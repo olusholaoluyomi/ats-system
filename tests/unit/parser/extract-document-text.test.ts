@@ -29,5 +29,5 @@ describe('extractDocumentText', () => {
 		const result = await extractDocumentText(file);
 		expect(result.success).toBe(false);
 		expect(result.error).toMatch(/^failed to parse PDF:/);
-	});
+	}, 15_000); // pdfjs can be slow to reject corrupt input in jsdom — give it headroom
 });

@@ -279,7 +279,9 @@ export async function creditReview(
 				freeUsed: billing.freeUsed === true,
 				credits: billing.credits + SCANS_PER_PAYMENT,
 				subscriptionType: billing.subscriptionType || 'one-time',
-				...(billing.subscriptionExpiresAt !== undefined && { subscriptionExpiresAt: billing.subscriptionExpiresAt }),
+				...(billing.subscriptionExpiresAt !== undefined && {
+					subscriptionExpiresAt: billing.subscriptionExpiresAt
+				}),
 				reviewsThisMonth: billing.reviewsThisMonth,
 				updatedAt: new Date()
 			});
