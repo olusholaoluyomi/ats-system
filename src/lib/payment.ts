@@ -9,7 +9,7 @@ export interface InitializePaymentResult {
 export async function initializePayment(
 	paymentType: 'one-time' | 'monthly' = 'one-time'
 ): Promise<InitializePaymentResult> {
-	let token = await authStore.getIdToken();
+	const token = await authStore.getIdToken();
 	if (!token) throw new Error('you must be signed in to purchase a review');
 
 	const response = await fetch('/api/payment/initialize', {
