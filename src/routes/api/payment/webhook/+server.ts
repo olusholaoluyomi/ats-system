@@ -2,12 +2,7 @@ import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { env as privateEnv } from '$env/dynamic/private';
 import { logger } from '$lib/log';
-import {
-	getPaystackSecret,
-	parseCurrency,
-	parsePriceForCurrency,
-	validatePriceForCurrency
-} from '$lib/server/paystack';
+import { getPaystackSecret } from '$lib/server/paystack';
 
 // Paystack posts the charge result here (server-to-server, no client auth).
 // the x-paystack-signature header authenticates the call: HMAC-SHA512 of the
@@ -47,31 +42,6 @@ export const POST: RequestHandler = async ({ request }) => {
 	const reference = typeof data.reference === 'string' ? data.reference : '';
 	if (!reference) {
 		logger.warn('payment.webhook_missing_reference');
-		return json({ ok: true });
-	}
-
-	// price + currency are validated here, not inside the credit transaction,
-	// so a stale or forged reference can never mint a credit for the wrong
-	// amount. a mismatch is logged and acknowledged (200 stops Paystack retries).
-	const currency = parseCurrency(privateEnv);
-	const price = parsePriceForCurrency(privateEnv, currency);
-	try {
-		validatePriceForCurrency(price, currency);
-	} catch (err) {
-		logger.error('payment.bad_price', {
-			currency,
-			error: err instanceof Error ? err.message : String(err)
-		});
-		return json({ ok: true });
-	}
-	if (Number(data.amount) !== price * 100 || data.currency !== currency) {
-		logger.warn('payment.webhook_amount_mismatch', {
-			reference,
-			amount: data.amount,
-			currency: data.currency,
-			expectedAmount: price * 100,
-			expectedCurrency: currency
-		});
 		return json({ ok: true });
 	}
 

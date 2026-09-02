@@ -38,13 +38,23 @@ export type ScoreLLMResult =
 // the analyze billing gate verifies a firebase ID token, so firebase-mode
 // clients attach it as a bearer header. ldap/none modes send nothing (the
 // server only enforces billing in firebase mode).
-async function authHeaders(): Promise<Record<string, string>> {
+async function authHeaders(forceRefresh = false): Promise<Record<string, string>> {
 	const headers: Record<string, string> = { 'Content-Type': 'application/json' };
 	if (authStore.mode === 'firebase') {
-		const token = await authStore.getIdToken();
+		const token = await authStore.getIdToken(forceRefresh);
 		if (token) headers['Authorization'] = `Bearer ${token}`;
 	}
 	return headers;
+}
+
+// isolated so scoreLLM can call it twice (initial + forced-refresh retry)
+// without duplicating the fetch options.
+async function postAnalyze(
+	body: string,
+	headers: Record<string, string>,
+	signal: AbortSignal
+): Promise<Response> {
+	return fetch('/api/analyze', { method: 'POST', headers, body, signal });
 }
 
 // performs full LLM-powered ATS scoring via the server endpoint
@@ -63,16 +73,25 @@ export async function scoreLLM(
 	external?.addEventListener('abort', onExternalAbort, { once: true });
 
 	try {
-		const response = await fetch('/api/analyze', {
-			method: 'POST',
-			headers: await authHeaders(),
-			body: JSON.stringify({
-				mode: 'full-score',
-				resumeText,
-				jobDescription
-			}),
-			signal: controller.signal
+		const requestBody = JSON.stringify({
+			mode: 'full-score',
+			resumeText,
+			jobDescription
 		});
+
+		let response = await postAnalyze(requestBody, await authHeaders(), controller.signal);
+
+		// the cached ID token can be stale (expired, clock skew, tab left open
+		// past the hourly refresh) even though the Firebase client session is
+		// still perfectly valid. before treating a 401 as "not signed in" and
+		// bouncing to /login, force a fresh token and retry once - mirrors the
+		// same retry payment.ts already does for /api/payment/initialize.
+		// only worth trying in firebase mode: an ldap 401 means the session
+		// cookie itself is gone, which a token refresh can't fix.
+		if (response.status === 401 && authStore.mode === 'firebase') {
+			logger.info('llm.token_expired_refreshing');
+			response = await postAnalyze(requestBody, await authHeaders(true), controller.signal);
+		}
 
 		if (!response.ok) {
 			const data = await response.json().catch(() => ({}));
@@ -81,9 +100,10 @@ export async function scoreLLM(
 				error: data.error ?? 'unknown error'
 			});
 			if (response.status === 401) {
-				// not signed in (or the identity token was rejected). scanning
-				// requires an account, so this must NOT degrade to rule-based
-				// scoring - the scanner routes the visitor to the login page.
+				// still rejected after a forced refresh (or the ldap session is
+				// genuinely gone): the visitor really isn't signed in. scanning
+				// requires an account, so route to the login page instead of
+				// degrading to the free rule-based scorer.
 				return { status: 'auth_required' };
 			}
 			if (response.status === 429) {

@@ -9,6 +9,8 @@ import {
 	getPaystackSecret,
 	initializePaystack,
 	parseCurrency,
+	parsePriceForCurrency,
+	parseMonthlyPriceForCurrency,
 	validatePriceForCurrency
 } from '$lib/server/paystack';
 import {
@@ -46,7 +48,10 @@ export const POST: RequestHandler = async ({ request }) => {
 	const paymentType = body.payment_type || 'one-time'; // 'one-time' or 'monthly'
 
 	const currency = parseCurrency(privateEnv);
-	const price = paymentType === 'monthly' ? MONTHLY_SUBSCRIPTION_PRICE : PRICE_PER_4_SCANS;
+	const price =
+		paymentType === 'monthly'
+			? parseMonthlyPriceForCurrency(privateEnv, currency)
+			: parsePriceForCurrency(privateEnv, currency);
 
 	try {
 		validatePriceForCurrency(price, currency);
@@ -57,7 +62,7 @@ export const POST: RequestHandler = async ({ request }) => {
 		});
 		return json({ error: 'payments are misconfigured on this deploy' }, { status: 503 });
 	}
-	const amountMinor = currency === 'NGN' ? price * 100 : price * 100; // Paystack uses minor units
+	const amountMinor = price * 100; // Paystack uses minor units
 
 	const reference = `ats_${identity.uid.slice(0, 10)}_${randomUUID()}`;
 	const origin = new URL(request.url).origin;

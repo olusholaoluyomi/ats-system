@@ -16,6 +16,7 @@ export const PAYSTACK_API_BASE = 'https://api.paystack.co';
 // default price of one review in naira. overridable per deploy via
 // PAYSTACK_PRICE_NGN (kobo conversion happens at the call site).
 export const DEFAULT_PRICE_NGN = 10000;
+export const MONTHLY_SUBSCRIPTION_PRICE_DEFAULT = 50000; // NGN, default monthly price
 
 // supported currencies by Paystack
 export const SUPPORTED_CURRENCIES = ['NGN', 'USD', 'GHS', 'KES', 'ZAR'] as const;
@@ -69,6 +70,16 @@ export function parsePriceForCurrency(env: Env, currency: SupportedCurrency): nu
 	}
 	const n = Number.parseInt(raw, 10);
 	return Number.isFinite(n) && n > 0 ? n : DEFAULT_PRICE_NGN;
+}
+
+// price of the monthly subscription for a specific currency, mirroring
+// parsePriceForCurrency above but reading PAYSTACK_PRICE_MONTHLY_{currency}.
+export function parseMonthlyPriceForCurrency(env: Env, currency: SupportedCurrency): number {
+	const envKey = `PAYSTACK_PRICE_MONTHLY_${currency}`;
+	const raw = val(env, envKey);
+	if (!raw) return MONTHLY_SUBSCRIPTION_PRICE_DEFAULT;
+	const n = Number.parseInt(raw, 10);
+	return Number.isFinite(n) && n > 0 ? n : MONTHLY_SUBSCRIPTION_PRICE_DEFAULT;
 }
 
 // a price of zero is a foot-gun: it would make every review "free" while the

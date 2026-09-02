@@ -4,6 +4,26 @@
 	import { browser } from '$app/environment';
 	import { logger } from '$lib/log';
 	import { authStore } from '$stores/auth.svelte';
+	import { billingStore } from '$stores/billing.svelte';
+	// ...
+	let retryingPayment = $state(false);
+	let retryError = $state<string | null>(null);
+
+	// starts a brand-new checkout (fresh reference) rather than re-polling the
+	// dead one. "Retry Verification" below only re-checks THIS reference, which
+	// is useless if the charge genuinely failed - this button is the real retry.
+	async function handleTryAgain() {
+		if (retryingPayment) return;
+		retryingPayment = true;
+		retryError = null;
+		try {
+			const url = await billingStore.payForReview();
+			window.location.href = url;
+		} catch (err) {
+			retryError = err instanceof Error ? err.message : 'failed to start payment';
+			retryingPayment = false;
+		}
+	}
 
 	// Paystack redirects the browser back here after a checkout attempt with
 	// ?reference=... in the query string. we settle the charge with the server
@@ -104,13 +124,17 @@
 			<h1 class="pay-title">Almost there</h1>
 			<p class="pay-text">{error}</p>
 			<div class="pay-actions">
-				<button class="pay-btn" onclick={() => (location.href = '/scanner')}>
-					Back to Scanner
+				<button class="pay-btn" onclick={handleTryAgain} disabled={retryingPayment}>
+					{retryingPayment ? 'Starting checkout…' : 'Try Payment Again'}
 				</button>
 				<button class="pay-btn pay-btn-secondary" onclick={() => location.reload()}>
 					Retry Verification
 				</button>
 			</div>
+			{#if retryError}
+				<p class="pay-text pay-fail-text">{retryError}</p>
+			{/if}
+			<button class="pay-link" onclick={() => (location.href = '/scanner')}> Back to Scanner </button>
 		{/if}
 	</div>
 </main>
@@ -206,5 +230,20 @@
 		background: var(--glass-bg);
 		border: 1px solid var(--glass-border);
 		color: var(--text-secondary);
+	}
+
+		.pay-fail-text {
+		color: #ef4444;
+		margin-top: 0.5rem;
+	}
+
+	.pay-link {
+		background: none;
+		border: none;
+		color: var(--text-secondary);
+		font-size: 0.85rem;
+		margin-top: 1rem;
+		cursor: pointer;
+		text-decoration: underline;
 	}
 </style>
