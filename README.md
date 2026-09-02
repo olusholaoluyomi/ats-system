@@ -25,8 +25,8 @@
 <p align="center">
   <a href="https://ats-screener.olusholaoluyomi.com">Live App</a> &bull;
   <a href="https://ats-screener.olusholaoluyomi.com/docs">Documentation</a> &bull;
-  <a href="https://github.com/olusholaoluyomi/ats-system-by-sunnypatell/issues">Issues</a> &bull;
-  <a href="https://github.com/olusholaoluyomi/ats-system-by-sunnypatell/blob/main/CONTRIBUTING.md">Contribute</a>
+  <a href="https://github.com/olusholaoluyomi/ats-system/issues">Issues</a> &bull;
+  <a href="https://github.com/olusholaoluyomi/ats-system/blob/main/CONTRIBUTING.md">Contribute</a>
 </p>
 
 ---
