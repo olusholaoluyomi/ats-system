@@ -14,9 +14,7 @@ import {
 	validatePriceForCurrency
 } from '$lib/server/paystack';
 import {
-	SCANS_PER_PAYMENT,
-	PRICE_PER_4_SCANS,
-	MONTHLY_SUBSCRIPTION_PRICE
+	SCANS_PER_PAYMENT
 } from '$lib/server/billing-config';
 
 // payments only exist in firebase mode (the hosted paid-review model). ldap
