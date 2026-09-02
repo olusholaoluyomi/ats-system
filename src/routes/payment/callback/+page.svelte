@@ -134,7 +134,9 @@
 			{#if retryError}
 				<p class="pay-text pay-fail-text">{retryError}</p>
 			{/if}
-			<button class="pay-link" onclick={() => (location.href = '/scanner')}> Back to Scanner </button>
+			<button class="pay-link" onclick={() => (location.href = '/scanner')}>
+				Back to Scanner
+			</button>
 		{/if}
 	</div>
 </main>
@@ -232,7 +234,7 @@
 		color: var(--text-secondary);
 	}
 
-		.pay-fail-text {
+	.pay-fail-text {
 		color: #ef4444;
 		margin-top: 0.5rem;
 	}
