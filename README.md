@@ -173,4 +173,4 @@ See [SECURITY.md](SECURITY.md) for vulnerability reporting. Resume files are par
 
 ## License
 
-[MIT](LICENSE) - Oluyomi Olushola Michael (original author: Sunny Patel)
+[MIT](LICENSE) - Oluyomi Olushola Michael (boilerplate base author: Sunny Patel)
