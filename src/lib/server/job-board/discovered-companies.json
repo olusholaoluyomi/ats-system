@@ -430,5 +430,213 @@
 		"boardToken": "arq",
 		"whyThisCompany": "YC company (Summer 2021): The global financial platform for affluent consumers in the Americas.",
 		"enabled": true
+	},
+	{
+		"slug": "trm-labs",
+		"name": "TRM Labs",
+		"atsType": "ashby",
+		"boardToken": "trm-labs",
+		"whyThisCompany": "YC company (Summer 2019): TRM is building a safer world for billions of people.",
+		"enabled": true
+	},
+	{
+		"slug": "prolific",
+		"name": "Prolific",
+		"atsType": "greenhouse",
+		"boardToken": "prolific",
+		"whyThisCompany": "YC company (Summer 2019): Making diverse, high-quality data easily available to anyone, anywhere",
+		"enabled": true
+	},
+	{
+		"slug": "rutter",
+		"name": "Rutter",
+		"atsType": "ashby",
+		"boardToken": "rutter",
+		"whyThisCompany": "YC company (Summer 2019): The Unified API for Business Financial Data",
+		"enabled": true
+	},
+	{
+		"slug": "fampay",
+		"name": "FamPay",
+		"atsType": "lever",
+		"boardToken": "fampay",
+		"whyThisCompany": "YC company (Summer 2019): India’s first neobank for teenagers",
+		"enabled": true
+	},
+	{
+		"slug": "recidiviz",
+		"name": "Recidiviz",
+		"atsType": "greenhouse",
+		"boardToken": "recidiviz",
+		"whyThisCompany": "YC company (Summer 2019): Helping create a smaller, fairer, safer justice system",
+		"enabled": true
+	},
+	{
+		"slug": "freshpaint",
+		"name": "Freshpaint",
+		"atsType": "ashby",
+		"boardToken": "freshpaint",
+		"whyThisCompany": "YC company (Summer 2019): Customer data collection, safeguarding, & activation for healthcare",
+		"enabled": true
+	},
+	{
+		"slug": "curri",
+		"name": "Curri",
+		"atsType": "lever",
+		"boardToken": "curri",
+		"whyThisCompany": "YC company (Summer 2019): Construction & industrial logistics platform.",
+		"enabled": true
+	},
+	{
+		"slug": "deepnote",
+		"name": "Deepnote",
+		"atsType": "ashby",
+		"boardToken": "deepnote",
+		"whyThisCompany": "YC company (Summer 2019): A better data science notebook.",
+		"enabled": true
+	},
+	{
+		"slug": "vorticity",
+		"name": "Vorticity",
+		"atsType": "ashby",
+		"boardToken": "vorticity",
+		"whyThisCompany": "YC company (Summer 2019): The Fastest Scientific Computing Platform on the Planet",
+		"enabled": true
+	},
+	{
+		"slug": "accord",
+		"name": "Accord",
+		"atsType": "ashby",
+		"boardToken": "accord",
+		"whyThisCompany": "YC company (Winter 2020): The Revenue Excellence Platform",
+		"enabled": true
+	},
+	{
+		"slug": "paragon",
+		"name": "Paragon",
+		"atsType": "ashby",
+		"boardToken": "paragon",
+		"whyThisCompany": "YC company (Winter 2020): The embedded integration platform for SaaS apps.",
+		"enabled": true
+	},
+	{
+		"slug": "porter",
+		"name": "Porter",
+		"atsType": "lever",
+		"boardToken": "porter",
+		"whyThisCompany": "YC company (Summer 2020): Easiest way to deploy on AWS/GCP/Azure",
+		"enabled": true
+	},
+	{
+		"slug": "pulley",
+		"name": "Pulley",
+		"atsType": "greenhouse",
+		"boardToken": "pulley",
+		"whyThisCompany": "YC company (Winter 2020): Pulley helps founders and finance teams manage their equity and cap…",
+		"enabled": true
+	},
+	{
+		"slug": "ophelia",
+		"name": "Ophelia",
+		"atsType": "greenhouse",
+		"boardToken": "ophelia",
+		"whyThisCompany": "YC company (Winter 2020): Medication & support to beat opioid addiction from home",
+		"enabled": true
+	},
+	{
+		"slug": "ditto",
+		"name": "Ditto",
+		"atsType": "ashby",
+		"boardToken": "ditto",
+		"whyThisCompany": "YC company (Winter 2020): Manage the words across your team’s product from design to production.",
+		"enabled": true
+	},
+	{
+		"slug": "handoff",
+		"name": "Handoff",
+		"atsType": "lever",
+		"boardToken": "handoff",
+		"whyThisCompany": "YC company (Winter 2020): AI estimator & agent for remodelers.",
+		"enabled": true
+	},
+	{
+		"slug": "haven",
+		"name": "Haven",
+		"atsType": "greenhouse",
+		"boardToken": "haven",
+		"whyThisCompany": "YC company (Winter 2020): Homeownership reimagined for the 21st century.",
+		"enabled": true
+	},
+	{
+		"slug": "benepass",
+		"name": "Benepass",
+		"atsType": "ashby",
+		"boardToken": "benepass",
+		"whyThisCompany": "YC company (Winter 2020): Fintech for corporate compensation",
+		"enabled": true
+	},
+	{
+		"slug": "ello",
+		"name": "Ello",
+		"atsType": "ashby",
+		"boardToken": "ello",
+		"whyThisCompany": "YC company (Winter 2020): Building the world's first 1:1 AI teacher.",
+		"enabled": true
+	},
+	{
+		"slug": "vori",
+		"name": "Vori",
+		"atsType": "ashby",
+		"boardToken": "vori",
+		"whyThisCompany": "YC company (Winter 2020): Vori is a modern operating system for supermarkets",
+		"enabled": true
+	},
+	{
+		"slug": "kinter",
+		"name": "Kinter",
+		"atsType": "lever",
+		"boardToken": "kinter",
+		"whyThisCompany": "YC company (Winter 2020): A new kind of power for finance teams",
+		"enabled": true
+	},
+	{
+		"slug": "posthog",
+		"name": "PostHog",
+		"atsType": "ashby",
+		"boardToken": "posthog",
+		"whyThisCompany": "YC company (Winter 2020): The single platform to analyze, test, observe, and deploy new features",
+		"enabled": true
+	},
+	{
+		"slug": "aios",
+		"name": "AIOS",
+		"atsType": "ashby",
+		"boardToken": "aios",
+		"whyThisCompany": "YC company (Winter 2020): Building AI-native infrastructure for the next era of care.",
+		"enabled": true
+	},
+	{
+		"slug": "junction",
+		"name": "Junction",
+		"atsType": "ashby",
+		"boardToken": "junction",
+		"whyThisCompany": "YC company (Winter 2020): API for at-home health data",
+		"enabled": true
+	},
+	{
+		"slug": "recurrency",
+		"name": "Recurrency",
+		"atsType": "lever",
+		"boardToken": "recurrency",
+		"whyThisCompany": "YC company (Summer 2020): Automated ERP for distributors.",
+		"enabled": true
+	},
+	{
+		"slug": "stable",
+		"name": "Stable",
+		"atsType": "ashby",
+		"boardToken": "stable",
+		"whyThisCompany": "YC company (Winter 2020): A virtual address + mailbox for business",
+		"enabled": true
 	}
 ]
