@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { matchesFilters } from '../../../src/routes/jobs/+page.server';
-import type { JobListing, JobsFilters } from '../../../src/routes/jobs/+page.server';
+import { matchesFilters } from '../../../src/routes/jobs/shared';
+import type { JobListing, JobsFilters } from '../../../src/routes/jobs/shared';
 
 function job(overrides: Partial<JobListing> = {}): JobListing {
 	return {

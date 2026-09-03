@@ -6,65 +6,14 @@
 import { env as privateEnv } from '$env/dynamic/private';
 import { logger } from '$lib/log';
 import type { PageServerLoad } from './$types';
-
-// hard cutoff: a posting older than this never appears on the board, full
-// stop, regardless of whether it's still `active` on its source's board.
-export const MAX_POSTING_AGE_MS = 48 * 60 * 60 * 1000;
-
-export interface JobListing {
-	id: string;
-	companyName: string;
-	title: string;
-	department: string | null;
-	locationRaw: string;
-	remote: boolean;
-	applyUrl: string;
-	whyThisCompany: string | null;
-	firstSeenAt: string; // ISO string
-	classification: {
-		africaRemoteFriendly: boolean;
-		relocationOffered: boolean | 'unclear';
-		relocationRequired: boolean;
-		experienceLevel: string;
-		minYearsExperience: number | null;
-		maxYearsExperience: number | null;
-		salaryMin: number | null;
-		salaryMax: number | null;
-		salaryCurrency: string | null;
-		salaryPeriod: string | null;
-	} | null;
-}
-
-export interface JobsFilters {
-	remote: boolean;
-	relocation: boolean;
-	experienceLevel: string | null;
-}
-
-function toIsoString(value: unknown): string {
-	if (value && typeof (value as { toDate?: () => Date }).toDate === 'function') {
-		return (value as { toDate: () => Date }).toDate().toISOString();
-	}
-	if (value instanceof Date) return value.toISOString();
-	return new Date(0).toISOString();
-}
-
-function hasActiveFilters(filters: JobsFilters): boolean {
-	return filters.remote || filters.relocation || Boolean(filters.experienceLevel);
-}
-
-// a filter narrows what's shown to the TOP of the list, it never hides
-// results outright - a visitor whose filters happen to match nothing still
-// sees the rest of the board rather than a dead end. see matchesFilters/sort
-// below.
-export function matchesFilters(job: JobListing, filters: JobsFilters): boolean {
-	if (filters.remote && !job.remote) return false;
-	if (filters.relocation && job.classification?.relocationOffered !== true) return false;
-	if (filters.experienceLevel && job.classification?.experienceLevel !== filters.experienceLevel) {
-		return false;
-	}
-	return true;
-}
+import {
+	type JobListing,
+	type JobsFilters,
+	MAX_POSTING_AGE_MS,
+	toIsoString,
+	hasActiveFilters,
+	matchesFilters
+} from './shared';
 
 export const load: PageServerLoad = async ({ url }) => {
 	const filters: JobsFilters = {

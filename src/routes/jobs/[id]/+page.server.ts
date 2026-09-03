@@ -2,15 +2,7 @@ import { error } from '@sveltejs/kit';
 import { env as privateEnv } from '$env/dynamic/private';
 import { logger } from '$lib/log';
 import type { PageServerLoad } from './$types';
-import type { JobListing } from '../+page.server';
-
-function toIsoString(value: unknown): string {
-	if (value && typeof (value as { toDate?: () => Date }).toDate === 'function') {
-		return (value as { toDate: () => Date }).toDate().toISOString();
-	}
-	if (value instanceof Date) return value.toISOString();
-	return new Date(0).toISOString();
-}
+import { type JobListing, toIsoString } from '../shared';
 
 export interface JobDetail extends JobListing {
 	descriptionText: string;
