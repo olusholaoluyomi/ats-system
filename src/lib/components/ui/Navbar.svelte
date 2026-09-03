@@ -42,6 +42,12 @@
 				aria-current={currentPath === '/scanner' ? 'page' : undefined}>Scanner</a
 			>
 			<a
+				href="/jobs"
+				class="nav-link"
+				class:active={currentPath === '/jobs' || currentPath.startsWith('/jobs/')}
+				aria-current={currentPath === '/jobs' ? 'page' : undefined}>Jobs</a
+			>
+			<a
 				href="/privacy"
 				class="nav-link"
 				class:active={currentPath === '/privacy'}
