@@ -2,6 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { getFirebase } from '$lib/firebase';
 	import { authStore } from '$stores/auth.svelte';
+	import { initializePayment } from '$lib/payment';
 	import SeoHead from '$components/seo/SeoHead.svelte';
 
 	interface Payment {
@@ -161,31 +162,20 @@
 		return createdAt < thirtyMinutesAgo;
 	}
 
-	async function retryPayment(reference: string) {
+	async function retryPayment(payment: Payment) {
 		try {
-			const response = await fetch('/api/payment/initialize', {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-					Authorization: `Bearer ${authStore.user?.uid}`
-				},
-				body: JSON.stringify({ reference })
-			});
-			if (response.status === 401) {
-				// Token expired - show error, don't redirect
-				error = 'Session expired. Please login again to retry payment.';
-				console.error('Payment retry failed: session expired');
-				return;
-			}
-			if (response.ok) {
-				const data = await response.json();
-				if (data.authorization_url) {
-					window.location.href = data.authorization_url;
-				}
-			}
+			// starts a fresh payment intent rather than resuming the stuck one -
+			// /api/payment/initialize has no concept of "retry a reference", it
+			// only takes a payment type. isSubscription decides which plan the
+			// new attempt is for, so a stuck monthly retry doesn't silently
+			// become a one-time purchase.
+			const { authorizationUrl } = await initializePayment(
+				payment.isSubscription ? 'monthly' : 'one-time'
+			);
+			window.location.href = authorizationUrl;
 		} catch (err) {
 			console.error('Failed to retry payment:', err);
-			error = 'Failed to retry payment. Please try again.';
+			error = err instanceof Error ? err.message : 'Failed to retry payment. Please try again.';
 		}
 	}
 </script>
@@ -267,7 +257,7 @@
 										</div>
 									{/if}
 									{#if isPaymentStuck(payment)}
-										<button class="retry-btn" onclick={() => retryPayment(payment.reference)}>
+										<button class="retry-btn" onclick={() => retryPayment(payment)}>
 											Retry Payment
 										</button>
 									{/if}
