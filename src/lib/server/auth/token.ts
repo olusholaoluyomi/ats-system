@@ -72,10 +72,7 @@ export async function requireFirebaseIdentity(
 	} catch (err) {
 		if (err instanceof AuthServiceUnavailableError) {
 			return {
-				response: json(
-					{ error: 'authentication service temporarily unavailable' },
-					{ status: 503 }
-				)
+				response: json({ error: 'authentication service temporarily unavailable' }, { status: 503 })
 			};
 		}
 		throw err;

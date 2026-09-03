@@ -11,7 +11,10 @@ export const GET: RequestHandler = async ({ request }) => {
 	}
 
 	const { requireFirebaseIdentity } = await import('$lib/server/auth/token');
-	const authResult = await requireFirebaseIdentity(privateEnv, request.headers.get('authorization'));
+	const authResult = await requireFirebaseIdentity(
+		privateEnv,
+		request.headers.get('authorization')
+	);
 	if ('response' in authResult) return authResult.response;
 	const identity = authResult.identity;
 

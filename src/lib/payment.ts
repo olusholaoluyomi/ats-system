@@ -109,10 +109,9 @@ export async function verifyPayment(reference: string): Promise<boolean> {
 			logger.info('payment.verify_token_expired_refreshing');
 			const freshToken = await authStore.getIdToken(true);
 			if (freshToken) {
-				response = await fetch(
-					`/api/payment/verify?reference=${encodeURIComponent(reference)}`,
-					{ headers: { Authorization: `Bearer ${freshToken}` } }
-				);
+				response = await fetch(`/api/payment/verify?reference=${encodeURIComponent(reference)}`, {
+					headers: { Authorization: `Bearer ${freshToken}` }
+				});
 			}
 		}
 

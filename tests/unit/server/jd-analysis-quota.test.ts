@@ -49,7 +49,8 @@ describe('checkJDAnalysisQuota: local fallback (no distributed backend)', () => 
 	it('treats different accounts independently', async () => {
 		const a = uniqueUid();
 		const b = uniqueUid();
-		for (let i = 0; i < JD_ANALYSIS_QUOTA_CONFIG.MAX_PER_DAY; i++) await checkJDAnalysisQuota({}, a);
+		for (let i = 0; i < JD_ANALYSIS_QUOTA_CONFIG.MAX_PER_DAY; i++)
+			await checkJDAnalysisQuota({}, a);
 		expect((await checkJDAnalysisQuota({}, a)).allowed).toBe(false);
 		expect((await checkJDAnalysisQuota({}, b)).allowed).toBe(true);
 	});

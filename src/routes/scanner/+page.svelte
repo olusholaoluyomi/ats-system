@@ -560,7 +560,9 @@
 										<div class="option-header">
 											<span class="option-title">Monthly Subscription</span>
 											<span class="option-price"
-												>{currencySymbol(paywallCurrency)}{paywallMonthlyPrice.toLocaleString()}</span
+												>{currencySymbol(
+													paywallCurrency
+												)}{paywallMonthlyPrice.toLocaleString()}</span
 											>
 										</div>
 										<div class="option-description">Unlimited scans • 30 days</div>

@@ -40,7 +40,9 @@ function fakeRequest() {
 	return {
 		request: { headers: new Headers({ authorization: 'Bearer good-token' }) },
 		getClientAddress: () => '203.0.113.1'
-	} as unknown as Parameters<typeof import('../../../src/routes/api/account/delete/+server').POST>[0];
+	} as unknown as Parameters<
+		typeof import('../../../src/routes/api/account/delete/+server').POST
+	>[0];
 }
 
 beforeEach(() => {

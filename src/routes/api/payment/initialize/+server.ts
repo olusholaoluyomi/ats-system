@@ -13,9 +13,7 @@ import {
 	parseMonthlyPriceForCurrency,
 	validatePriceForCurrency
 } from '$lib/server/paystack';
-import {
-	SCANS_PER_PAYMENT
-} from '$lib/server/billing-config';
+import { SCANS_PER_PAYMENT } from '$lib/server/billing-config';
 import { checkPaymentRateLimit } from '$lib/server/payment-rate-limit';
 
 // payments only exist in firebase mode (the hosted paid-review model). ldap
@@ -42,7 +40,10 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
 	// the caller must be a real signed-in firebase user; their uid is bound to
 	// the payment record so verify/webhook can never credit a stranger.
 	const { requireFirebaseIdentity } = await import('$lib/server/auth/token');
-	const authResult = await requireFirebaseIdentity(privateEnv, request.headers.get('authorization'));
+	const authResult = await requireFirebaseIdentity(
+		privateEnv,
+		request.headers.get('authorization')
+	);
 	if ('response' in authResult) return authResult.response;
 	const identity = authResult.identity;
 

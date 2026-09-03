@@ -25,8 +25,7 @@ let lastDailyCleanupAt = 0;
 export type PaymentAction = 'initialize' | 'verify' | 'account-delete';
 
 export type PaymentRateLimitResult =
-	| { allowed: true }
-	| { allowed: false; reason: 'minute' | 'daily'; retryAfterSec: number };
+	{ allowed: true } | { allowed: false; reason: 'minute' | 'daily'; retryAfterSec: number };
 
 function checkPaymentRateLimitLocal(key: string): PaymentRateLimitResult {
 	const now = Date.now();
@@ -57,7 +56,11 @@ function checkPaymentRateLimitLocal(key: string): PaymentRateLimitResult {
 
 	const day = dailyLimits.get(key);
 	if (day && now < day.resetAt && day.count >= MAX_RPD) {
-		return { allowed: false, reason: 'daily', retryAfterSec: Math.ceil((day.resetAt - now) / 1000) };
+		return {
+			allowed: false,
+			reason: 'daily',
+			retryAfterSec: Math.ceil((day.resetAt - now) / 1000)
+		};
 	}
 
 	if (minute && now < minute.resetAt) minute.count++;
