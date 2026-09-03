@@ -375,8 +375,8 @@
 			</div>
 			<div class="stat-divider"></div>
 			<div class="stat">
-				<span class="stat-number">100%</span>
-				<span class="stat-label">Free</span>
+				<span class="stat-number">Free</span>
+				<span class="stat-label">To Start</span>
 			</div>
 		</div>
 	</div>

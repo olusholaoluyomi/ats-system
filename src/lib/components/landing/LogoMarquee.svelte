@@ -21,7 +21,12 @@
 </script>
 
 <section class="marquee-section">
-	<p class="marquee-label">Simulates real enterprise ATS platforms used by 75%+ of Fortune 500</p>
+	<!-- a <div>, not a <p>: the global normalize reset applies
+	     `:where(p){text-wrap:pretty;max-inline-size:var(--size-content-3)}`,
+	     which was constraining this label to ~430px and leaving it flush left
+	     instead of centered - :where() is zero-specificity so this doesn't
+	     need an override, just a tag the reset's selector doesn't match. -->
+	<div class="marquee-label">Simulates real enterprise ATS platforms used by 75%+ of Fortune 500</div>
 
 	<!-- primary marquee: platform logos (monochrome wordmarks) -->
 	<div class="marquee-container" aria-hidden="true">
