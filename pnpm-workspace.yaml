@@ -5,3 +5,14 @@ onlyBuiltDependencies:
 overrides:
   jose: 4.15.5
   'rollup@<4.59.0': ^4.59.0
+  # transitive-only CVE patches: none of these are imported directly, pinned
+  # to the advisory's patched floor so a future lockfile refresh can't
+  # silently drift back below it. see GHSA-w5hq-g745-h8pq / GHSA-6gmq-8vp8-gcm6
+  # / GHSA-pxg6-pf52-xh8x.
+  uuid: '>=11.1.1'
+  '@xmldom/xmldom': '>=0.8.15'
+  # pinned to 0.7.x, NOT an open '>=0.7.0': cookie 2.x drops the named
+  # serialize/parse exports @sveltejs/kit's runtime imports, which breaks SSR
+  # entirely (confirmed locally - every request 500s) rather than just being
+  # untested.
+  cookie: '0.7.2'

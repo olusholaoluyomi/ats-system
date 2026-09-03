@@ -413,6 +413,17 @@ class ScoresStore {
 		this.previousScanForComparison = null;
 		this.error = null;
 	}
+
+	// like reset(), but also drops the loaded history list. used when the
+	// signed-in identity itself changes (sign-out) - unlike reset() (called by
+	// "Start Over" mid-session for the SAME user, where the history dropdown
+	// should stay populated), leaving scanHistory behind here would let a
+	// second person who signs in on the same tab see the first account's
+	// saved scans for the brief window before loadHistory() re-fetches.
+	resetForSignOut() {
+		this.reset();
+		this.scanHistory = [];
+	}
 }
 
 export const scoresStore = new ScoresStore();

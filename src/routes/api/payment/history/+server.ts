@@ -10,11 +10,10 @@ export const GET: RequestHandler = async ({ request }) => {
 		return json({ error: 'payments are only available in firebase mode' }, { status: 400 });
 	}
 
-	const { verifyFirebaseIdToken } = await import('$lib/server/auth/token');
-	const identity = await verifyFirebaseIdToken(privateEnv, request.headers.get('authorization'));
-	if (!identity) {
-		return json({ error: 'authentication required' }, { status: 401 });
-	}
+	const { requireFirebaseIdentity } = await import('$lib/server/auth/token');
+	const authResult = await requireFirebaseIdentity(privateEnv, request.headers.get('authorization'));
+	if ('response' in authResult) return authResult.response;
+	const identity = authResult.identity;
 
 	try {
 		const { getAdminFirestore } = await import('$lib/server/firebase-admin');

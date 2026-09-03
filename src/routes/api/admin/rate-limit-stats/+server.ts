@@ -32,7 +32,7 @@ export const GET: RequestHandler = ({ request }) => {
 	}
 
 	return json(
-		{ ...getRateLimitStats(), providerQuota: getQuotaState() },
+		{ ...getRateLimitStats(privateEnv), providerQuota: getQuotaState() },
 		{ headers: { 'Cache-Control': 'no-store' } }
 	);
 };

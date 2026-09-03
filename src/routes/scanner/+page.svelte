@@ -13,7 +13,8 @@
 	import { billingStore } from '$stores/billing.svelte';
 	import type { ScoringInput } from '$engine/scorer/types';
 	import type { LLMFailureReason } from '$engine/llm/client';
-	import { MONTHLY_SUBSCRIPTION_PRICE } from '$lib/pricing';
+	import { getPricing } from '$lib/payment';
+	import { currencySymbol } from '$lib/currency';
 
 	// load history once the user is allowed to use the scanner. authenticated
 	// users on hosted firebase pull from firestore; self-host installs (auth
@@ -38,6 +39,21 @@
 		if (billingStore.canReview) showPaywall = false;
 	});
 
+	// pull the real server-configured price up front so the paywall (both the
+	// proactive one shown before any scan, and the one raised by a 402) never
+	// shows a stale hardcoded default once the deploy overrides PAYSTACK_PRICE_*.
+	// public/unauthenticated, so this doesn't wait on auth state.
+	$effect(() => {
+		if (billingStore.enabled) {
+			void getPricing().then((info) => {
+				if (!info) return;
+				paywallPrice = info.price;
+				paywallMonthlyPrice = info.monthlyPrice;
+				paywallCurrency = info.currency;
+			});
+		}
+	});
+
 	// tracks whether results should be visible (scan clicked or loaded from history)
 	let hasScanned = $state(false);
 
@@ -45,6 +61,8 @@
 	// and the rule-based fallback is skipped so the paywall can't be bypassed.
 	let showPaywall = $state(false);
 	let paywallPrice = $state(10000);
+	let paywallMonthlyPrice = $state(50000);
+	let paywallCurrency = $state('NGN');
 	let payingForReview = $state(false);
 	let paymentError = $state<string | null>(null);
 	let selectedPaymentType = $state<'one-time' | 'monthly'>('one-time');
@@ -165,7 +183,8 @@
 			// paid-review model is bypassed client-side.
 			if (llmResult.status === 'payment_required') {
 				scoresStore.cancelScoring();
-				paywallPrice = llmResult.priceNgn;
+				// price is already kept live by the pricing effect above, not
+				// carried on this response - see ScoreLLMResult's comment.
 				showPaywall = true;
 				void billingStore.refresh();
 				return;
@@ -528,7 +547,9 @@
 									>
 										<div class="option-header">
 											<span class="option-title">Pay-Per-Use</span>
-											<span class="option-price">₦{paywallPrice.toLocaleString('en-NG')}</span>
+											<span class="option-price"
+												>{currencySymbol(paywallCurrency)}{paywallPrice.toLocaleString()}</span
+											>
 										</div>
 										<div class="option-description">4 scans • No subscription</div>
 									</button>
@@ -538,7 +559,9 @@
 									>
 										<div class="option-header">
 											<span class="option-title">Monthly Subscription</span>
-											<span class="option-price">₦{paywallPrice.toLocaleString()}</span>
+											<span class="option-price"
+												>{currencySymbol(paywallCurrency)}{paywallMonthlyPrice.toLocaleString()}</span
+											>
 										</div>
 										<div class="option-description">Unlimited scans • 30 days</div>
 									</button>
@@ -556,8 +579,8 @@
 										Opening payment...
 									{:else}
 										{selectedPaymentType === 'monthly'
-											? `Subscribe ₦${MONTHLY_SUBSCRIPTION_PRICE.toLocaleString('en-NG')}`
-											: `Pay ₦${paywallPrice.toLocaleString('en-NG')} for 4 Scans`}
+											? `Subscribe ${currencySymbol(paywallCurrency)}${paywallMonthlyPrice.toLocaleString()}`
+											: `Pay ${currencySymbol(paywallCurrency)}${paywallPrice.toLocaleString()} for 4 Scans`}
 									{/if}
 								</button>
 							</div>

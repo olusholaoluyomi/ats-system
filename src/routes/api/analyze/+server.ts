@@ -140,7 +140,7 @@ interface RequestBody {
 	jobDescription?: string;
 }
 
-export const POST: RequestHandler = async ({ request, locals }) => {
+export const POST: RequestHandler = async ({ request, locals, getClientAddress }) => {
 	// in ldap self-host mode the scanner sits behind a login, so the analyze API
 	// requires a valid session too (defense in depth). public and unchanged in
 	// the hosted firebase deploy and anonymous self-host (resolveAuthMode is
@@ -171,9 +171,13 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		return json({ error: 'no LLM providers configured', fallback: true }, { status: 503 });
 	}
 
-	// rate limiting per IP
-	const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
-	const limit = checkRateLimit(ip);
+	// rate limiting per IP. getClientAddress() (not the raw x-forwarded-for
+	// header) is what makes this cost-control actually hold: SvelteKit's
+	// adapter derives it from the platform's trusted proxy layer, whereas a
+	// client can set x-forwarded-for to a new value on every request and get
+	// a fresh quota each time.
+	const ip = getClientAddress();
+	const limit = await checkRateLimit(env, ip);
 	if (!limit.allowed) {
 		const reasonMsg =
 			limit.reason === 'minute' ? 'too many requests this minute' : 'daily limit reached';
@@ -268,11 +272,10 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	// this the hosted deploy resolves 'none' and billing never engages.
 	const mergedEnv = { ...env, ...publicEnv };
 	if (resolveAuthMode(mergedEnv) === 'firebase') {
-		const { verifyFirebaseIdToken } = await import('$lib/server/auth/token');
-		const identity = await verifyFirebaseIdToken(env, request.headers.get('authorization'));
-		if (!identity) {
-			return json({ error: 'authentication required' }, { status: 401 });
-		}
+		const { requireFirebaseIdentity } = await import('$lib/server/auth/token');
+		const authResult = await requireFirebaseIdentity(env, request.headers.get('authorization'));
+		if ('response' in authResult) return authResult.response;
+		const identity = authResult.identity;
 
 		if (body.mode === 'full-score') {
 			const { getAdminFirestore } = await import('$lib/server/firebase-admin');
@@ -334,6 +337,20 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 					});
 				}
 			};
+		} else if (body.mode === 'analyze-jd') {
+			// analyze-jd isn't billed through consumeReview (it's a lightweight
+			// preprocessing step, not a scored review) but it's still a real
+			// LLM API call, so it needs its own bound - otherwise it's an
+			// unlimited-per-account free call path, capped only by the per-IP
+			// rate limiter above (which a caller can dilute across many IPs).
+			const { checkJDAnalysisQuota } = await import('$lib/server/jd-analysis-quota');
+			const quota = await checkJDAnalysisQuota(env, identity.uid);
+			if (!quota.allowed) {
+				return json(
+					{ error: 'too many requests', retryAfter: quota.retryAfterSec },
+					{ status: 429, headers: { 'Retry-After': String(quota.retryAfterSec) } }
+				);
+			}
 		}
 	}
 

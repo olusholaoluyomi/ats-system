@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { goto } from '$app/navigation';
 	import { getFirebase } from '$lib/firebase';
 	import { authStore } from '$stores/auth.svelte';
 	import SeoHead from '$components/seo/SeoHead.svelte';
@@ -35,12 +35,24 @@
 		reviewsThisMonth: 0
 	});
 
-	onMount(async () => {
-		if (!authStore.isAuthenticated) {
-			window.location.href = '/login';
-			return;
+	// redirect if not logged in, but only once Firebase has finished restoring
+	// the session (authStore.loading). checking isAuthenticated before that
+	// resolves bounces a still-signed-in user who refreshed or bookmarked
+	// this page straight to /login.
+	$effect(() => {
+		if (authStore.disabled) return;
+		if (!authStore.loading && !authStore.isAuthenticated) {
+			goto('/login');
 		}
+	});
 
+	$effect(() => {
+		if (authStore.loading) return;
+		if (!authStore.disabled && !authStore.isAuthenticated) return;
+		loadTransactions();
+	});
+
+	async function loadTransactions() {
 		try {
 			const { db } = await getFirebase();
 			const { collection, query, where, orderBy, getDocs, doc, getDoc } =
@@ -104,7 +116,7 @@
 		} finally {
 			loading = false;
 		}
-	});
+	}
 
 	function formatCurrency(amount: number, currency: string | null): string {
 		const symbols: Record<string, string> = {

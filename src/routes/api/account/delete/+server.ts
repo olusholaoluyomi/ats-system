@@ -4,17 +4,25 @@ import { env as privateEnv } from '$env/dynamic/private';
 import { env as publicEnv } from '$env/dynamic/public';
 import { logger } from '$lib/log';
 import { resolveAuthMode } from '$lib/server/auth/config';
+import { checkPaymentRateLimit } from '$lib/server/payment-rate-limit';
 
-export const POST: RequestHandler = async ({ request }) => {
+export const POST: RequestHandler = async ({ request, getClientAddress }) => {
 	if (resolveAuthMode({ ...privateEnv, ...publicEnv }) !== 'firebase') {
 		return json({ error: 'account deletion is only available in firebase mode' }, { status: 400 });
 	}
 
-	const { verifyFirebaseIdToken } = await import('$lib/server/auth/token');
-	const identity = await verifyFirebaseIdToken(privateEnv, request.headers.get('authorization'));
-	if (!identity) {
-		return json({ error: 'authentication required' }, { status: 401 });
+	const rateLimit = await checkPaymentRateLimit(privateEnv, 'account-delete', getClientAddress());
+	if (!rateLimit.allowed) {
+		return json(
+			{ error: 'too many requests', retryAfter: rateLimit.retryAfterSec },
+			{ status: 429, headers: { 'Retry-After': String(rateLimit.retryAfterSec) } }
+		);
 	}
+
+	const { requireFirebaseIdentity } = await import('$lib/server/auth/token');
+	const authResult = await requireFirebaseIdentity(privateEnv, request.headers.get('authorization'));
+	if ('response' in authResult) return authResult.response;
+	const identity = authResult.identity;
 
 	try {
 		const { getAdminAuth, getAdminFirestore } = await import('$lib/server/firebase-admin');
@@ -24,13 +32,18 @@ export const POST: RequestHandler = async ({ request }) => {
 			return json({ error: 'admin services not configured' }, { status: 503 });
 		}
 
-		// delete user-scoped docs but keep payments/* ledger for audit
+		// delete user-scoped docs but keep payments/* ledger for audit.
+		// `users/{uid}/scans` is a collection (submitted resumes/scores live at
+		// users/{uid}/scans/{scanId}), not a document - db.doc() on an odd
+		// number of path segments throws synchronously, and even a valid doc
+		// ref wouldn't cascade-delete the scan documents underneath it.
+		// recursiveDelete is a bulk operation and can't run inside
+		// runTransaction, so it's a separate step from the billing tombstone.
 		const billingRef = db.doc(`users/${identity.uid}/billing/state`);
-		const scansRef = db.doc(`users/${identity.uid}/scans`);
+		const scansRef = db.collection(`users/${identity.uid}/scans`);
+		await db.recursiveDelete(scansRef);
 		await db.runTransaction(async (tx) => {
-			// delete the small docs under the user's space
 			tx.set(billingRef, { deleted: true });
-			tx.set(scansRef, { deleted: true });
 		});
 
 		// delete the auth user

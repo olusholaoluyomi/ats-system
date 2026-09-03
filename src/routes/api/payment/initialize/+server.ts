@@ -16,11 +16,12 @@ import {
 import {
 	SCANS_PER_PAYMENT
 } from '$lib/server/billing-config';
+import { checkPaymentRateLimit } from '$lib/server/payment-rate-limit';
 
 // payments only exist in firebase mode (the hosted paid-review model). ldap
 // self-host and anonymous 'none' mode have no concept of a wallet, so the
 // endpoint is inert there.
-export const POST: RequestHandler = async ({ request }) => {
+export const POST: RequestHandler = async ({ request, getClientAddress }) => {
 	// resolve the mode from private + public env: PUBLIC_FIREBASE_PROJECT_ID only
 	// reaches the server through $env/dynamic/public (PUBLIC_ vars are stripped
 	// from the private module), same merge as hooks.server.ts.
@@ -28,13 +29,22 @@ export const POST: RequestHandler = async ({ request }) => {
 		return json({ error: 'payments are only available in firebase mode' }, { status: 400 });
 	}
 
+	// checked before the (expensive) token verification below so a flood of
+	// requests can't be used to hammer the admin SDK or spam Paystack/Firestore.
+	const rateLimit = await checkPaymentRateLimit(privateEnv, 'initialize', getClientAddress());
+	if (!rateLimit.allowed) {
+		return json(
+			{ error: 'too many requests', retryAfter: rateLimit.retryAfterSec },
+			{ status: 429, headers: { 'Retry-After': String(rateLimit.retryAfterSec) } }
+		);
+	}
+
 	// the caller must be a real signed-in firebase user; their uid is bound to
 	// the payment record so verify/webhook can never credit a stranger.
-	const { verifyFirebaseIdToken } = await import('$lib/server/auth/token');
-	const identity = await verifyFirebaseIdToken(privateEnv, request.headers.get('authorization'));
-	if (!identity) {
-		return json({ error: 'authentication required' }, { status: 401 });
-	}
+	const { requireFirebaseIdentity } = await import('$lib/server/auth/token');
+	const authResult = await requireFirebaseIdentity(privateEnv, request.headers.get('authorization'));
+	if ('response' in authResult) return authResult.response;
+	const identity = authResult.identity;
 
 	const secret = getPaystackSecret(privateEnv);
 	if (!secret) {
@@ -105,7 +115,7 @@ export const POST: RequestHandler = async ({ request }) => {
 			currency,
 			callbackUrl,
 			cancelUrl,
-			plan: paymentType === 'monthly' ? process.env.PAYSTACK_MONTHLY_PLAN_CODE : undefined
+			plan: paymentType === 'monthly' ? privateEnv.PAYSTACK_MONTHLY_PLAN_CODE : undefined
 		});
 	} catch (err) {
 		logger.error('payment.initialize_failed', {

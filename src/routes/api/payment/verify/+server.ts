@@ -5,6 +5,7 @@ import { env as publicEnv } from '$env/dynamic/public';
 import { logger } from '$lib/log';
 import { resolveAuthMode } from '$lib/server/auth/config';
 import { getPaystackSecret, verifyPaystack } from '$lib/server/paystack';
+import { checkPaymentRateLimit } from '$lib/server/payment-rate-limit';
 
 // the user lands on /payment/callback?reference=... after Paystack redirects
 // them back; this endpoint settles the charge by asking Paystack (server-side)
@@ -12,11 +13,21 @@ import { getPaystackSecret, verifyPaystack } from '$lib/server/paystack';
 // gets a definitive answer even if Paystack's webhook is late or the deploy
 // was briefly down. creditReview is idempotent, so webhook + verify can both
 // fire on the same reference and exactly one lands the credit.
-export const GET: RequestHandler = async ({ request, url }) => {
+export const GET: RequestHandler = async ({ request, url, getClientAddress }) => {
 	// same public/private env merge as hooks.server.ts: PUBLIC_FIREBASE_PROJECT_ID
 	// is not visible through $env/dynamic/private alone.
 	if (resolveAuthMode({ ...privateEnv, ...publicEnv }) !== 'firebase') {
 		return json({ error: 'payments are only available in firebase mode' }, { status: 400 });
+	}
+
+	// own budget from 'initialize' (see payment-rate-limit.ts) - the callback
+	// page polls this endpoint a few times per checkout as normal behaviour.
+	const rateLimit = await checkPaymentRateLimit(privateEnv, 'verify', getClientAddress());
+	if (!rateLimit.allowed) {
+		return json(
+			{ error: 'too many requests', retryAfter: rateLimit.retryAfterSec },
+			{ status: 429, headers: { 'Retry-After': String(rateLimit.retryAfterSec) } }
+		);
 	}
 
 	const reference = url.searchParams.get('reference');
@@ -24,11 +35,10 @@ export const GET: RequestHandler = async ({ request, url }) => {
 		return json({ error: 'missing reference' }, { status: 400 });
 	}
 
-	const { verifyFirebaseIdToken } = await import('$lib/server/auth/token');
-	const identity = await verifyFirebaseIdToken(privateEnv, request.headers.get('authorization'));
-	if (!identity) {
-		return json({ error: 'authentication required' }, { status: 401 });
-	}
+	const { requireFirebaseIdentity } = await import('$lib/server/auth/token');
+	const authResult = await requireFirebaseIdentity(privateEnv, request.headers.get('authorization'));
+	if ('response' in authResult) return authResult.response;
+	const identity = authResult.identity;
 
 	const secret = getPaystackSecret(privateEnv);
 	if (!secret) {

@@ -1,6 +1,13 @@
-// per-IP in-memory rate limiter
-// dies with the instance (no distributed lock); fine on Vercel hobby/single instance
-// upgrade path: swap the Maps for a kv-backed adapter without changing the public API
+// per-IP rate limiter for /api/analyze.
+//
+// tries the Upstash-backed distributed counter first (see
+// $lib/server/distributed-counter) so the limit holds across every Vercel
+// instance; when that isn't configured (or a call to it fails), falls back
+// to the original per-instance in-memory Maps below. the local counters stay
+// as the always-available floor - upgrade path: swap them for a different
+// backend without changing the public API.
+
+import { distributedIncrement, isDistributedConfigured } from '$lib/server/distributed-counter';
 
 const rateLimits = new Map<string, { count: number; resetAt: number }>();
 const dailyLimits = new Map<string, { count: number; resetAt: number }>();
@@ -29,8 +36,9 @@ const stats = {
 export type RateLimitResult =
 	{ allowed: true } | { allowed: false; reason: 'minute' | 'daily'; retryAfterSec: number };
 
-export function checkRateLimit(ip: string): RateLimitResult {
-	stats.totalChecks += 1;
+// the original per-instance check, unchanged - used whenever the distributed
+// backend isn't configured or a call to it failed.
+function checkRateLimitLocal(ip: string): RateLimitResult {
 	const now = Date.now();
 
 	// periodically clean up expired entries to prevent unbounded memory growth.
@@ -53,7 +61,6 @@ export function checkRateLimit(ip: string): RateLimitResult {
 	// doesn't also consume a minute slot
 	const minute = rateLimits.get(ip);
 	if (minute && now < minute.resetAt && minute.count >= MAX_RPM) {
-		stats.totalBlockedMinute += 1;
 		return {
 			allowed: false,
 			reason: 'minute',
@@ -63,7 +70,6 @@ export function checkRateLimit(ip: string): RateLimitResult {
 
 	const day = dailyLimits.get(ip);
 	if (day && now < day.resetAt && day.count >= MAX_RPD) {
-		stats.totalBlockedDaily += 1;
 		return {
 			allowed: false,
 			reason: 'daily',
@@ -78,15 +84,47 @@ export function checkRateLimit(ip: string): RateLimitResult {
 	if (day && now < day.resetAt) day.count++;
 	else dailyLimits.set(ip, { count: 1, resetAt: now + 86_400_000 });
 
-	stats.totalAllowed += 1;
 	return { allowed: true };
+}
+
+export async function checkRateLimit(
+	env: Record<string, string | undefined>,
+	ip: string
+): Promise<RateLimitResult> {
+	stats.totalChecks += 1;
+
+	const [minute, day] = await Promise.all([
+		distributedIncrement(env, `rl:analyze:m:${ip}`, 60_000),
+		distributedIncrement(env, `rl:analyze:d:${ip}`, 86_400_000)
+	]);
+
+	let result: RateLimitResult;
+	if (minute !== null && day !== null) {
+		if (minute.count > MAX_RPM) {
+			result = { allowed: false, reason: 'minute', retryAfterSec: minute.retryAfterSec };
+		} else if (day.count > MAX_RPD) {
+			result = { allowed: false, reason: 'daily', retryAfterSec: day.retryAfterSec };
+		} else {
+			result = { allowed: true };
+		}
+	} else {
+		result = checkRateLimitLocal(ip);
+	}
+
+	if (result.allowed) stats.totalAllowed += 1;
+	else if (result.reason === 'minute') stats.totalBlockedMinute += 1;
+	else stats.totalBlockedDaily += 1;
+
+	return result;
 }
 
 // observability surface for /api/admin/rate-limit-stats. returns the
 // in-process counters plus current map sizes so an admin can spot abuse
 // patterns without paying for external observability tooling. per-instance
-// only (lost on cold start), so this is best-effort, not authoritative.
-export function getRateLimitStats() {
+// only (lost on cold start), so this is best-effort, not authoritative -
+// `distributed` says whether the Upstash-backed counter (which IS
+// consistent across instances) is actually active for this deploy.
+export function getRateLimitStats(env: Record<string, string | undefined>) {
 	return {
 		startedAt: new Date(stats.startedAt).toISOString(),
 		uptimeSec: Math.round((Date.now() - stats.startedAt) / 1000),
@@ -96,11 +134,12 @@ export function getRateLimitStats() {
 		totalBlockedDaily: stats.totalBlockedDaily,
 		minuteMapSize: rateLimits.size,
 		dailyMapSize: dailyLimits.size,
+		distributed: isDistributedConfigured(env),
 		config: { maxRpm: MAX_RPM, maxRpd: MAX_RPD, maxMapSize: MAX_MAP_SIZE }
 	};
 }
 
-// exported constants so tests can drive the limiter without magic numbers
+// exported so tests can drive the limiter without magic numbers
 export const RATE_LIMIT_CONFIG = {
 	MAX_RPM,
 	MAX_RPD

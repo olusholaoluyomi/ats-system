@@ -27,7 +27,12 @@ export type ScoreLLMResult =
 			triedProviders?: string[];
 	  }
 	| { status: 'rate_limited'; retryAfterSec: number }
-	| { status: 'payment_required'; priceNgn: number }
+	// price/currency are NOT carried here - the scanner fetches the real
+	// server-configured price up front via /api/pricing and keeps it live,
+	// rather than trusting a field on this one response (which drifted: the
+	// server sends `price`, this used to read a nonexistent `priceNgn` and
+	// silently fall back to a hardcoded default on every call).
+	| { status: 'payment_required' }
 	// server-side auth failed (401): firebase visitor not signed in / token
 	// rejected, or expired ldap session. NOT a fallback signal - scanning must
 	// require sign-up, so the caller routes to the login page instead of
@@ -120,10 +125,7 @@ export async function scoreLLM(
 				// the free reviews are used up and the account has no credits left.
 				// distinct from a generic error: the scanner shows the paywall and
 				// must NOT degrade to the rule-based scorer.
-				return {
-					status: 'payment_required',
-					priceNgn: typeof data.priceNgn === 'number' ? data.priceNgn : 10000
-				};
+				return { status: 'payment_required' };
 			}
 			return { status: 'error' };
 		}

@@ -294,6 +294,7 @@ class AuthStore {
 				});
 			}
 			this.ldapUser = null;
+			await this.clearSessionScopedStores();
 			return;
 		}
 		try {
@@ -303,6 +304,22 @@ class AuthStore {
 		} catch (err) {
 			this.error = this.getErrorMessage(err);
 		}
+		await this.clearSessionScopedStores();
+	}
+
+	// scoresStore/resumeStore are module-level singletons that outlive any one
+	// component, so a scan's results stay in memory across sign-out. without
+	// this, a second person signing in on the same browser tab (shared/public
+	// computer) briefly sees the previous account's parsed resume and ATS
+	// scores the moment they land on /scanner. dynamic import avoids a static
+	// circular dependency (scores.svelte.ts imports authStore from this file).
+	private async clearSessionScopedStores() {
+		const [{ scoresStore }, { resumeStore }] = await Promise.all([
+			import('./scores.svelte'),
+			import('./resume.svelte')
+		]);
+		scoresStore.resetForSignOut();
+		resumeStore.reset();
 	}
 
 	clearError() {

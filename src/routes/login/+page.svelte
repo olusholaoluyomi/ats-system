@@ -82,11 +82,14 @@
 	async function handlePasswordReset() {
 		const normalized = normalizeEmail(resetEmail);
 		if (!normalized) return;
+		submitting = true;
 		try {
 			await authStore.sendPasswordReset(normalized);
 			resetSent = true;
 		} catch {
 			// error is set in authStore
+		} finally {
+			submitting = false;
 		}
 	}
 </script>

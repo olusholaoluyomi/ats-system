@@ -120,7 +120,11 @@ export async function parseResume(file: File): Promise<ParseResult> {
 	}
 }
 
-function getFileType(file: File): 'pdf' | 'docx' | null {
+// exported so upload UIs can validate against the exact same rule the parser
+// uses (MIME type OR extension) instead of a stricter MIME-only check that
+// rejects a legitimate .pdf/.docx whenever the browser/OS reports an empty or
+// unexpected file.type.
+export function getFileType(file: File): 'pdf' | 'docx' | null {
 	if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) return 'pdf';
 	if (
 		file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||

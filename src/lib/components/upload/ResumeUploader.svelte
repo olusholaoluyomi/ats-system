@@ -1,16 +1,11 @@
 <script lang="ts">
 	import { resumeStore } from '$stores/resume.svelte';
+	import { getFileType } from '$engine/parser';
 
 	// visual feedback for the drag-and-drop zone
 	let isDragging = $state(false);
 	// ref to the hidden file input for programmatic click
 	let fileInput: HTMLInputElement;
-
-	// MIME types we accept (PDF and DOCX only)
-	const ACCEPTED_TYPES = [
-		'application/pdf',
-		'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-	];
 
 	function handleDragOver(e: DragEvent) {
 		e.preventDefault();
@@ -34,9 +29,12 @@
 		if (file) validateAndSetFile(file);
 	}
 
-	// validates type + size before passing to the store
+	// validates type + size before passing to the store. matches on MIME type
+	// OR file extension (same rule the parser itself uses) rather than MIME
+	// alone - file.type can be empty/unreliable depending on browser/OS, which
+	// otherwise rejects a legitimate .pdf/.docx before parsing is even tried.
 	function validateAndSetFile(file: File) {
-		if (!ACCEPTED_TYPES.includes(file.type)) {
+		if (!getFileType(file)) {
 			resumeStore.setError('Please upload a PDF or DOCX file.');
 			return;
 		}

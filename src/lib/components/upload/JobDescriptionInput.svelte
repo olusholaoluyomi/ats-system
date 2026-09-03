@@ -5,6 +5,7 @@
 	import { authStore } from '$stores/auth.svelte';
 	import { SAMPLE_JD } from '$lib/sample-resume';
 	import { logger } from '$lib/log';
+	import { getFileType } from '$engine/parser';
 
 	let expanded = $state(false);
 	let libraryOpen = $state(false);
@@ -13,10 +14,6 @@
 	// resume uploader: extractDocumentText reuses parsePDF/parseDOCX, and the
 	// extracted text lands in scoresStore.jobDescription so the paste textarea,
 	// live preview, targeted scoring, and save-to-library all work identically.
-	const ACCEPTED_TYPES = [
-		'application/pdf',
-		'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-	];
 	const MAX_JD_FILE_SIZE = 10 * 1024 * 1024;
 	let jdFile = $state<File | null>(null);
 	let isParsingJD = $state(false);
@@ -49,7 +46,11 @@
 	}
 
 	async function handleJdFile(file: File) {
-		if (!ACCEPTED_TYPES.includes(file.type)) {
+		// matches on MIME type OR extension (same rule the parser itself uses),
+		// not MIME alone - file.type can be empty/unreliable depending on
+		// browser/OS, which otherwise rejects a legitimate .pdf/.docx before
+		// parsing is even tried.
+		if (!getFileType(file)) {
 			jdError = 'Please upload a PDF or DOCX file.';
 			return;
 		}
