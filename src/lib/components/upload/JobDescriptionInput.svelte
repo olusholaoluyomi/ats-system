@@ -10,6 +10,15 @@
 	let expanded = $state(false);
 	let libraryOpen = $state(false);
 
+	// auto-open when a job description is already present - e.g. arriving via
+	// a job board "Check my CV Score" link (?jobId=... on the scanner page),
+	// or loading a saved JD from the library. without this the panel stays
+	// collapsed and the pre-filled text is invisible until the user manually
+	// expands it.
+	$effect(() => {
+		if (scoresStore.hasJobDescription) expanded = true;
+	});
+
 	// JD documents (PDF/DOCX) go through the same text-extraction layer as the
 	// resume uploader: extractDocumentText reuses parsePDF/parseDOCX, and the
 	// extracted text lands in scoresStore.jobDescription so the paste textarea,

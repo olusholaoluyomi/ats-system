@@ -1,0 +1,68 @@
+name: discover-companies
+
+on:
+  schedule:
+    # daily, offset 30min from ingest-jobs' :00 so the two workflows don't
+    # contend for the same runner pool at the same instant.
+    - cron: '30 2 * * *'
+  workflow_dispatch: {}
+
+concurrency:
+  group: discover-companies
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      # sha-pinned third-party action, matching ci.yml. no version input, it reads packageManager from package.json
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: 'pnpm'
+
+      - name: install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: discover new companies
+        run: node scripts/discover-companies.mjs
+
+      - name: open PR for newly discovered companies
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -e
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          if git diff --quiet -- src/lib/server/job-board/discovered-companies.json; then
+            echo "no new companies discovered this run"
+            # still try to persist the state file directly (best-effort - a
+            # branch-protected main can legitimately reject this, that's fine,
+            # the discovery script's day-of-year rotation doesn't depend on it).
+            if ! git diff --quiet -- src/lib/server/job-board/discovery-state.json; then
+              git add src/lib/server/job-board/discovery-state.json
+              git commit -m "chore: update job-board discovery state [skip ci]"
+              git push origin HEAD:main || echo "::warning::could not push discovery state directly (branch protection?) - skipping, next run's rotation covers this"
+            fi
+            exit 0
+          fi
+
+          BRANCH="discover-companies/$(date -u +%Y-%m-%d)-$(date -u +%H%M)"
+          git checkout -b "$BRANCH"
+          git add src/lib/server/job-board/discovered-companies.json src/lib/server/job-board/discovery-state.json
+          git commit -m "feat: add newly discovered job-board companies"
+          git push origin "$BRANCH"
+          gh pr create \
+            --title "Job board: newly discovered companies ($(date -u +%Y-%m-%d))" \
+            --body "Auto-discovered by \`scripts/discover-companies.mjs\` against Y Combinator's public company list (https://github.com/yc-oss/api). Every entry in this diff resolved to a real, live Greenhouse/Lever/Ashby board at run time - none are guessed/unverified. Review before merging: merging adds them to the live job board on the next ingestion run." \
+            --base main

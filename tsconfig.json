@@ -9,6 +9,15 @@
 		"skipLibCheck": true,
 		"sourceMap": true,
 		"strict": true,
-		"moduleResolution": "bundler"
+		"moduleResolution": "bundler",
+		// a handful of src/lib/server/job-board/** modules (plus llm-call.ts)
+		// need to run both under Vite AND directly via `node` (from the
+		// standalone ingestion/discovery scripts, which lack Vite's alias
+		// resolution) - they use relative imports with explicit .ts
+		// extensions for that reason. safe alongside moduleResolution:
+		// bundler + noEmit (already set in the extended base config): Vite
+		// resolves these at bundle time regardless, this only affects the
+		// type-checker.
+		"allowImportingTsExtensions": true
 	}
 }

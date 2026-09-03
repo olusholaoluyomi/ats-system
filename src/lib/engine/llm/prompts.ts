@@ -390,6 +390,12 @@ Rules:
 - be specific about experience level based on years mentioned or seniority terms`;
 }
 
+// buildJobClassificationPrompt (job-board ingestion classification) lives in
+// $lib/server/job-board/classification-prompt.ts, not here - it needs to run
+// under plain `node` (scripts/ingest-jobs.mjs), and this file's top-level
+// import of $engine/parser/section-detector (needed by other functions
+// above, not by that one) breaks module load entirely in that context.
+
 export function buildSemanticMatchPrompt(
 	resumeSkills: string[],
 	jobDescription: string,

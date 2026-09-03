@@ -1,0 +1,434 @@
+[
+	{
+		"slug": "belvo",
+		"name": "Belvo",
+		"atsType": "ashby",
+		"boardToken": "belvo",
+		"whyThisCompany": "YC company (Winter 2020): Open Finance API platform for Latam.",
+		"enabled": true
+	},
+	{
+		"slug": "zip",
+		"name": "Zip",
+		"atsType": "ashby",
+		"boardToken": "zip",
+		"whyThisCompany": "YC company (Summer 2020): The future of B2B spend",
+		"enabled": true
+	},
+	{
+		"slug": "luminai",
+		"name": "Luminai",
+		"atsType": "ashby",
+		"boardToken": "luminai",
+		"whyThisCompany": "YC company (Summer 2020): Luminai helps automate repetitive manual work away from your mission…",
+		"enabled": true
+	},
+	{
+		"slug": "roboflow",
+		"name": "Roboflow",
+		"atsType": "ashby",
+		"boardToken": "roboflow",
+		"whyThisCompany": "YC company (Summer 2020): 🖼️ Give your software the sense of sight.",
+		"enabled": true
+	},
+	{
+		"slug": "datafold",
+		"name": "Datafold",
+		"atsType": "ashby",
+		"boardToken": "datafold",
+		"whyThisCompany": "YC company (Summer 2020): Automating manual and repetitive data engineering tasks with AI",
+		"enabled": true
+	},
+	{
+		"slug": "atob",
+		"name": "AtoB",
+		"atsType": "ashby",
+		"boardToken": "atob",
+		"whyThisCompany": "YC company (Summer 2020): Modernizing global transportation payments.",
+		"enabled": true
+	},
+	{
+		"slug": "blissway",
+		"name": "Blissway",
+		"atsType": "ashby",
+		"boardToken": "blissway",
+		"whyThisCompany": "YC company (Summer 2020): The tolling industry’s prime tech infrastructure",
+		"enabled": true
+	},
+	{
+		"slug": "doola",
+		"name": "doola",
+		"atsType": "lever",
+		"boardToken": "doola",
+		"whyThisCompany": "YC company (Summer 2020): Business-in-a-Box™ for LLCs",
+		"enabled": true
+	},
+	{
+		"slug": "atomic",
+		"name": "Atomic",
+		"atsType": "ashby",
+		"boardToken": "atomic",
+		"whyThisCompany": "YC company (Summer 2020): API that lets companies embed investment accounts into their services",
+		"enabled": true
+	},
+	{
+		"slug": "notabene",
+		"name": "Notabene",
+		"atsType": "ashby",
+		"boardToken": "notabene",
+		"whyThisCompany": "YC company (Summer 2020): The Notabene platform is the trust layer for global money movement.",
+		"enabled": true
+	},
+	{
+		"slug": "kingdom",
+		"name": "Kingdom",
+		"atsType": "ashby",
+		"boardToken": "kingdom",
+		"whyThisCompany": "YC company (Summer 2020): Clinically-validated ingredients from natural microbes",
+		"enabled": true
+	},
+	{
+		"slug": "flint",
+		"name": "Flint",
+		"atsType": "ashby",
+		"boardToken": "flint",
+		"whyThisCompany": "YC company (Summer 2020): Securing Nurses for Your Future",
+		"enabled": true
+	},
+	{
+		"slug": "hotplate",
+		"name": "Hotplate",
+		"atsType": "ashby",
+		"boardToken": "hotplate",
+		"whyThisCompany": "YC company (Summer 2020): Online ordering platform for independent chefs and bakers.",
+		"enabled": true
+	},
+	{
+		"slug": "arketa",
+		"name": "Arketa",
+		"atsType": "ashby",
+		"boardToken": "arketa",
+		"whyThisCompany": "YC company (Summer 2020): Everything for your fitness or wellness business.",
+		"enabled": true
+	},
+	{
+		"slug": "carbonchain",
+		"name": "CarbonChain",
+		"atsType": "greenhouse",
+		"boardToken": "carbonchain",
+		"whyThisCompany": "YC company (Summer 2020): We help companies automate the accounting of their carbon emissions",
+		"enabled": true
+	},
+	{
+		"slug": "ready",
+		"name": "Ready",
+		"atsType": "ashby",
+		"boardToken": "ready",
+		"whyThisCompany": "YC company (Summer 2020): Collaborative platform for optimizing regulated utilities such as…",
+		"enabled": true
+	},
+	{
+		"slug": "taktile",
+		"name": "Taktile",
+		"atsType": "ashby",
+		"boardToken": "taktile",
+		"whyThisCompany": "YC company (Summer 2020): Transform your decision-making with reliable AI agents in weeks, not…",
+		"enabled": true
+	},
+	{
+		"slug": "finch",
+		"name": "Finch",
+		"atsType": "lever",
+		"boardToken": "finch",
+		"whyThisCompany": "YC company (Summer 2020): Finch is the Employment Data Platform",
+		"enabled": true
+	},
+	{
+		"slug": "fieldguide",
+		"name": "Fieldguide",
+		"atsType": "ashby",
+		"boardToken": "fieldguide",
+		"whyThisCompany": "YC company (Summer 2020): Vertical AI for Audit & Advisory Firms",
+		"enabled": true
+	},
+	{
+		"slug": "abacum",
+		"name": "Abacum",
+		"atsType": "ashby",
+		"boardToken": "abacum",
+		"whyThisCompany": "YC company (Winter 2021): The AI-native FP&A platform that helps Finance teams drive business…",
+		"enabled": true
+	},
+	{
+		"slug": "runway",
+		"name": "Runway",
+		"atsType": "ashby",
+		"boardToken": "runway",
+		"whyThisCompany": "YC company (Winter 2021): Easier and more reliable mobile app releases for teams.",
+		"enabled": true
+	},
+	{
+		"slug": "authzed",
+		"name": "authzed",
+		"atsType": "ashby",
+		"boardToken": "authzed",
+		"whyThisCompany": "YC company (Winter 2021): Authorization Infrastructure securing AI at OpenAI, Zoom, & more",
+		"enabled": true
+	},
+	{
+		"slug": "humaans",
+		"name": "Humaans",
+		"atsType": "lever",
+		"boardToken": "humaans",
+		"whyThisCompany": "YC company (Winter 2021): AI-Powered HRIS for high performing teams",
+		"enabled": true
+	},
+	{
+		"slug": "albedo",
+		"name": "Albedo",
+		"atsType": "greenhouse",
+		"boardToken": "albedo",
+		"whyThisCompany": "YC company (Winter 2021): Full-stack VLEO satellite missions",
+		"enabled": true
+	},
+	{
+		"slug": "signoz",
+		"name": "SigNoz",
+		"atsType": "ashby",
+		"boardToken": "signoz",
+		"whyThisCompany": "YC company (Winter 2021): Open source alternative to DataDog ",
+		"enabled": true
+	},
+	{
+		"slug": "spruceid",
+		"name": "SpruceID",
+		"atsType": "ashby",
+		"boardToken": "spruceid",
+		"whyThisCompany": "YC company (Winter 2021): SpruceID lets users control their data across the web.",
+		"enabled": true
+	},
+	{
+		"slug": "smartcuts",
+		"name": "Smartcuts",
+		"atsType": "lever",
+		"boardToken": "smartcuts",
+		"whyThisCompany": "YC company (Winter 2021): Chrome extension to turn clicks & keystrokes into no-code automations",
+		"enabled": true
+	},
+	{
+		"slug": "pesto",
+		"name": "Pesto",
+		"atsType": "ashby",
+		"boardToken": "pesto",
+		"whyThisCompany": "Y Combinator company (Winter 2021).",
+		"enabled": true
+	},
+	{
+		"slug": "encord",
+		"name": "Encord",
+		"atsType": "ashby",
+		"boardToken": "encord",
+		"whyThisCompany": "YC company (Winter 2021): The data layer for physical AI",
+		"enabled": true
+	},
+	{
+		"slug": "axle-health",
+		"name": "Axle Health",
+		"atsType": "ashby",
+		"boardToken": "axle-health",
+		"whyThisCompany": "YC company (Winter 2021): Scheduling and workforce management SaaS for home healthcare providers",
+		"enabled": true
+	},
+	{
+		"slug": "gridware",
+		"name": "Gridware",
+		"atsType": "lever",
+		"boardToken": "gridware",
+		"whyThisCompany": "YC company (Winter 2021): Protecting the grid today, preparing the grid for tomorrow",
+		"enabled": true
+	},
+	{
+		"slug": "vapi",
+		"name": "Vapi",
+		"atsType": "ashby",
+		"boardToken": "vapi",
+		"whyThisCompany": "YC company (Winter 2021): Voice AI for developers.",
+		"enabled": true
+	},
+	{
+		"slug": "anima",
+		"name": "Anima",
+		"atsType": "ashby",
+		"boardToken": "anima",
+		"whyThisCompany": "YC company (Winter 2021): The next generation care enablement platform",
+		"enabled": true
+	},
+	{
+		"slug": "popl",
+		"name": "Popl",
+		"atsType": "ashby",
+		"boardToken": "popl",
+		"whyThisCompany": "YC company (Winter 2021): Your AI GTM platform for In-Person Events",
+		"enabled": true
+	},
+	{
+		"slug": "fathom",
+		"name": "Fathom",
+		"atsType": "ashby",
+		"boardToken": "fathom",
+		"whyThisCompany": "YC company (Winter 2021): The most flexible AI meeting notetaker ever built.",
+		"enabled": true
+	},
+	{
+		"slug": "liveflow",
+		"name": "LiveFlow",
+		"atsType": "ashby",
+		"boardToken": "liveflow",
+		"whyThisCompany": "YC company (Winter 2021): The Unified AI-ERP & FP&A Platform",
+		"enabled": true
+	},
+	{
+		"slug": "enode",
+		"name": "Enode",
+		"atsType": "ashby",
+		"boardToken": "enode",
+		"whyThisCompany": "YC company (Winter 2021): Energy Orchestration Platform",
+		"enabled": true
+	},
+	{
+		"slug": "homebase",
+		"name": "Homebase",
+		"atsType": "ashby",
+		"boardToken": "homebase",
+		"whyThisCompany": "YC company (Winter 2021): Personalized rent-to-own real estate financing using technology in SEA",
+		"enabled": true
+	},
+	{
+		"slug": "topline-pro",
+		"name": "Topline Pro",
+		"atsType": "ashby",
+		"boardToken": "topline-pro",
+		"whyThisCompany": "YC company (Winter 2021): Generative AI powered Shopify for home service professionals",
+		"enabled": true
+	},
+	{
+		"slug": "quicknode",
+		"name": "Quicknode",
+		"atsType": "ashby",
+		"boardToken": "quicknode",
+		"whyThisCompany": "YC company (Winter 2021): Tools & infra to build and scale high-quality blockchain applications.",
+		"enabled": true
+	},
+	{
+		"slug": "tractian",
+		"name": "Tractian",
+		"atsType": "lever",
+		"boardToken": "tractian",
+		"whyThisCompany": "YC company (Winter 2021): Physical AI for asset-heavy industries",
+		"enabled": true
+	},
+	{
+		"slug": "phoenix",
+		"name": "Phoenix",
+		"atsType": "ashby",
+		"boardToken": "phoenix",
+		"whyThisCompany": "YC company (Winter 2021): Canada's digital health clinic for men",
+		"enabled": true
+	},
+	{
+		"slug": "ziina",
+		"name": "Ziina",
+		"atsType": "ashby",
+		"boardToken": "ziina",
+		"whyThisCompany": "YC company (Winter 2021): A digital wallet for the Middle East & North Africa",
+		"enabled": true
+	},
+	{
+		"slug": "infracost",
+		"name": "Infracost",
+		"atsType": "ashby",
+		"boardToken": "infracost",
+		"whyThisCompany": "YC company (Winter 2021): Shift FinOps Left: Proactively Find & Fix Cloud Cost Issues",
+		"enabled": true
+	},
+	{
+		"slug": "flutterflow",
+		"name": "FlutterFlow",
+		"atsType": "ashby",
+		"boardToken": "flutterflow",
+		"whyThisCompany": "YC company (Winter 2021): Application Development Platform (Native Mobile + Web Apps)",
+		"enabled": true
+	},
+	{
+		"slug": "svix",
+		"name": "Svix",
+		"atsType": "ashby",
+		"boardToken": "svix",
+		"whyThisCompany": "YC company (Winter 2021): Enterprise ready webhooks service, open-source and in the cloud",
+		"enabled": true
+	},
+	{
+		"slug": "gigs",
+		"name": "Gigs",
+		"atsType": "greenhouse",
+		"boardToken": "gigs",
+		"whyThisCompany": "YC company (Winter 2021): The OS for Embedded Telecom",
+		"enabled": true
+	},
+	{
+		"slug": "prospa",
+		"name": "Prospa",
+		"atsType": "greenhouse",
+		"boardToken": "prospa",
+		"whyThisCompany": "YC company (Winter 2021): Banking for businesses ",
+		"enabled": true
+	},
+	{
+		"slug": "jiga",
+		"name": "Jiga",
+		"atsType": "ashby",
+		"boardToken": "jiga",
+		"whyThisCompany": "YC company (Winter 2021): Source better parts by partnering directly with vetted manufacturers",
+		"enabled": true
+	},
+	{
+		"slug": "triomics",
+		"name": "Triomics",
+		"atsType": "ashby",
+		"boardToken": "triomics",
+		"whyThisCompany": "YC company (Winter 2021): AI Agents for Oncology EHRs",
+		"enabled": true
+	},
+	{
+		"slug": "shepherd",
+		"name": "Shepherd",
+		"atsType": "greenhouse",
+		"boardToken": "shepherd",
+		"whyThisCompany": "YC company (Winter 2021): Modernizing commercial insurance",
+		"enabled": true
+	},
+	{
+		"slug": "odys-aviation",
+		"name": "Odys Aviation",
+		"atsType": "ashby",
+		"boardToken": "odys-aviation",
+		"whyThisCompany": "YC company (Summer 2021): Vertical takeoff and landing aircraft for major airlines",
+		"enabled": true
+	},
+	{
+		"slug": "replo",
+		"name": "Replo",
+		"atsType": "ashby",
+		"boardToken": "replo",
+		"whyThisCompany": "YC company (Summer 2021): Sell anything",
+		"enabled": true
+	},
+	{
+		"slug": "arq",
+		"name": "ARQ",
+		"atsType": "ashby",
+		"boardToken": "arq",
+		"whyThisCompany": "YC company (Summer 2021): The global financial platform for affluent consumers in the Americas.",
+		"enabled": true
+	}
+]

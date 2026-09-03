@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
+	import { page } from '$app/state';
 	import ResumeUploader from '$components/upload/ResumeUploader.svelte';
 	import JobDescriptionInput from '$components/upload/JobDescriptionInput.svelte';
 	import ScoreDashboard from '$components/scoring/ScoreDashboard.svelte';
@@ -52,6 +53,27 @@
 				paywallCurrency = info.currency;
 			});
 		}
+	});
+
+	// job board hand-off: arriving as /scanner?jobId=... (from a job board
+	// "Check my CV Score" link) pre-fills the job description with that
+	// specific posting's text. loadedJobId guards against refetching on every
+	// reactive tick - only a genuinely new jobId triggers a fetch. resumeStore
+	// needs no equivalent handling: it's a persistent module-level singleton,
+	// so a resume already scanned this session survives the navigation here.
+	let loadedJobId = $state<string | null>(null);
+	$effect(() => {
+		const jobId = page.url.searchParams.get('jobId');
+		if (!jobId || jobId === loadedJobId) return;
+		loadedJobId = jobId;
+		void fetch(`/api/jobs/${encodeURIComponent(jobId)}`)
+			.then((res) => (res.ok ? res.json() : null))
+			.then((data) => {
+				if (data?.descriptionText) scoresStore.setJobDescription(data.descriptionText);
+			})
+			.catch(() => {
+				// best-effort pre-fill; the user can still paste the JD manually
+			});
 	});
 
 	// tracks whether results should be visible (scan clicked or loaded from history)

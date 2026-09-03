@@ -40,5 +40,14 @@ service cloud.firestore {
       allow read: if true;
       allow write: if request.auth != null;
     }
+
+    // job board postings: public read (browsable before signup, unlike scan
+    // history), written only by the ingestion script via the admin SDK
+    // (which bypasses rules entirely) - never by any client. mirrors
+    // billing/payments' write:false precedent.
+    match /jobs/{jobId} {
+      allow read: if true;
+      allow write: if false;
+    }
   }
 }
