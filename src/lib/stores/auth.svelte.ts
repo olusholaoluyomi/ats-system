@@ -274,7 +274,15 @@ class AuthStore {
 		try {
 			const { auth } = await getFirebase();
 			const { sendPasswordResetEmail } = await import('firebase/auth');
-			await sendPasswordResetEmail(auth, email);
+			// without this, Firebase's reset email links to its own generic
+			// firebaseapp.com action page with no way back to the app. pointing
+			// continueUrl at our own /login gives the "Continue" link on that
+			// page (shown after the password is successfully reset) somewhere
+			// useful. the origin is read live from the browser rather than
+			// hardcoded so this keeps working on localhost, the custom domain,
+			// and Firebase's own *.web.app/*.firebaseapp.com hosts - every host
+			// already on the Authorized domains list in Firebase Console.
+			await sendPasswordResetEmail(auth, email, { url: `${location.origin}/login` });
 		} catch (err) {
 			this.error = this.getErrorMessage(err);
 			throw err;
