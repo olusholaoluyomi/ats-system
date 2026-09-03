@@ -16,10 +16,12 @@ import {
 } from './shared';
 
 export const load: PageServerLoad = async ({ url }) => {
+	const rawQuery = url.searchParams.get('q')?.trim() ?? '';
 	const filters: JobsFilters = {
 		remote: url.searchParams.get('remote') === 'true',
 		relocation: url.searchParams.get('relocation') === 'true',
-		experienceLevel: url.searchParams.get('experienceLevel')
+		experienceLevel: url.searchParams.get('experienceLevel'),
+		query: rawQuery.length > 0 ? rawQuery.slice(0, 100) : null
 	};
 
 	try {

@@ -18,7 +18,12 @@ function job(overrides: Partial<JobListing> = {}): JobListing {
 	};
 }
 
-const NO_FILTERS: JobsFilters = { remote: false, relocation: false, experienceLevel: null };
+const NO_FILTERS: JobsFilters = {
+	remote: false,
+	relocation: false,
+	experienceLevel: null,
+	query: null
+};
 
 describe('matchesFilters', () => {
 	it('matches everything when no filters are active', () => {
@@ -64,8 +69,23 @@ describe('matchesFilters', () => {
 		).toBe(false);
 	});
 
+	it('matches title, company, or department case-insensitively when a query is active', () => {
+		const filters: JobsFilters = { ...NO_FILTERS, query: 'product manager' };
+		expect(matchesFilters(job({ title: 'Senior Product Manager' }), filters)).toBe(true);
+		expect(matchesFilters(job({ title: 'PRODUCT MANAGER, Growth' }), filters)).toBe(true);
+		expect(matchesFilters(job({ title: 'Backend Engineer' }), filters)).toBe(false);
+		expect(
+			matchesFilters(job({ title: 'Engineer', companyName: 'Product Manager Co' }), filters)
+		).toBe(true);
+	});
+
 	it('requires ALL active filters to pass (AND, not OR)', () => {
-		const filters: JobsFilters = { remote: true, relocation: true, experienceLevel: null };
+		const filters: JobsFilters = {
+			remote: true,
+			relocation: true,
+			experienceLevel: null,
+			query: null
+		};
 		const remoteOnly = job({ remote: true, classification: classification() });
 		expect(matchesFilters(remoteOnly, filters)).toBe(false); // relocation not offered
 		const both = job({

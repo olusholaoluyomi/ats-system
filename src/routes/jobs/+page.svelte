@@ -41,7 +41,10 @@
 	// so someone whose filters happen to match nothing still sees the rest of
 	// the board instead of a dead end.
 	const hasActiveFilters = $derived(
-		data.filters.remote || data.filters.relocation || Boolean(data.filters.experienceLevel)
+		data.filters.remote ||
+			data.filters.relocation ||
+			Boolean(data.filters.experienceLevel) ||
+			Boolean(data.filters.query)
 	);
 	const matchedJobs = $derived(hasActiveFilters ? data.jobs.slice(0, data.matchCount) : data.jobs);
 	const otherJobs = $derived(hasActiveFilters ? data.jobs.slice(data.matchCount) : []);
@@ -63,6 +66,15 @@
 	</header>
 
 	<form method="GET" class="jobs-filters">
+		<input
+			type="search"
+			name="q"
+			class="filter-search"
+			placeholder="Search job titles, e.g. Product Manager"
+			value={data.filters.query ?? ''}
+			maxlength="100"
+			aria-label="Search job titles"
+		/>
 		<label class="filter-checkbox">
 			<input type="checkbox" name="remote" value="true" checked={data.filters.remote} />
 			Remote-friendly
@@ -193,6 +205,21 @@
 		border: 1px solid var(--glass-border);
 		border-radius: var(--radius-xl);
 		margin-bottom: var(--space-8);
+	}
+
+	.filter-search {
+		flex: 1 1 240px;
+		min-width: 200px;
+		padding: var(--space-2) var(--space-3);
+		border-radius: var(--radius-md);
+		background: var(--glass-bg-hover);
+		border: 1px solid var(--glass-border);
+		color: var(--text-primary);
+		font-size: var(--text-sm);
+	}
+
+	.filter-search::placeholder {
+		color: var(--text-tertiary);
 	}
 
 	.filter-checkbox {

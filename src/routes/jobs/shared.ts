@@ -34,6 +34,7 @@ export interface JobsFilters {
 	remote: boolean;
 	relocation: boolean;
 	experienceLevel: string | null;
+	query: string | null; // trimmed, non-empty keyword search over title/company
 }
 
 // hard cutoff: a posting older than this never appears on the board, full
@@ -49,7 +50,12 @@ export function toIsoString(value: unknown): string {
 }
 
 export function hasActiveFilters(filters: JobsFilters): boolean {
-	return filters.remote || filters.relocation || Boolean(filters.experienceLevel);
+	return (
+		filters.remote ||
+		filters.relocation ||
+		Boolean(filters.experienceLevel) ||
+		Boolean(filters.query)
+	);
 }
 
 // a filter narrows what's shown to the TOP of the list, it never hides
@@ -60,6 +66,11 @@ export function matchesFilters(job: JobListing, filters: JobsFilters): boolean {
 	if (filters.relocation && job.classification?.relocationOffered !== true) return false;
 	if (filters.experienceLevel && job.classification?.experienceLevel !== filters.experienceLevel) {
 		return false;
+	}
+	if (filters.query) {
+		const q = filters.query.toLowerCase();
+		const haystack = `${job.title} ${job.companyName} ${job.department ?? ''}`.toLowerCase();
+		if (!haystack.includes(q)) return false;
 	}
 	return true;
 }
