@@ -2,10 +2,14 @@
 	import Hero from '$components/landing/Hero.svelte';
 	import LogoMarquee from '$components/landing/LogoMarquee.svelte';
 
+	import JobBoardPreview from '$components/landing/JobBoardPreview.svelte';
 	import Features from '$components/landing/Features.svelte';
 	import HowItWorks from '$components/landing/HowItWorks.svelte';
 	import CallToAction from '$components/landing/CallToAction.svelte';
 	import SeoHead from '$components/seo/SeoHead.svelte';
+	import type { PageData } from './$types';
+
+	let { data }: { data: PageData } = $props();
 
 	const softwareAppLd = {
 		'@context': 'https://schema.org',
@@ -14,7 +18,7 @@
 		applicationCategory: 'BusinessApplication',
 		operatingSystem: 'Web',
 		description:
-			'Free ATS resume screener simulating Workday, Taleo, iCIMS, Greenhouse, Lever, and SuccessFactors. Real scores, not made-up numbers.',
+			'Free ATS resume screener simulating Workday, Taleo, iCIMS, Greenhouse, Lever, and SuccessFactors, plus a live job board of remote-friendly roles. Check your real score before you apply.',
 		offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
 		author: { '@type': 'Person', name: 'Oluyomi Olushola Michael' }
 	};
@@ -25,8 +29,8 @@
 </script>
 
 <SeoHead
-	title="ATS Screener - Free Resume Scanner for Real HCMS Platforms"
-	description="Free ATS resume screener simulating Workday, Taleo, iCIMS, Greenhouse, Lever, and SuccessFactors. Get real scores, not made-up numbers."
+	title="ATS Screener - Free Resume Scanner & Job Board"
+	description="Free ATS resume screener simulating Workday, Taleo, iCIMS, Greenhouse, Lever, and SuccessFactors - plus a live job board of remote-friendly roles. Check your real score before you apply."
 />
 
 <svelte:head>
@@ -37,6 +41,7 @@
 <main class="landing">
 	<Hero />
 	<LogoMarquee />
+	<JobBoardPreview jobs={data.previewJobs} />
 	<Features />
 	<HowItWorks />
 	<CallToAction />

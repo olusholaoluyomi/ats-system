@@ -262,7 +262,8 @@
 					'Crack the screening.',
 					'Beat the algorithms.',
 					'Know your real score.',
-					'Stop guessing. Start scoring.'
+					'Stop guessing. Start scoring.',
+					'Know before you apply.'
 				]}
 			/>
 		</div>
@@ -284,6 +285,13 @@
 				text="and other enterprise HCMS platforms parse, filter, and score your resume. Powered by documented ATS behavior, not generic algorithms."
 				delay={600}
 			/>
+		</p>
+
+		<!-- the "why check first" benefit line: ties the score directly to the
+		     act of applying, not just an abstract number -->
+		<p class="hero-benefit">
+			Most rejections happen inside the ATS, before a recruiter ever opens your resume. Check your
+			score first - then apply with real jobs on our board.
 		</p>
 
 		<!-- CTA buttons -->
@@ -614,6 +622,15 @@
 		max-width: 760px;
 		margin: 0 auto 2.5rem;
 		line-height: 1.7;
+	}
+
+	.hero-benefit {
+		font-size: clamp(0.9rem, 1.6vw, 1.02rem);
+		color: var(--accent-text);
+		max-width: 620px;
+		margin: -1.25rem auto 2.5rem;
+		line-height: 1.6;
+		font-weight: 500;
 	}
 
 	.flip-system {

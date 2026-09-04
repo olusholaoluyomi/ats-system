@@ -49,6 +49,39 @@ export function toIsoString(value: unknown): string {
 	return new Date(0).toISOString();
 }
 
+// shared Firestore doc -> JobListing mapping, used by both the full job
+// board (jobs/+page.server.ts) and the landing-page preview
+// (routes/+page.server.ts) so the two never drift out of sync on field
+// shape. takes plain (id, data) rather than a Firestore snapshot type so
+// this module stays decoupled from firebase-admin's types.
+export function mapJobDoc(id: string, data: Record<string, unknown>): JobListing {
+	return {
+		id,
+		companyName: typeof data.companyName === 'string' ? data.companyName : '',
+		title: typeof data.title === 'string' ? data.title : '',
+		department: typeof data.department === 'string' ? data.department : null,
+		locationRaw: typeof data.locationRaw === 'string' ? data.locationRaw : '',
+		remote: data.remote === true,
+		applyUrl: typeof data.applyUrl === 'string' ? data.applyUrl : '',
+		whyThisCompany: typeof data.whyThisCompany === 'string' ? data.whyThisCompany : null,
+		firstSeenAt: toIsoString(data.firstSeenAt),
+		classification: (data.classification as JobListing['classification']) ?? null
+	};
+}
+
+// "posted 2 hours ago" style relative label, shared by the full job board
+// and the landing-page preview. caps at "yesterday"/"2 days ago" - nothing
+// on the board is ever older than MAX_POSTING_AGE_MS (48h) in the first
+// place.
+export function timeAgo(iso: string): string {
+	const hours = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 3_600_000));
+	if (hours < 1) return 'just now';
+	if (hours === 1) return '1 hour ago';
+	if (hours < 24) return `${hours} hours ago`;
+	if (hours < 48) return 'yesterday';
+	return '2 days ago';
+}
+
 export function hasActiveFilters(filters: JobsFilters): boolean {
 	return (
 		filters.remote ||

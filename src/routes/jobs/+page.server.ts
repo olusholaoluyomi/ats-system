@@ -10,7 +10,7 @@ import {
 	type JobListing,
 	type JobsFilters,
 	MAX_POSTING_AGE_MS,
-	toIsoString,
+	mapJobDoc,
 	hasActiveFilters,
 	matchesFilters
 } from './shared';
@@ -41,21 +41,7 @@ export const load: PageServerLoad = async ({ url }) => {
 			.limit(150)
 			.get();
 
-		const jobs: JobListing[] = snapshot.docs.map((doc) => {
-			const data = doc.data();
-			return {
-				id: doc.id,
-				companyName: typeof data.companyName === 'string' ? data.companyName : '',
-				title: typeof data.title === 'string' ? data.title : '',
-				department: typeof data.department === 'string' ? data.department : null,
-				locationRaw: typeof data.locationRaw === 'string' ? data.locationRaw : '',
-				remote: data.remote === true,
-				applyUrl: typeof data.applyUrl === 'string' ? data.applyUrl : '',
-				whyThisCompany: typeof data.whyThisCompany === 'string' ? data.whyThisCompany : null,
-				firstSeenAt: toIsoString(data.firstSeenAt),
-				classification: data.classification ?? null
-			};
-		});
+		const jobs: JobListing[] = snapshot.docs.map((doc) => mapJobDoc(doc.id, doc.data()));
 
 		let matchCount = jobs.length;
 		if (hasActiveFilters(filters)) {

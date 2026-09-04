@@ -1,6 +1,7 @@
 <script lang="ts">
 	import SeoHead from '$components/seo/SeoHead.svelte';
 	import { currencySymbol } from '$lib/currency';
+	import { timeAgo } from './shared';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -24,15 +25,6 @@
 		}
 		const single = c.salaryMin ?? c.salaryMax;
 		return `${symbol}${single?.toLocaleString()}${period}`;
-	}
-
-	function timeAgo(iso: string): string {
-		const hours = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 3_600_000));
-		if (hours < 1) return 'just now';
-		if (hours === 1) return '1 hour ago';
-		if (hours < 24) return `${hours} hours ago`;
-		if (hours < 48) return 'yesterday';
-		return '2 days ago';
 	}
 
 	// filters narrow what's shown to the TOP of the list, they never hide
