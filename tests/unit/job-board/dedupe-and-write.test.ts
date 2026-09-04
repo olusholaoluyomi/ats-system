@@ -234,6 +234,43 @@ describe('upsertCompanyPostings', () => {
 		expect(doc?.minYearsExperience).toBeNull();
 		expect(doc?.maxYearsExperience).toBeNull();
 	});
+
+	it('derives workMode from remote/locationRaw/workplaceTypeRaw', async () => {
+		const db = createFakeDb();
+		await upsertCompanyPostings(db as never, COMPANY, [
+			posting({ externalId: '1', remote: true }),
+			posting({ externalId: '2', remote: false, locationRaw: 'Hybrid - NYC' }),
+			posting({ externalId: '3', remote: false, locationRaw: 'NYC' })
+		]);
+
+		expect(db.store.get('jobs/greenhouse:1')?.workMode).toBe('remote');
+		expect(db.store.get('jobs/greenhouse:2')?.workMode).toBe('hybrid');
+		expect(db.store.get('jobs/greenhouse:3')?.workMode).toBe('onsite');
+	});
+
+	it('extracts compensation and relocation support from descriptionText', async () => {
+		const db = createFakeDb();
+		await upsertCompanyPostings(db as never, COMPANY, [
+			posting({
+				descriptionText: 'Pay: $120,000 - $150,000 per year. We offer relocation assistance.'
+			})
+		]);
+
+		const doc = db.store.get('jobs/greenhouse:1');
+		expect(doc?.compensationText).toBe('$120,000 - $150,000 per year');
+		expect(doc?.relocationSupport).toBe(true);
+	});
+
+	it('stores null compensation and false relocation support when absent', async () => {
+		const db = createFakeDb();
+		await upsertCompanyPostings(db as never, COMPANY, [
+			posting({ descriptionText: 'Build things.' })
+		]);
+
+		const doc = db.store.get('jobs/greenhouse:1');
+		expect(doc?.compensationText).toBeNull();
+		expect(doc?.relocationSupport).toBe(false);
+	});
 });
 
 describe('deleteStalePostings', () => {

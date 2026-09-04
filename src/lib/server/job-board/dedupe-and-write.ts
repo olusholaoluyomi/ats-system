@@ -20,6 +20,9 @@ import type { RawJobPosting } from './types.ts';
 import type { SeedCompany } from './seed-companies.ts';
 import { extractYearsOfExperience } from './experience-heuristic.ts';
 import { buildSearchKeywords } from './search-keywords.ts';
+import { deriveWorkMode } from './work-mode.ts';
+import { extractCompensation } from './compensation-heuristic.ts';
+import { detectsRelocationSupport } from './relocation-heuristic.ts';
 
 export interface UpsertResult {
 	jobId: string;
@@ -49,6 +52,7 @@ interface MutableFields {
 	descriptionText: string;
 	minYearsExperience: number | null;
 	maxYearsExperience: number | null;
+	workplaceTypeRaw: string | null;
 }
 
 // only the fields that matter for "did this posting actually change" -
@@ -67,7 +71,8 @@ function isUnchanged(existing: Record<string, unknown>, next: MutableFields): bo
 		existing.applyUrl === next.applyUrl &&
 		existing.descriptionText === next.descriptionText &&
 		(existing.minYearsExperience ?? null) === next.minYearsExperience &&
-		(existing.maxYearsExperience ?? null) === next.maxYearsExperience
+		(existing.maxYearsExperience ?? null) === next.maxYearsExperience &&
+		(existing.workplaceTypeRaw ?? null) === next.workplaceTypeRaw
 	);
 }
 
@@ -120,6 +125,9 @@ export async function upsertCompanyPostings(
 			company.name,
 			posting.department ?? null
 		);
+		const workMode = deriveWorkMode(posting.remote, posting.locationRaw, posting.workplaceTypeRaw);
+		const compensationText = extractCompensation(posting.descriptionText);
+		const relocationSupport = detectsRelocationSupport(posting.descriptionText);
 		const existing = existingByExternalId.get(posting.externalId);
 
 		if (!existing) {
@@ -139,6 +147,10 @@ export async function upsertCompanyPostings(
 					postedAtSource: posting.postedAtSource,
 					minYearsExperience: minYears,
 					maxYearsExperience: maxYears,
+					workplaceTypeRaw: posting.workplaceTypeRaw ?? null,
+					workMode,
+					compensationText,
+					relocationSupport,
 					searchKeywords,
 					// the authoritative "posted" signal for the 48h filter - set
 					// once, on first observation, never touched again.
@@ -162,7 +174,8 @@ export async function upsertCompanyPostings(
 			applyUrl: posting.applyUrl,
 			descriptionText: posting.descriptionText,
 			minYearsExperience: minYears,
-			maxYearsExperience: maxYears
+			maxYearsExperience: maxYears,
+			workplaceTypeRaw: posting.workplaceTypeRaw ?? null
 		};
 
 		if (isUnchanged(existing.data, nextFields)) {
@@ -178,6 +191,9 @@ export async function upsertCompanyPostings(
 			data: {
 				...nextFields,
 				postedAtSource: posting.postedAtSource,
+				workMode,
+				compensationText,
+				relocationSupport,
 				searchKeywords,
 				lastSeenAt: now,
 				active: true,

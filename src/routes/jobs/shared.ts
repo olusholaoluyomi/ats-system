@@ -6,6 +6,13 @@
 // caught by Vercel's build (svelte-kit's postbuild analysis), not by
 // svelte-check/vitest/eslint, none of which run that check.
 
+// remote/hybrid/onsite - see $lib/server/job-board/work-mode.ts, computed
+// once at ingestion time and stored on the doc (not re-derived here) so this
+// module never needs to import server-only code - it's shared with
+// client-reachable Svelte components (jobs/+page.svelte), and SvelteKit
+// forbids importing anything under $lib/server from client-bundled code.
+export type WorkMode = 'remote' | 'hybrid' | 'onsite';
+
 export interface JobListing {
 	id: string;
 	companyName: string;
@@ -21,6 +28,17 @@ export interface JobListing {
 	// tell", not "zero years required".
 	minYearsExperience: number | null;
 	maxYearsExperience: number | null;
+	workMode: WorkMode;
+	// non-AI, regex-extracted at ingestion time (see
+	// $lib/server/job-board/compensation-heuristic.ts) - the company's own
+	// text verbatim, never a parsed/normalized number. null means the
+	// description didn't mention a pay range, not "unpaid".
+	compensationText: string | null;
+	// non-AI, regex-detected at ingestion time (see
+	// $lib/server/job-board/relocation-heuristic.ts) - true only when the
+	// posting explicitly offers relocation support, never inferred from its
+	// absence.
+	relocationSupport: boolean;
 }
 
 export interface JobsFilters {
@@ -62,7 +80,14 @@ export function mapJobDoc(id: string, data: Record<string, unknown>): JobListing
 		firstSeenAt: toIsoString(data.firstSeenAt),
 		minYearsExperience:
 			typeof data.minYearsExperience === 'number' ? data.minYearsExperience : null,
-		maxYearsExperience: typeof data.maxYearsExperience === 'number' ? data.maxYearsExperience : null
+		maxYearsExperience:
+			typeof data.maxYearsExperience === 'number' ? data.maxYearsExperience : null,
+		workMode:
+			data.workMode === 'remote' || data.workMode === 'hybrid' || data.workMode === 'onsite'
+				? data.workMode
+				: 'onsite',
+		compensationText: typeof data.compensationText === 'string' ? data.compensationText : null,
+		relocationSupport: data.relocationSupport === true
 	};
 }
 
@@ -91,6 +116,27 @@ export function formatPostedDate(iso: string): string {
 		day: 'numeric',
 		year: 'numeric'
 	});
+}
+
+// display labels for the two heuristic-derived chips shown on both the job
+// board list and the job detail page - kept here (not duplicated in each
+// +page.svelte) so the two never drift on wording.
+const WORK_MODE_LABELS: Record<WorkMode, string> = {
+	remote: 'Remote',
+	hybrid: 'Hybrid',
+	onsite: 'Onsite'
+};
+
+export function workModeLabel(mode: WorkMode): string {
+	return WORK_MODE_LABELS[mode];
+}
+
+export function experienceLabel(job: JobListing): string | null {
+	const { minYearsExperience: min, maxYearsExperience: max } = job;
+	if (min === null && max === null) return null;
+	if (min !== null && max !== null) return `${min}-${max} yrs`;
+	if (min !== null) return `${min}+ yrs`;
+	return `up to ${max} yrs`;
 }
 
 export type DescriptionBlock =

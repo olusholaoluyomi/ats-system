@@ -29,6 +29,7 @@ interface AshbyJob {
 	jobUrl?: string;
 	descriptionPlain?: string;
 	publishedAt?: string;
+	workplaceType?: string;
 }
 
 interface AshbyResponse {
@@ -69,7 +70,8 @@ export async function fetchAshbyJobs(boardToken: string): Promise<RawJobPosting[
 				remote: job.isRemote === true,
 				applyUrl,
 				descriptionText: (job.descriptionPlain ?? '').slice(0, 20_000),
-				postedAtSource: job.publishedAt ? new Date(job.publishedAt) : null
+				postedAtSource: job.publishedAt ? new Date(job.publishedAt) : null,
+				workplaceTypeRaw: job.workplaceType ?? null
 			} satisfies RawJobPosting;
 		})
 		.filter((job) => job.applyUrl.length > 0);

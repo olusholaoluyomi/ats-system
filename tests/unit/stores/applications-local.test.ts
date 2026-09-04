@@ -48,6 +48,9 @@ function stubJob(overrides: Partial<JobListing> = {}): JobListing {
 		firstSeenAt: new Date().toISOString(),
 		minYearsExperience: null,
 		maxYearsExperience: null,
+		workMode: 'remote',
+		compensationText: null,
+		relocationSupport: false,
 		...overrides
 	};
 }

@@ -62,7 +62,8 @@ export async function fetchLeverJobs(boardToken: string): Promise<RawJobPosting[
 				remote: job.workplaceType === 'remote',
 				applyUrl,
 				descriptionText: (job.descriptionPlain ?? '').slice(0, 20_000),
-				postedAtSource: typeof job.createdAt === 'number' ? new Date(job.createdAt) : null
+				postedAtSource: typeof job.createdAt === 'number' ? new Date(job.createdAt) : null,
+				workplaceTypeRaw: job.workplaceType ?? null
 			} satisfies RawJobPosting;
 		})
 		.filter((job) => job.applyUrl.length > 0);

@@ -1,5 +1,10 @@
 <script lang="ts">
-	import { timeAgo, formatPostedDate } from '../../../routes/jobs/shared';
+	import {
+		timeAgo,
+		formatPostedDate,
+		workModeLabel,
+		experienceLabel
+	} from '../../../routes/jobs/shared';
 	import type { JobListing } from '../../../routes/jobs/shared';
 
 	let { jobs }: { jobs: JobListing[] } = $props();
@@ -47,8 +52,15 @@
 					<h3 class="job-preview-title">{job.title}</h3>
 					<p class="job-preview-location">{job.locationRaw || 'Location not specified'}</p>
 					<div class="job-preview-chips">
-						{#if job.remote}
-							<span class="meta-chip">Remote</span>
+						<span class="meta-chip chip-{job.workMode}">{workModeLabel(job.workMode)}</span>
+						{#if experienceLabel(job)}
+							<span class="meta-chip chip-experience">{experienceLabel(job)}</span>
+						{/if}
+						{#if job.compensationText}
+							<span class="meta-chip chip-compensation">{job.compensationText}</span>
+						{/if}
+						{#if job.relocationSupport}
+							<span class="meta-chip chip-relocation">Relocation support</span>
 						{/if}
 					</div>
 				</a>
@@ -195,12 +207,50 @@
 
 	.meta-chip {
 		display: inline-flex;
+		align-items: center;
 		padding: 0.25rem 0.7rem;
 		border-radius: var(--radius-full);
 		background: var(--glass-bg-hover);
 		border: 1px solid var(--glass-border);
 		font-size: 0.72rem;
+		font-weight: 600;
 		color: var(--text-secondary);
+	}
+
+	.chip-remote {
+		background: color-mix(in srgb, var(--accent-green) 15%, transparent);
+		border-color: color-mix(in srgb, var(--accent-green) 40%, transparent);
+		color: var(--accent-green);
+	}
+
+	.chip-hybrid {
+		background: color-mix(in srgb, var(--accent-amber) 15%, transparent);
+		border-color: color-mix(in srgb, var(--accent-amber) 40%, transparent);
+		color: var(--accent-amber);
+	}
+
+	.chip-onsite {
+		background: var(--glass-bg-hover);
+		border-color: var(--glass-border);
+		color: var(--text-secondary);
+	}
+
+	.chip-experience {
+		background: color-mix(in srgb, var(--accent-pink) 12%, transparent);
+		border-color: color-mix(in srgb, var(--accent-pink) 35%, transparent);
+		color: var(--accent-pink);
+	}
+
+	.chip-compensation {
+		background: color-mix(in srgb, var(--accent-purple) 15%, transparent);
+		border-color: color-mix(in srgb, var(--accent-purple) 40%, transparent);
+		color: var(--accent-purple);
+	}
+
+	.chip-relocation {
+		background: color-mix(in srgb, var(--accent-teal) 15%, transparent);
+		border-color: color-mix(in srgb, var(--accent-teal) 40%, transparent);
+		color: var(--accent-teal);
 	}
 
 	.job-preview-empty {
