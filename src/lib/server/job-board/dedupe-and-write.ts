@@ -90,10 +90,26 @@ async function commitInChunks(
 	}
 }
 
+export interface UpsertOptions {
+	// caps how many of this company's postings get WRITE-processed this run
+	// (see ingest-jobs.mjs's own comment on why one large employer shouldn't
+	// dominate the daily quota) - but never how many count as "still live" for
+	// deactivation purposes. those are two different questions: a company
+	// with 900 open roles and a cap of 40 should only get 40 created/
+	// refreshed this run, but the OTHER 860 (already in Firestore from an
+	// earlier, uncapped run) must not be wrongly marked inactive just because
+	// this run didn't re-touch them - that would silently empty the board
+	// company by company as ingestion re-runs. undefined/Infinity means no
+	// cap (every test and any caller that doesn't pass this gets the old,
+	// uncapped behavior).
+	maxPostings?: number;
+}
+
 export async function upsertCompanyPostings(
 	db: Firestore,
 	company: SeedCompany,
-	postings: RawJobPosting[]
+	allPostings: RawJobPosting[],
+	options: UpsertOptions = {}
 ): Promise<UpsertResult[]> {
 	const results: UpsertResult[] = [];
 	const pendingWrites: { ref: DocumentReference; data: Record<string, unknown> }[] = [];
@@ -113,10 +129,24 @@ export async function upsertCompanyPostings(
 	}
 
 	const now = new Date();
-	const seenExternalIds = new Set<string>();
+	// built from the FULL fetched list (every posting the ATS actually
+	// returned this run), independent of the write-processing cap below -
+	// see UpsertOptions.maxPostings.
+	const seenExternalIds = new Set(allPostings.map((p) => p.externalId));
 
-	for (const posting of postings) {
-		seenExternalIds.add(posting.externalId);
+	const maxPostings = options.maxPostings ?? Infinity;
+	// sorted newest-first (by postedAtSource, nulls last) before capping, so
+	// a company over the cap still gets its most current roles created/
+	// refreshed rather than an arbitrary prefix of whatever order the ATS
+	// API happened to return.
+	const postingsToProcess =
+		allPostings.length <= maxPostings
+			? allPostings
+			: [...allPostings]
+					.sort((a, b) => (b.postedAtSource?.getTime() ?? 0) - (a.postedAtSource?.getTime() ?? 0))
+					.slice(0, maxPostings);
+
+	for (const posting of postingsToProcess) {
 		const id = jobId(company.atsType, posting.externalId);
 		const ref = db.doc(`jobs/${id}`);
 		const { minYears, maxYears } = extractYearsOfExperience(posting.descriptionText);

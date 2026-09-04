@@ -60,20 +60,14 @@ import {
 // board and burn a huge share of the daily read/write budget by itself -
 // this keeps the board diverse across companies and keeps quota usage
 // roughly proportional to company count, not to any one company's total
-// headcount. sorted by postedAtSource (newest first, nulls last) before
-// slicing so the cap keeps the most current roles, not an arbitrary prefix
-// of whatever order the ATS API happened to return.
+// headcount. passed through to upsertCompanyPostings as options.maxPostings
+// rather than slicing the fetched list here - that function needs the FULL
+// fetched list to correctly tell "genuinely gone from the source" apart
+// from "just over our own cap" when deciding what to deactivate (see its
+// own comment on UpsertOptions.maxPostings; an earlier version sliced the
+// list here, which silently deactivated a capped company's overflow
+// postings on every run instead of leaving them alone).
 const MAX_POSTINGS_PER_COMPANY = 40;
-
-function capPostings(postings) {
-	if (postings.length <= MAX_POSTINGS_PER_COMPANY) return postings;
-	const sorted = [...postings].sort((a, b) => {
-		const at = a.postedAtSource ? new Date(a.postedAtSource).getTime() : 0;
-		const bt = b.postedAtSource ? new Date(b.postedAtSource).getTime() : 0;
-		return bt - at;
-	});
-	return sorted.slice(0, MAX_POSTINGS_PER_COMPANY);
-}
 
 // discovered-companies.json only ever gains entries via a reviewed, merged
 // PR (see discover-companies.mjs / .github/workflows/discover-companies.yml)
@@ -130,8 +124,10 @@ let failedCompanies = 0;
 for (const company of enabledCompanies) {
 	try {
 		const fetcher = FETCHERS[company.atsType];
-		const postings = capPostings(await fetcher(company.boardToken));
-		const results = await upsertCompanyPostings(db, company, postings);
+		const postings = await fetcher(company.boardToken);
+		const results = await upsertCompanyPostings(db, company, postings, {
+			maxPostings: MAX_POSTINGS_PER_COMPANY
+		});
 
 		const newResults = results.filter((r) => r.isNew);
 		const changedResults = results.filter((r) => !r.isNew && r.written);

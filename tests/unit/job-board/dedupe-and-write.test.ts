@@ -199,6 +199,60 @@ describe('upsertCompanyPostings', () => {
 		expect(db.store.get('jobs/greenhouse:2')?.active).toBe(false);
 	});
 
+	it('does not deactivate postings beyond options.maxPostings - only genuinely-gone postings get deactivated', async () => {
+		const db = createFakeDb();
+		// three postings already active from an earlier, uncapped run
+		await upsertCompanyPostings(db as never, COMPANY, [
+			posting({ externalId: '1' }),
+			posting({ externalId: '2' }),
+			posting({ externalId: '3' })
+		]);
+
+		// this run's fetch still returns all three (nothing genuinely gone),
+		// but is capped to 1 - postings 2 and 3 must stay active even though
+		// they weren't re-processed, since they're still present in the full
+		// fetch, just outside the cap.
+		const results = await upsertCompanyPostings(
+			db as never,
+			COMPANY,
+			[posting({ externalId: '1' }), posting({ externalId: '2' }), posting({ externalId: '3' })],
+			{ maxPostings: 1 }
+		);
+
+		expect(results).toEqual([{ jobId: 'greenhouse:1', isNew: false, written: false }]);
+		expect(db.store.get('jobs/greenhouse:2')?.active).toBe(true);
+		expect(db.store.get('jobs/greenhouse:3')?.active).toBe(true);
+	});
+
+	it('still deactivates a posting genuinely absent from the fetch, even with a cap set', async () => {
+		const db = createFakeDb();
+		await upsertCompanyPostings(db as never, COMPANY, [
+			posting({ externalId: '1' }),
+			posting({ externalId: '2' })
+		]);
+
+		// posting 2 is genuinely gone this run (not just capped-out) - only
+		// posting 1 comes back from the fetch at all.
+		await upsertCompanyPostings(db as never, COMPANY, [posting({ externalId: '1' })], {
+			maxPostings: 1
+		});
+
+		expect(db.store.get('jobs/greenhouse:2')?.active).toBe(false);
+	});
+
+	it('processes the newest postings first when over the cap (by postedAtSource)', async () => {
+		const db = createFakeDb();
+		const older = posting({ externalId: 'old', postedAtSource: new Date('2026-01-01') });
+		const newer = posting({ externalId: 'new', postedAtSource: new Date('2026-06-01') });
+
+		const results = await upsertCompanyPostings(db as never, COMPANY, [older, newer], {
+			maxPostings: 1
+		});
+
+		expect(results).toEqual([{ jobId: 'greenhouse:new', isNew: true, written: true }]);
+		expect(db.store.has('jobs/greenhouse:old')).toBe(false);
+	});
+
 	it('does not re-deactivate (write) a posting that is already inactive', async () => {
 		const db = createFakeDb();
 		await upsertCompanyPostings(db as never, COMPANY, [
