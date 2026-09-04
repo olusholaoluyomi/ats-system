@@ -7,13 +7,12 @@
 				{ "fieldPath": "active", "order": "ASCENDING" },
 				{ "fieldPath": "firstSeenAt", "order": "DESCENDING" }
 			]
-		}
-	],
-	"fieldOverrides": [
+		},
 		{
 			"collectionGroup": "profile",
-			"fieldPath": "notifyOnMatch",
-			"indexes": [{ "order": "ASCENDING", "queryScope": "COLLECTION_GROUP" }]
+			"queryScope": "COLLECTION_GROUP",
+			"fields": [{ "fieldPath": "notifyOnMatch", "order": "ASCENDING" }]
 		}
-	]
+	],
+	"fieldOverrides": []
 }
