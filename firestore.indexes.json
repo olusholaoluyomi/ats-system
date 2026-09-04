@@ -9,5 +9,11 @@
 			]
 		}
 	],
-	"fieldOverrides": []
+	"fieldOverrides": [
+		{
+			"collectionGroup": "profile",
+			"fieldPath": "notifyOnMatch",
+			"indexes": [{ "order": "ASCENDING", "queryScope": "COLLECTION_GROUP" }]
+		}
+	]
 }

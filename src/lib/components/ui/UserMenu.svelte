@@ -1,8 +1,15 @@
 <script lang="ts">
 	import { authStore } from '$stores/auth.svelte';
+	import { notificationsStore } from '$stores/notifications.svelte';
 	import { goto } from '$app/navigation';
 
 	let open = $state(false);
+
+	$effect(() => {
+		if (authStore.isAuthenticated) {
+			notificationsStore.load();
+		}
+	});
 
 	function handleSignOut() {
 		authStore.signOut();
@@ -35,6 +42,11 @@
 	function goToProfile() {
 		open = false;
 		goto('/profile');
+	}
+
+	function goToNotifications() {
+		open = false;
+		goto('/notifications');
 	}
 
 	function goToTransactions() {
@@ -91,6 +103,11 @@
 			/>
 		{:else}
 			<span class="avatar-initials">{authStore.initials}</span>
+		{/if}
+		{#if notificationsStore.unreadCount > 0}
+			<span class="unread-badge"
+				>{notificationsStore.unreadCount > 9 ? '9+' : notificationsStore.unreadCount}</span
+			>
 		{/if}
 	</button>
 
@@ -191,6 +208,32 @@
 				class="dropdown-item"
 				onclick={(event) => {
 					event.preventDefault();
+					goToNotifications();
+				}}
+				href="/notifications"
+			>
+				<svg
+					width="14"
+					height="14"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+				>
+					<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
+					<path d="M13.73 21a2 2 0 0 1-3.46 0" />
+				</svg>
+				Notifications
+				{#if notificationsStore.unreadCount > 0}
+					<span class="item-badge"
+						>{notificationsStore.unreadCount > 9 ? '9+' : notificationsStore.unreadCount}</span
+					>
+				{/if}
+			</a>
+			<a
+				class="dropdown-item"
+				onclick={(event) => {
+					event.preventDefault();
 					goToTransactions();
 				}}
 				href="/transactions"
@@ -251,6 +294,7 @@
 	}
 
 	.avatar-btn {
+		position: relative;
 		width: 36px;
 		height: 36px;
 		border-radius: 50%;
@@ -283,6 +327,40 @@
 		font-size: 0.8rem;
 		font-weight: 700;
 		color: var(--accent-text);
+	}
+
+	.unread-badge {
+		position: absolute;
+		top: -2px;
+		right: -2px;
+		min-width: 16px;
+		height: 16px;
+		padding: 0 3px;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		border-radius: var(--radius-full);
+		background: var(--danger, #ef4444);
+		color: #fff;
+		font-size: 0.6rem;
+		font-weight: 700;
+		line-height: 1;
+		border: 2px solid var(--color-bg-primary, #0a0e14);
+	}
+
+	.item-badge {
+		margin-left: auto;
+		min-width: 18px;
+		height: 18px;
+		padding: 0 5px;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		border-radius: var(--radius-full);
+		background: var(--danger, #ef4444);
+		color: #fff;
+		font-size: 0.65rem;
+		font-weight: 700;
 	}
 
 	.dropdown {

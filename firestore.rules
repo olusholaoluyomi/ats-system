@@ -19,6 +19,14 @@ service cloud.firestore {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
+    // in-app match notifications, written by scripts/notify-matches.mjs via
+    // the admin SDK (which bypasses these rules). clients only ever read
+    // their own and mark them read - same owner-gated shape as
+    // scans/applications above.
+    match /users/{userId}/notifications/{notificationId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
     // per-account review entitlements (free-review-used flag + paid credits).
     // written ONLY by the admin SDK via the billing transactions on the server
     // (/api/analyze gate, /api/payment/*); clients may read their own doc so
