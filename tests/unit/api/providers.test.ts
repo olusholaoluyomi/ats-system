@@ -4,7 +4,7 @@ import {
 	buildOllamaProvider,
 	buildGoogleProvider,
 	buildGroqProvider,
-	buildCerebrasProvider,
+	buildClaudeProvider,
 	PROVIDER_ENV_KEYS
 } from '../../../src/routes/api/analyze/providers';
 
@@ -171,36 +171,47 @@ describe('cloud provider invariants (regression net)', () => {
 		expect(buildGroqProvider('x', 'm').configKey).toBe('GROQ_API_KEY');
 	});
 
-	it('cerebras provider configKey is CEREBRAS_API_KEY', () => {
-		expect(buildCerebrasProvider('x', 'm').configKey).toBe('CEREBRAS_API_KEY');
+	it('claude provider configKey is CLAUDE_API_KEY', () => {
+		expect(buildClaudeProvider('x', 'm').configKey).toBe('CLAUDE_API_KEY');
 	});
 
 	// the whole chain has to fit the route's maxDuration of 60s or the last leg is
-	// unreachable. 30 + 15 + 12 = 57. raising any of them means raising maxDuration too
+	// unreachable. 30 + 12 + 15 = 57. raising any of them means raising maxDuration too
 	it('every configured leg fits inside the route maxDuration', () => {
 		const total = buildProviders({
 			GEMINI_API_KEY: 'k',
-			GROQ_API_KEY: 'k',
-			CEREBRAS_API_KEY: 'k'
+			CLAUDE_API_KEY: 'k',
+			GROQ_API_KEY: 'k'
 		}).reduce((sum, p) => sum + p.timeoutMs, 0);
 		expect(total).toBeLessThan(60_000);
 	});
 
-	// same reachability rule as the other cloud legs. cerebras sustains far more than
+	// same reachability rule as the other cloud legs. claude sustains far more than
 	// this, 500 tok/s is a deliberately pessimistic floor
-	it('cerebras token budget is reachable within its timeout', () => {
-		const c = buildCerebrasProvider('x', 'm');
+	it('claude token budget is reachable within its timeout', () => {
+		const c = buildClaudeProvider('x', 'm');
 		const body = JSON.parse(c.buildRequest('p', 'k').init.body as string);
 		expect((body.max_tokens / 500) * 1000).toBeLessThan(c.timeoutMs);
 	});
 
-	it('cerebras requests JSON natively and sends the key as a bearer header', () => {
-		const req = buildCerebrasProvider('x', 'm').buildRequest('p', 'secret-key');
-		const body = JSON.parse(req.init.body as string);
-		expect(body.response_format).toEqual({ type: 'json_object' });
-		expect(headersOf(req.init).Authorization).toBe('Bearer secret-key');
+	it('claude authenticates via x-api-key (not a bearer header) and sends the required API version', () => {
+		const req = buildClaudeProvider('x', 'm').buildRequest('p', 'secret-key');
+		const headers = headersOf(req.init);
+		expect(headers['x-api-key']).toBe('secret-key');
+		expect(headers.Authorization).toBeUndefined();
+		expect(headers['anthropic-version']).toBeTruthy();
 		// the key must never reach the url, only the header
 		expect(req.url).not.toContain('secret-key');
+	});
+
+	it('claude extractText reads the first text block from the content array', () => {
+		const provider = buildClaudeProvider('x', 'm');
+		expect(provider.extractText({ content: [{ type: 'text', text: '{"ok":true}' }] })).toBe(
+			'{"ok":true}'
+		);
+		expect(provider.extractText({ content: [{ type: 'tool_use' }] })).toBe('');
+		expect(provider.extractText({})).toBe('');
+		expect(provider.extractText(null)).toBe('');
 	});
 });
 
@@ -298,31 +309,34 @@ describe('buildProviders: OLLAMA_API_KEY passthrough', () => {
 	});
 });
 
-describe('buildProviders: cerebras leg', () => {
-	// inert until the key is set, exactly like the ollama leg
-	it('is absent when CEREBRAS_API_KEY is unset', () => {
+describe('buildProviders: claude leg', () => {
+	// inert until the key is set, exactly like the ollama leg - and unlike every
+	// other cloud leg, that's a deliberate cost gate, not just a config default
+	it('is absent when CLAUDE_API_KEY is unset', () => {
 		const chain = buildProviders({ GEMINI_API_KEY: 'k', GROQ_API_KEY: 'k' });
 		expect(chain.map((p) => p.name)).toEqual(['gemini-3.5-flash-lite', 'groq-gpt-oss-120b']);
 	});
 
-	it('appends after groq so the current chain order is unchanged', () => {
+	// claude sits ahead of groq: it has no free-tier throttling to work around,
+	// so it's the more reliable of the two fallback legs when both are configured
+	it('inserts before groq rather than after it', () => {
 		const chain = buildProviders({
 			GEMINI_API_KEY: 'k',
 			GROQ_API_KEY: 'k',
-			CEREBRAS_API_KEY: 'k'
+			CLAUDE_API_KEY: 'k'
 		});
 		expect(chain.map((p) => p.name)).toEqual([
 			'gemini-3.5-flash-lite',
-			'groq-gpt-oss-120b',
-			'cerebras-gpt-oss-120b'
+			'claude-haiku-4-5',
+			'groq-gpt-oss-120b'
 		]);
 	});
 
-	// even without groq configured, cerebras alone must still give a cross-vendor
+	// even without groq configured, claude alone must still give a cross-vendor
 	// fallback next to google
 	it('still pairs with google once groq is dropped', () => {
-		const chain = buildProviders({ GEMINI_API_KEY: 'k', CEREBRAS_API_KEY: 'k' });
-		expect(chain.map((p) => p.name)).toEqual(['gemini-3.5-flash-lite', 'cerebras-gpt-oss-120b']);
+		const chain = buildProviders({ GEMINI_API_KEY: 'k', CLAUDE_API_KEY: 'k' });
+		expect(chain.map((p) => p.name)).toEqual(['gemini-3.5-flash-lite', 'claude-haiku-4-5']);
 	});
 });
 
@@ -332,8 +346,8 @@ describe('PROVIDER_ENV_KEYS covers every leg', () => {
 	// env, the leg would never build, and the test would pass while the route broke
 	const EVERY_PROVIDER_ENV: Record<string, string> = {
 		GEMINI_API_KEY: 'k',
+		CLAUDE_API_KEY: 'k',
 		GROQ_API_KEY: 'k',
-		CEREBRAS_API_KEY: 'k',
 		OLLAMA_BASE_URL: 'http://127.0.0.1:11434',
 		OLLAMA_MODEL: 'llama3.2',
 		OLLAMA_API_KEY: 'k'
@@ -354,8 +368,8 @@ describe('PROVIDER_ENV_KEYS covers every leg', () => {
 	it('builds one leg per vendor from a fully populated env', () => {
 		expect(buildProviders(EVERY_PROVIDER_ENV).map((p) => p.name)).toEqual([
 			'gemini-3.5-flash-lite',
+			'claude-haiku-4-5',
 			'groq-gpt-oss-120b',
-			'cerebras-gpt-oss-120b',
 			'ollama-llama3.2'
 		]);
 	});

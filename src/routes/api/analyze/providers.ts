@@ -1,14 +1,15 @@
 // LLM provider abstraction for /api/analyze.
 //
-// cloud chain is Gemini 3.5 Flash Lite (Google) -> GPT-OSS 120B (Groq): one model
-// per vendor, because a second model on the same key shares that key's quota and adds
-// no real redundancy. crossing vendors is what keeps one provider's limits from
-// cascading. the Google leg was measured against the real full-scoring prompt; the
-// Groq/Cerebras token budgets below are carried over unverified from the prior
-// llama-3.3-70b-versatile legs (see buildProviders) after Groq deprecated that model
-// on 2026-06-17 and Cerebras never carried it on its shared/pay-as-you-go tier -
-// re-measure against gpt-oss-120b's real free-tier ceilings once there's traffic to
-// observe.
+// cloud chain is Gemini 3.5 Flash Lite (Google) -> Claude Haiku 4.5 (Anthropic) ->
+// GPT-OSS 120B (Groq): one model per vendor, because a second model on the same key
+// shares that key's quota and adds no real redundancy. crossing vendors is what keeps
+// one provider's limits from cascading. Claude sits ahead of Groq because it has no
+// free-tier throttling to work around (it's opt-in, paid-per-call - see
+// buildClaudeProvider), so it's the more reliable of the two fallback legs. the
+// Google leg was measured against the real full-scoring prompt; the Groq token
+// budget below is carried over unverified from the prior llama-3.3-70b-versatile leg
+// (see buildProviders) after Groq deprecated that model on 2026-06-17 - re-measure
+// against gpt-oss-120b's real free-tier ceilings once there's traffic to observe.
 //
 // self-hosters can prepend Ollama by setting OLLAMA_BASE_URL (and optionally
 // OLLAMA_MODEL, plus OLLAMA_API_KEY for proxied / auth-gated daemons); the
@@ -161,49 +162,64 @@ export function buildGroqProvider(
 	};
 }
 
-// Cerebras is a second cross-vendor leg alongside Groq, both now on gpt-oss-120b
-// (Cerebras's shared/pay-as-you-go tier never carried a Llama 3.3 70B model; Groq
-// deprecated its own llama-3.3-70b-versatile on 2026-06-17 in favor of the same
-// model). same OpenAI-shaped contract as Groq. inert until CEREBRAS_API_KEY is set,
-// exactly like the Ollama leg.
-const CEREBRAS_MAX_TOKENS = 3072;
+// Claude (Anthropic) is the second cross-vendor leg, positioned ahead of Groq.
+// unlike every other leg here, Anthropic has no free tier - every call is billed
+// against the configured API key - so this leg is strictly opt-in: it only enters
+// the chain when CLAUDE_API_KEY is explicitly set (see buildProviders), exactly
+// like the Ollama leg is opt-in via OLLAMA_BASE_URL. Haiku 4.5 is the fast/cheap
+// tier, matching what the rest of the fallback chain is sized for - not
+// Sonnet/Opus, which would turn every fallback call into a meaningfully bigger
+// bill for no scoring-quality benefit this task needs.
+//
+// the Anthropic Messages API has no request-level "return JSON" mode the way
+// Google/Groq do (no response_format/responseMimeType field) - extractJSON's
+// markdown-fence-stripping and brace-extraction fallback (llm-call.ts) is what
+// actually salvages valid JSON out of Claude's response text.
+const CLAUDE_MAX_TOKENS = 3072;
+const ANTHROPIC_API_VERSION = '2023-06-01';
 
-export function buildCerebrasProvider(
+export function buildClaudeProvider(
 	name: string,
 	model: string,
 	opts?: { maxTokens?: number; contextBudget?: number }
 ): LLMProvider {
 	return {
 		name,
-		configKey: 'CEREBRAS_API_KEY',
-		// 30 + 15 + 12 = 57s, inside the route's maxDuration of 60. cerebras is the
-		// fastest leg in the chain, so 12s is already generous for a 3072 token budget
+		configKey: 'CLAUDE_API_KEY',
+		// 30 (Gemini) + 12 (Claude) + 15 (Groq) = 57s, inside the route's maxDuration
+		// of 60. unverified starting point (no free-tier ceiling to tune against the
+		// way Groq's TPM limit does) - re-measure once there's real traffic.
 		timeoutMs: 12_000,
-		// same model/budget math as Groq above - this is the replacement leg for
-		// the same free-tier-constrained slot, not an independently-tuned value
+		// conservative default: Haiku 4.5's real context window is far larger than
+		// this, but every extra character here is a real cost on a paid API, not
+		// just unused headroom - raise deliberately, not by default.
 		contextBudget: opts?.contextBudget ?? 6_000,
 		buildRequest: (prompt, apiKey) => ({
-			url: 'https://api.cerebras.ai/v1/chat/completions',
+			url: 'https://api.anthropic.com/v1/messages',
 			init: {
 				method: 'POST',
+				// Anthropic authenticates via x-api-key, not an Authorization bearer
+				// header, and requires an explicit API version header on every request.
 				headers: {
 					'Content-Type': 'application/json',
-					Authorization: `Bearer ${apiKey}`
+					'x-api-key': apiKey,
+					'anthropic-version': ANTHROPIC_API_VERSION
 				},
 				body: JSON.stringify({
 					model,
-					messages: [{ role: 'user', content: prompt }],
+					max_tokens: opts?.maxTokens ?? CLAUDE_MAX_TOKENS,
 					temperature: 0.3,
 					top_p: 0.85,
-					max_tokens: opts?.maxTokens ?? CEREBRAS_MAX_TOKENS,
-					response_format: { type: 'json_object' }
+					messages: [{ role: 'user', content: prompt }]
 				})
 			}
 		}),
 		extractText: (data: unknown) => {
 			if (!data || typeof data !== 'object') return '';
-			const d = data as { choices?: { message?: { content?: string } }[] };
-			return d.choices?.[0]?.message?.content ?? '';
+			// Messages API responses are a `content` array of typed blocks (text,
+			// tool_use, ...) rather than a single string - find the first text block.
+			const d = data as { content?: { type?: string; text?: string }[] };
+			return d.content?.find((block) => block.type === 'text' && block.text)?.text ?? '';
 		}
 	};
 }
@@ -274,15 +290,15 @@ export function buildOllamaProvider(
 }
 
 // composes the provider chain from whatever's configured in env. ordering is
-// intentional: cloud providers run first (Gemini, Groq, Cerebras), with Ollama
+// intentional: cloud providers run first (Gemini, Claude, Groq), with Ollama
 // last as a fallback. callers without any of the providers configured will see
 // an empty array and the route returns 503.
 // every env var buildProviders reads. the route copies exactly these out of $env, so a
 // name missing here silently disables a whole leg no matter how the var is configured
 export const PROVIDER_ENV_KEYS = [
 	'GEMINI_API_KEY',
+	'CLAUDE_API_KEY',
 	'GROQ_API_KEY',
-	'CEREBRAS_API_KEY',
 	'OLLAMA_BASE_URL',
 	'OLLAMA_MODEL',
 	'OLLAMA_API_KEY',
@@ -297,16 +313,18 @@ export function buildProviders(env: Record<string, string>): LLMProvider[] {
 		providers.push(buildGoogleProvider('gemini-3.5-flash-lite', 'gemini-3.5-flash-lite'));
 	}
 
-	// 2. Groq (cross-vendor fallback for Google outages). llama-3.3-70b-versatile was
-	// deprecated 2026-06-17; openai/gpt-oss-120b is Groq's own recommended replacement.
-	if (env.GROQ_API_KEY) {
-		providers.push(buildGroqProvider('groq-gpt-oss-120b', 'openai/gpt-oss-120b'));
+	// 2. Claude (Anthropic) — cross-vendor fallback ahead of Groq. strictly opt-in:
+	// unlike every other cloud leg, Anthropic has no free tier, so this only enters
+	// the chain when the operator has explicitly set CLAUDE_API_KEY and accepted
+	// that fallback calls cost real money.
+	if (env.CLAUDE_API_KEY) {
+		providers.push(buildClaudeProvider('claude-haiku-4-5', 'claude-haiku-4-5-20251001'));
 	}
 
-	// 3. Cerebras (second cross-vendor leg). gpt-oss-120b is the model this prompt's
-	// shape actually needs that Cerebras carries on its shared/pay-as-you-go tier.
-	if (env.CEREBRAS_API_KEY) {
-		providers.push(buildCerebrasProvider('cerebras-gpt-oss-120b', 'gpt-oss-120b'));
+	// 3. Groq (cross-vendor fallback for Google/Claude outages). llama-3.3-70b-versatile
+	// was deprecated 2026-06-17; openai/gpt-oss-120b is Groq's own recommended replacement.
+	if (env.GROQ_API_KEY) {
+		providers.push(buildGroqProvider('groq-gpt-oss-120b', 'openai/gpt-oss-120b'));
 	}
 
 	// 4. Ollama (last — self-hosted local daemon, only if explicitly configured)

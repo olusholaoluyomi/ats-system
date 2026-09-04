@@ -10,9 +10,9 @@ import { buildProviders, PROVIDER_ENV_KEYS } from './providers';
 import { callLLM } from '$lib/server/llm-call';
 import { resolveAuthMode } from '$lib/server/auth/config';
 
-// must exceed the sum of every provider timeout in the chain (30 + 15 + 12 = 57s) or
-// the last leg gets killed by the platform before it can answer, which silently turns
-// a 3-provider chain into a shorter one
+// must exceed the sum of every provider timeout in the chain (30 Gemini + 12 Claude +
+// 15 Groq = 57s) or the last leg gets killed by the platform before it can answer,
+// which silently turns a 3-provider chain into a shorter one
 export const config = {
 	maxDuration: 60
 };
@@ -43,12 +43,12 @@ export const POST: RequestHandler = async ({ request, locals, getClientAddress }
 	);
 
 	// at least one provider must be configured. cloud-hosted instances set
-	// GEMINI/GROQ/CEREBRAS; self-hosted forks can opt into Ollama-only by setting
+	// GEMINI/CLAUDE/GROQ; self-hosted forks can opt into Ollama-only by setting
 	// OLLAMA_BASE_URL with no cloud keys.
 	const hasAnyProvider =
 		keys.GEMINI_API_KEY.length > 0 ||
+		keys.CLAUDE_API_KEY.length > 0 ||
 		keys.GROQ_API_KEY.length > 0 ||
-		keys.CEREBRAS_API_KEY.length > 0 ||
 		keys.OLLAMA_BASE_URL.length > 0;
 	if (!hasAnyProvider) {
 		return json({ error: 'no LLM providers configured', fallback: true }, { status: 503 });

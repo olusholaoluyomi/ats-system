@@ -32,8 +32,9 @@ function logWarn(event: string, fields: Record<string, unknown>): void {
 // tries each provider in sequence until one succeeds and returns valid JSON.
 // promptFor is called once per provider with that provider's own
 // contextBudget, so Gemini (huge context window) gets a near-complete
-// resume while Groq/Cerebras (tight free-tier TPM ceilings) still get the
-// smaller, section-prioritized slice they need to stay under their limits.
+// resume while Claude/Groq (kept deliberately small - cost-per-call for
+// Claude, a tight free-tier TPM ceiling for Groq) still get the smaller,
+// section-prioritized slice they need to stay under their limits.
 // Building lazily per-provider (rather than once up front) also means a
 // provider that's skipped for missing credentials never pays the cost of
 // having a prompt built for it.
