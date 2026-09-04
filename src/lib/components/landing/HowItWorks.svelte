@@ -2,34 +2,49 @@
 	const steps = [
 		{
 			number: '01',
-			title: 'Upload Your Resume',
+			title: 'Find the Job',
 			description:
-				'PDF or DOCX. Parsed entirely client-side in a Web Worker. The file itself is never uploaded.',
-			icon: 'upload',
+				'Browse real, remote-friendly openings on the job board - refreshed hourly, straight from company hiring pipelines.',
+			icon: 'briefcase',
 			accent: '#06b6d4'
 		},
 		{
 			number: '02',
-			title: 'Add a Job Description',
+			title: 'Check Your Score',
 			description:
-				'Optional. Paste a JD for targeted scoring, or skip for general ATS-readiness analysis.',
-			icon: 'clipboard',
+				'Hit "Check my CV Score" on any listing to score against that exact job - or paste any JD yourself.',
+			icon: 'target',
 			accent: '#3b82f6'
 		},
 		{
 			number: '03',
-			title: 'Get Scored by 6 Systems',
+			title: 'Upload Your Resume',
 			description:
-				'Each platform scores differently. Workday, Taleo, iCIMS, Greenhouse, Lever, SuccessFactors.',
-			icon: 'zap',
+				'PDF or DOCX. Parsed entirely client-side in a Web Worker. The file itself is never uploaded.',
+			icon: 'upload',
 			accent: '#8b5cf6'
 		},
 		{
 			number: '04',
-			title: 'See What to Fix',
+			title: 'Get Scored by 6 Systems',
 			description:
-				'Per-system breakdown: formatting, keywords, sections, experience, education. Plus tips.',
-			icon: 'check',
+				'Each platform scores differently. Workday, Taleo, iCIMS, Greenhouse, Lever, SuccessFactors.',
+			icon: 'zap',
+			accent: '#ec4899'
+		},
+		{
+			number: '05',
+			title: 'Make Changes (If Needed)',
+			description:
+				'Per-system breakdown: formatting, keywords, sections, experience, education. Fix it, rescan.',
+			icon: 'edit',
+			accent: '#f97316'
+		},
+		{
+			number: '06',
+			title: 'Apply With Confidence',
+			description: 'Once your score holds up, apply straight from the listing - no more guessing.',
+			icon: 'send',
 			accent: '#22c55e'
 		}
 	];
@@ -55,8 +70,8 @@
 			<span>How It Works</span>
 		</div>
 		<h2 class="section-title">
-			Four Steps to
-			<span class="gradient-text">Real Scores</span>
+			Six Steps
+			<span class="gradient-text">From Job to Offer</span>
 		</h2>
 	</div>
 
@@ -68,7 +83,32 @@
 
 				<!-- icon -->
 				<div class="step-icon">
-					{#if step.icon === 'upload'}
+					{#if step.icon === 'briefcase'}
+						<svg
+							width="24"
+							height="24"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="1.5"
+						>
+							<rect x="2" y="7" width="20" height="14" rx="2" />
+							<path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+						</svg>
+					{:else if step.icon === 'target'}
+						<svg
+							width="24"
+							height="24"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="1.5"
+						>
+							<circle cx="12" cy="12" r="10" />
+							<circle cx="12" cy="12" r="6" />
+							<circle cx="12" cy="12" r="2" />
+						</svg>
+					{:else if step.icon === 'upload'}
 						<svg
 							width="24"
 							height="24"
@@ -81,18 +121,6 @@
 							<polyline points="17,8 12,3 7,8" />
 							<line x1="12" y1="3" x2="12" y2="15" />
 						</svg>
-					{:else if step.icon === 'clipboard'}
-						<svg
-							width="24"
-							height="24"
-							viewBox="0 0 24 24"
-							fill="none"
-							stroke="currentColor"
-							stroke-width="1.5"
-						>
-							<path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
-							<rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
-						</svg>
 					{:else if step.icon === 'zap'}
 						<svg
 							width="24"
@@ -104,7 +132,7 @@
 						>
 							<polygon points="13,2 3,14 12,14 11,22 21,10 12,10 13,2" />
 						</svg>
-					{:else if step.icon === 'check'}
+					{:else if step.icon === 'edit'}
 						<svg
 							width="24"
 							height="24"
@@ -113,8 +141,20 @@
 							stroke="currentColor"
 							stroke-width="1.5"
 						>
-							<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-							<polyline points="22,4 12,14.01 9,11.01" />
+							<path d="M12 20h9" />
+							<path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+						</svg>
+					{:else if step.icon === 'send'}
+						<svg
+							width="24"
+							height="24"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="1.5"
+						>
+							<path d="m22 2-7 20-4-9-9-4Z" />
+							<path d="M22 2 11 13" />
 						</svg>
 					{/if}
 				</div>
@@ -122,8 +162,9 @@
 				<h3 class="step-title">{step.title}</h3>
 				<p class="step-description">{step.description}</p>
 
-				<!-- connecting arrow (not on last card) -->
-				{#if i < steps.length - 1}
+				<!-- connecting arrow: only between cards in the same row, never
+				     spanning the wrap to the next row -->
+				{#if i < steps.length - 1 && (i + 1) % 3 !== 0}
 					<div class="step-arrow">
 						<svg
 							width="20"
@@ -190,10 +231,10 @@
 		background-clip: text;
 	}
 
-	/* horizontal card grid */
+	/* 3-column card grid: two rows of three for the six steps */
 	.steps-grid {
 		display: grid;
-		grid-template-columns: repeat(4, 1fr);
+		grid-template-columns: repeat(3, 1fr);
 		gap: 1.25rem;
 	}
 
