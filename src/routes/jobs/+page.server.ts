@@ -29,7 +29,11 @@ import {
 } from './shared';
 import { tokenizeQuery } from '$lib/server/job-board/search-keywords';
 
-export const PAGE_SIZE = 20;
+// not exported: +page.server.ts's exports are validated by SvelteKit against
+// a fixed allow-list (load/prerender/csr/ssr/trailingSlash/config/actions/
+// entries, or a `_`-prefixed name) and the production build fails on
+// anything else - this is used only within this file.
+const PAGE_SIZE = 20;
 
 // clamp a query-param years value to a sane bound, or null if absent/invalid
 // - never trust a URL param to be a well-formed positive integer.
