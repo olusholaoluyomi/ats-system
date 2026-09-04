@@ -93,6 +93,46 @@ export function formatPostedDate(iso: string): string {
 	});
 }
 
+export type DescriptionBlock =
+	{ type: 'paragraph'; lines: string[] } | { type: 'bullets'; lines: string[] };
+
+const BULLET_PREFIX = /^\s*(?:[-*•]|\d+[.)])\s+/;
+
+// splits plain description text (see html-to-text.ts - this never touches
+// raw HTML, descriptionText is already-safe plain text) into paragraph vs.
+// bullet-list blocks, so the detail page can render real <ul>/<li> markup
+// instead of one flat wall of text. every line still goes through Svelte's
+// normal {...} interpolation when rendered (auto-escaped) - this function
+// only decides STRUCTURE, it never builds HTML strings or trusts anything
+// beyond "does this line start with a bullet marker".
+export function formatDescription(text: string): DescriptionBlock[] {
+	if (!text.trim()) return [];
+
+	const blocks: DescriptionBlock[] = [];
+	// blank-line-separated chunks first, then decide each chunk's type
+	const chunks = text.split(/\n{2,}/).filter((c) => c.trim());
+
+	for (const chunk of chunks) {
+		const lines = chunk
+			.split('\n')
+			.map((l) => l.trim())
+			.filter(Boolean);
+		if (lines.length === 0) continue;
+
+		const bulletLines = lines.filter((l) => BULLET_PREFIX.test(l));
+		// a chunk counts as a bullet list only if EVERY line in it looks like
+		// a bullet - a single stray dash inside a paragraph shouldn't turn the
+		// whole paragraph into a one-item list.
+		if (bulletLines.length === lines.length) {
+			blocks.push({ type: 'bullets', lines: lines.map((l) => l.replace(BULLET_PREFIX, '')) });
+		} else {
+			blocks.push({ type: 'paragraph', lines });
+		}
+	}
+
+	return blocks;
+}
+
 export function hasActiveFilters(filters: JobsFilters): boolean {
 	return (
 		filters.remote ||

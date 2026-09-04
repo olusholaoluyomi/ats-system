@@ -14,6 +14,14 @@ describe('htmlToText', () => {
 		expect(result).toContain('Two');
 	});
 
+	it('marks list items with a "- " prefix, distinct from a plain paragraph break', () => {
+		// this marker is what lets formatDescription (jobs/shared.ts) tell a
+		// real list apart from an ordinary line break downstream - without it,
+		// <li> and <p>/<br> would be indistinguishable after stripping.
+		const html = '<ul><li>First item</li><li>Second item</li></ul>';
+		expect(htmlToText(html)).toBe('- First item\n- Second item');
+	});
+
 	it('decodes common HTML entities', () => {
 		expect(htmlToText('Ben &amp; Jerry&#39;s &lt;3')).toBe("Ben & Jerry's <3");
 	});

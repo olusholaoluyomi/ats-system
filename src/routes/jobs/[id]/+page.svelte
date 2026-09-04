@@ -3,11 +3,12 @@
 	import { authStore } from '$stores/auth.svelte';
 	import { applicationsStore, type ApplicationStatus } from '$stores/applications.svelte';
 	import { incrementApplyClick } from '$lib/job-analytics';
-	import { timeAgo, formatPostedDate } from '../shared';
+	import { timeAgo, formatPostedDate, formatDescription } from '../shared';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
 	const job = $derived(data.job);
+	const descriptionBlocks = $derived(formatDescription(job.descriptionText));
 
 	const STATUSES: { value: ApplicationStatus; label: string }[] = [
 		{ value: 'saved', label: 'Saved' },
@@ -115,7 +116,25 @@
 
 	<section class="job-description">
 		<h2>Full description</h2>
-		<p class="job-description-text">{job.descriptionText || 'No description available.'}</p>
+		{#if descriptionBlocks.length === 0}
+			<p class="job-description-text">No description available.</p>
+		{:else}
+			{#each descriptionBlocks as block, i (i)}
+				{#if block.type === 'bullets'}
+					<ul class="job-description-list">
+						{#each block.lines as line, j (j)}
+							<li>{line}</li>
+						{/each}
+					</ul>
+				{:else}
+					<p class="job-description-text">
+						{#each block.lines as line, j (j)}
+							{line}{#if j < block.lines.length - 1}<br />{/if}
+						{/each}
+					</p>
+				{/if}
+			{/each}
+		{/if}
 	</section>
 </main>
 
@@ -252,8 +271,27 @@
 	}
 
 	.job-description-text {
-		white-space: pre-wrap;
 		color: var(--text-secondary);
 		line-height: 1.7;
+		margin-bottom: var(--space-4);
+	}
+
+	.job-description-text:last-child {
+		margin-bottom: 0;
+	}
+
+	.job-description-list {
+		color: var(--text-secondary);
+		line-height: 1.7;
+		margin: 0 0 var(--space-4);
+		padding-left: 1.4em;
+	}
+
+	.job-description-list:last-child {
+		margin-bottom: 0;
+	}
+
+	.job-description-list li {
+		margin-bottom: var(--space-1);
 	}
 </style>
