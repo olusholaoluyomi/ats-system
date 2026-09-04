@@ -100,9 +100,13 @@
 
 <style>
 	.jobs-page {
-		max-width: var(--container-lg);
+		max-width: var(--container-xl);
 		margin: 0 auto;
-		padding: var(--space-12) var(--space-6) var(--space-24);
+		/* 8rem clears the fixed navbar (63px) with room to spare - the previous
+		   var(--space-12) (48px) sat under it, clipping the page-badge pill.
+		   matches the top-padding convention other non-hero content pages
+		   (e.g. /privacy) already use. */
+		padding: 8rem var(--space-6) var(--space-24);
 	}
 
 	.jobs-header {
@@ -209,7 +213,7 @@
 
 	.jobs-list {
 		display: grid;
-		grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+		grid-template-columns: repeat(4, 1fr);
 		gap: var(--space-5);
 	}
 
@@ -280,5 +284,33 @@
 		color: var(--text-tertiary);
 		font-style: italic;
 		margin-top: var(--space-2);
+	}
+
+	/* the 4-column grid needs explicit tapering (unlike the old auto-fill
+	   version, which self-adjusted) so cards don't get crushed narrow on
+	   tablet/mobile. */
+	@media (max-width: 1200px) {
+		.jobs-list {
+			grid-template-columns: repeat(2, 1fr);
+		}
+	}
+
+	@media (max-width: 640px) {
+		.jobs-page {
+			padding-top: 6.5rem;
+		}
+
+		.jobs-list {
+			grid-template-columns: 1fr;
+		}
+
+		.jobs-filters {
+			flex-direction: column;
+			align-items: stretch;
+		}
+
+		.filter-apply {
+			margin-left: 0;
+		}
 	}
 </style>
