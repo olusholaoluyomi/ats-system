@@ -118,6 +118,28 @@ describe('upsertCompanyPostings', () => {
 		expect(doc?.title).toBe('Senior Engineer'); // refreshed
 		expect(doc?.firstSeenAt).toBe(firstSeenAt); // preserved, not reset
 	});
+
+	it('extracts years-of-experience from descriptionText via the non-AI heuristic', async () => {
+		const db = createFakeDb();
+		await upsertCompanyPostings(db as never, COMPANY, [
+			posting({ descriptionText: 'Looking for someone with 5-7 years of experience.' })
+		]);
+
+		const doc = db.store.get('jobs/greenhouse:1');
+		expect(doc?.minYearsExperience).toBe(5);
+		expect(doc?.maxYearsExperience).toBe(7);
+	});
+
+	it('stores null years-of-experience when the description has no detectable phrase', async () => {
+		const db = createFakeDb();
+		await upsertCompanyPostings(db as never, COMPANY, [
+			posting({ descriptionText: 'Build things.' })
+		]);
+
+		const doc = db.store.get('jobs/greenhouse:1');
+		expect(doc?.minYearsExperience).toBeNull();
+		expect(doc?.maxYearsExperience).toBeNull();
+	});
 });
 
 describe('sweepInactiveJobs', () => {

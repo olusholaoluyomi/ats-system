@@ -10,9 +10,22 @@
 	// "matches your filters" group ends and the "other roles" group begins,
 	// so someone whose filters happen to match nothing still sees the rest of
 	// the board instead of a dead end.
-	const hasActiveFilters = $derived(data.filters.remote || Boolean(data.filters.query));
+	const hasActiveFilters = $derived(
+		data.filters.remote ||
+			Boolean(data.filters.query) ||
+			data.filters.experienceMin !== null ||
+			data.filters.experienceMax !== null
+	);
 	const matchedJobs = $derived(hasActiveFilters ? data.jobs.slice(0, data.matchCount) : data.jobs);
 	const otherJobs = $derived(hasActiveFilters ? data.jobs.slice(data.matchCount) : []);
+
+	function experienceLabel(job: (typeof data.jobs)[number]): string | null {
+		const { minYearsExperience: min, maxYearsExperience: max } = job;
+		if (min === null && max === null) return null;
+		if (min !== null && max !== null) return `${min}-${max} yrs`;
+		if (min !== null) return `${min}+ yrs`;
+		return `up to ${max} yrs`;
+	}
 </script>
 
 <SeoHead
@@ -43,6 +56,28 @@
 			<input type="checkbox" name="remote" value="true" checked={data.filters.remote} />
 			Remote-friendly
 		</label>
+		<label class="filter-years">
+			<span>Min years</span>
+			<input
+				type="number"
+				name="experienceMin"
+				min="0"
+				max="40"
+				value={data.filters.experienceMin ?? ''}
+				class="filter-years-input"
+			/>
+		</label>
+		<label class="filter-years">
+			<span>Max years</span>
+			<input
+				type="number"
+				name="experienceMax"
+				min="0"
+				max="40"
+				value={data.filters.experienceMax ?? ''}
+				class="filter-years-input"
+			/>
+		</label>
 		<button type="submit" class="filter-apply">Filter</button>
 	</form>
 
@@ -59,6 +94,9 @@
 			<div class="job-chips">
 				{#if job.remote}
 					<span class="meta-chip">Remote</span>
+				{/if}
+				{#if experienceLabel(job)}
+					<span class="meta-chip">{experienceLabel(job)}</span>
 				{/if}
 			</div>
 			{#if job.whyThisCompany}
@@ -176,6 +214,24 @@
 		font-size: var(--text-sm);
 		color: var(--text-secondary);
 		cursor: pointer;
+	}
+
+	.filter-years {
+		display: flex;
+		align-items: center;
+		gap: var(--space-2);
+		font-size: var(--text-sm);
+		color: var(--text-secondary);
+	}
+
+	.filter-years-input {
+		width: 4.5rem;
+		padding: var(--space-2) var(--space-3);
+		border-radius: var(--radius-md);
+		background: var(--glass-bg-hover);
+		border: 1px solid var(--glass-border);
+		color: var(--text-primary);
+		font-size: var(--text-sm);
 	}
 
 	.filter-apply {

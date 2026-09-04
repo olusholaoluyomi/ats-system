@@ -15,11 +15,22 @@ import {
 	matchesFilters
 } from './shared';
 
+// clamp a query-param years value to a sane bound, or null if absent/invalid
+// - never trust a URL param to be a well-formed positive integer.
+function parseYearsParam(raw: string | null): number | null {
+	if (!raw) return null;
+	const n = Number(raw);
+	if (!Number.isFinite(n) || n < 0) return null;
+	return Math.min(Math.round(n), 40);
+}
+
 export const load: PageServerLoad = async ({ url }) => {
 	const rawQuery = url.searchParams.get('q')?.trim() ?? '';
 	const filters: JobsFilters = {
 		remote: url.searchParams.get('remote') === 'true',
-		query: rawQuery.length > 0 ? rawQuery.slice(0, 100) : null
+		query: rawQuery.length > 0 ? rawQuery.slice(0, 100) : null,
+		experienceMin: parseYearsParam(url.searchParams.get('experienceMin')),
+		experienceMax: parseYearsParam(url.searchParams.get('experienceMax'))
 	};
 
 	try {

@@ -16,11 +16,20 @@ export interface JobListing {
 	applyUrl: string;
 	whyThisCompany: string | null;
 	firstSeenAt: string; // ISO string
+	// non-AI, regex-extracted from descriptionText at ingestion time (see
+	// $lib/server/job-board/experience-heuristic.ts) - null means "couldn't
+	// tell", not "zero years required".
+	minYearsExperience: number | null;
+	maxYearsExperience: number | null;
 }
 
 export interface JobsFilters {
 	remote: boolean;
 	query: string | null; // trimmed, non-empty keyword search over title/company/department
+	// years-of-experience range filter. null means "no bound on this side" -
+	// e.g. {experienceMin: 3, experienceMax: null} means "3 years or more".
+	experienceMin: number | null;
+	experienceMax: number | null;
 }
 
 // hard cutoff: a posting older than this never appears on the board, full
@@ -50,7 +59,10 @@ export function mapJobDoc(id: string, data: Record<string, unknown>): JobListing
 		remote: data.remote === true,
 		applyUrl: typeof data.applyUrl === 'string' ? data.applyUrl : '',
 		whyThisCompany: typeof data.whyThisCompany === 'string' ? data.whyThisCompany : null,
-		firstSeenAt: toIsoString(data.firstSeenAt)
+		firstSeenAt: toIsoString(data.firstSeenAt),
+		minYearsExperience:
+			typeof data.minYearsExperience === 'number' ? data.minYearsExperience : null,
+		maxYearsExperience: typeof data.maxYearsExperience === 'number' ? data.maxYearsExperience : null
 	};
 }
 
@@ -82,18 +94,36 @@ export function formatPostedDate(iso: string): string {
 }
 
 export function hasActiveFilters(filters: JobsFilters): boolean {
-	return filters.remote || Boolean(filters.query);
+	return (
+		filters.remote ||
+		Boolean(filters.query) ||
+		filters.experienceMin !== null ||
+		filters.experienceMax !== null
+	);
 }
 
 // a filter narrows what's shown to the TOP of the list, it never hides
 // results outright - a visitor whose filters happen to match nothing still
-// sees the rest of the board rather than a dead end.
+// sees the rest of the board rather than a dead end. the experience filter
+// follows the same rule: a job the heuristic couldn't extract years from
+// always matches, since "couldn't tell" is not the same as "doesn't
+// qualify" - only a job with a KNOWN, non-overlapping range gets excluded.
 export function matchesFilters(job: JobListing, filters: JobsFilters): boolean {
 	if (filters.remote && !job.remote) return false;
 	if (filters.query) {
 		const q = filters.query.toLowerCase();
 		const haystack = `${job.title} ${job.companyName} ${job.department ?? ''}`.toLowerCase();
 		if (!haystack.includes(q)) return false;
+	}
+	if (filters.experienceMin !== null || filters.experienceMax !== null) {
+		const hasJobRange = job.minYearsExperience !== null || job.maxYearsExperience !== null;
+		if (hasJobRange) {
+			const jobMin = job.minYearsExperience ?? 0;
+			const jobMax = job.maxYearsExperience ?? Infinity;
+			const filterMin = filters.experienceMin ?? 0;
+			const filterMax = filters.experienceMax ?? Infinity;
+			if (jobMax < filterMin || jobMin > filterMax) return false;
+		}
 	}
 	return true;
 }

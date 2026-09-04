@@ -5,6 +5,7 @@
 import type { Firestore } from 'firebase-admin/firestore';
 import type { RawJobPosting } from './types.ts';
 import type { SeedCompany } from './seed-companies.ts';
+import { extractYearsOfExperience } from './experience-heuristic.ts';
 
 export interface UpsertResult {
 	jobId: string;
@@ -28,6 +29,11 @@ export async function upsertCompanyPostings(
 		const id = jobId(company.atsType, posting.externalId);
 		const ref = db.doc(`jobs/${id}`);
 
+		// non-AI, regex-based - see experience-heuristic.ts. re-derived on every
+		// upsert (cheap, deterministic) so a posting whose text changes on
+		// re-fetch gets a fresh extraction rather than a stale one.
+		const { minYears, maxYears } = extractYearsOfExperience(posting.descriptionText);
+
 		const isNew = await db.runTransaction(async (tx) => {
 			const snap = await tx.get(ref);
 			const now = new Date();
@@ -45,6 +51,8 @@ export async function upsertCompanyPostings(
 					applyUrl: posting.applyUrl,
 					descriptionText: posting.descriptionText,
 					postedAtSource: posting.postedAtSource,
+					minYearsExperience: minYears,
+					maxYearsExperience: maxYears,
 					// the authoritative "posted" signal for the 48h filter - set
 					// once, on first observation, never touched again. see
 					// types.ts's RawJobPosting.postedAtSource comment for why the
@@ -70,6 +78,8 @@ export async function upsertCompanyPostings(
 				applyUrl: posting.applyUrl,
 				descriptionText: posting.descriptionText,
 				postedAtSource: posting.postedAtSource,
+				minYearsExperience: minYears,
+				maxYearsExperience: maxYears,
 				lastSeenAt: now,
 				active: true,
 				updatedAt: now
