@@ -95,11 +95,10 @@ describe('upsertCompanyPostings', () => {
 		const db = createFakeDb();
 		const results = await upsertCompanyPostings(db as never, COMPANY, [posting()]);
 
-		expect(results).toEqual([{ jobId: 'greenhouse:1', isNew: true, needsClassification: true }]);
+		expect(results).toEqual([{ jobId: 'greenhouse:1', isNew: true }]);
 		const doc = db.store.get('jobs/greenhouse:1');
 		expect(doc?.firstSeenAt).toBeInstanceOf(Date);
 		expect(doc?.active).toBe(true);
-		expect(doc?.classification).toBeNull();
 		expect(doc?.companyName).toBe('Acme');
 	});
 
@@ -114,39 +113,10 @@ describe('upsertCompanyPostings', () => {
 			[posting({ title: 'Senior Engineer' })] // description/title changed on re-fetch
 		);
 
-		expect(results).toEqual([{ jobId: 'greenhouse:1', isNew: false, needsClassification: true }]);
+		expect(results).toEqual([{ jobId: 'greenhouse:1', isNew: false }]);
 		const doc = db.store.get('jobs/greenhouse:1');
 		expect(doc?.title).toBe('Senior Engineer'); // refreshed
 		expect(doc?.firstSeenAt).toBe(firstSeenAt); // preserved, not reset
-	});
-
-	it('does not overwrite an existing classification on re-ingestion', async () => {
-		const db = createFakeDb();
-		await upsertCompanyPostings(db as never, COMPANY, [posting()]);
-		db.store.set('jobs/greenhouse:1', {
-			...db.store.get('jobs/greenhouse:1'),
-			classification: { africaRemoteFriendly: true },
-			classifiedAt: new Date()
-		});
-
-		const results = await upsertCompanyPostings(db as never, COMPANY, [posting()]);
-
-		const doc = db.store.get('jobs/greenhouse:1');
-		expect(doc?.classification).toEqual({ africaRemoteFriendly: true });
-		expect(results).toEqual([{ jobId: 'greenhouse:1', isNew: false, needsClassification: false }]);
-	});
-
-	it('flags an existing-but-never-classified posting for re-classification', async () => {
-		// simulates the real incident this guards against: a posting written
-		// during a run where every LLM provider failed, leaving
-		// classification:null with no way back in under the old isNew-only logic.
-		const db = createFakeDb();
-		await upsertCompanyPostings(db as never, COMPANY, [posting()]);
-		expect(db.store.get('jobs/greenhouse:1')?.classification).toBeNull();
-
-		const results = await upsertCompanyPostings(db as never, COMPANY, [posting()]);
-
-		expect(results).toEqual([{ jobId: 'greenhouse:1', isNew: false, needsClassification: true }]);
 	});
 });
 

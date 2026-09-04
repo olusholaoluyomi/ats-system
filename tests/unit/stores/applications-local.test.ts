@@ -46,7 +46,6 @@ function stubJob(overrides: Partial<JobListing> = {}): JobListing {
 		applyUrl: 'https://acme.example.com/apply',
 		whyThisCompany: null,
 		firstSeenAt: new Date().toISOString(),
-		classification: null,
 		...overrides
 	};
 }

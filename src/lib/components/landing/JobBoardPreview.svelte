@@ -28,9 +28,9 @@
 			<span class="gradient-text">Know Your Score First.</span>
 		</h2>
 		<p class="section-description">
-			Real openings from real companies, refreshed hourly - checked for remote-from-Africa
-			friendliness and relocation support. Most rejections happen inside the ATS before a recruiter
-			ever opens your resume, so every listing has a "Check my score" step before you apply.
+			Real openings from real companies, refreshed hourly. Most rejections happen inside the ATS
+			before a recruiter ever opens your resume, so every listing has a "Check my score" step before
+			you apply.
 		</p>
 	</div>
 
@@ -47,12 +47,6 @@
 					<div class="job-preview-chips">
 						{#if job.remote}
 							<span class="meta-chip">Remote</span>
-						{/if}
-						{#if job.classification?.relocationOffered === true}
-							<span class="meta-chip chip-accent">Relocation offered</span>
-						{/if}
-						{#if job.classification?.africaRemoteFriendly}
-							<span class="meta-chip chip-accent">Africa remote-friendly</span>
 						{/if}
 					</div>
 				</a>
@@ -205,12 +199,6 @@
 		border: 1px solid var(--glass-border);
 		font-size: 0.72rem;
 		color: var(--text-secondary);
-	}
-
-	.chip-accent {
-		background: var(--accent-tint);
-		border-color: var(--accent-border);
-		color: var(--accent-text);
 	}
 
 	.job-preview-empty {

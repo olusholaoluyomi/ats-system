@@ -13,17 +13,11 @@ function job(overrides: Partial<JobListing> = {}): JobListing {
 		applyUrl: 'https://example.com',
 		whyThisCompany: null,
 		firstSeenAt: new Date().toISOString(),
-		classification: null,
 		...overrides
 	};
 }
 
-const NO_FILTERS: JobsFilters = {
-	remote: false,
-	relocation: false,
-	experienceLevel: null,
-	query: null
-};
+const NO_FILTERS: JobsFilters = { remote: false, query: null };
 
 describe('matchesFilters', () => {
 	it('matches everything when no filters are active', () => {
@@ -36,39 +30,6 @@ describe('matchesFilters', () => {
 		expect(matchesFilters(job({ remote: false }), filters)).toBe(false);
 	});
 
-	it('requires relocationOffered === true (not "unclear") when the relocation filter is active', () => {
-		const filters: JobsFilters = { ...NO_FILTERS, relocation: true };
-		expect(
-			matchesFilters(
-				job({ classification: { ...classification(), relocationOffered: true } }),
-				filters
-			)
-		).toBe(true);
-		expect(
-			matchesFilters(
-				job({ classification: { ...classification(), relocationOffered: 'unclear' } }),
-				filters
-			)
-		).toBe(false);
-		expect(matchesFilters(job({ classification: null }), filters)).toBe(false);
-	});
-
-	it('requires an exact experienceLevel match when that filter is active', () => {
-		const filters: JobsFilters = { ...NO_FILTERS, experienceLevel: 'senior' };
-		expect(
-			matchesFilters(
-				job({ classification: { ...classification(), experienceLevel: 'senior' } }),
-				filters
-			)
-		).toBe(true);
-		expect(
-			matchesFilters(
-				job({ classification: { ...classification(), experienceLevel: 'mid' } }),
-				filters
-			)
-		).toBe(false);
-	});
-
 	it('matches title, company, or department case-insensitively when a query is active', () => {
 		const filters: JobsFilters = { ...NO_FILTERS, query: 'product manager' };
 		expect(matchesFilters(job({ title: 'Senior Product Manager' }), filters)).toBe(true);
@@ -77,36 +38,16 @@ describe('matchesFilters', () => {
 		expect(
 			matchesFilters(job({ title: 'Engineer', companyName: 'Product Manager Co' }), filters)
 		).toBe(true);
+		expect(
+			matchesFilters(job({ title: 'Engineer', department: 'Product Manager Team' }), filters)
+		).toBe(true);
 	});
 
 	it('requires ALL active filters to pass (AND, not OR)', () => {
-		const filters: JobsFilters = {
-			remote: true,
-			relocation: true,
-			experienceLevel: null,
-			query: null
-		};
-		const remoteOnly = job({ remote: true, classification: classification() });
-		expect(matchesFilters(remoteOnly, filters)).toBe(false); // relocation not offered
-		const both = job({
-			remote: true,
-			classification: { ...classification(), relocationOffered: true }
-		});
+		const filters: JobsFilters = { remote: true, query: 'engineer' };
+		const remoteOnly = job({ remote: true, title: 'Product Manager' });
+		expect(matchesFilters(remoteOnly, filters)).toBe(false); // query doesn't match title
+		const both = job({ remote: true, title: 'Backend Engineer' });
 		expect(matchesFilters(both, filters)).toBe(true);
 	});
 });
-
-function classification(): NonNullable<JobListing['classification']> {
-	return {
-		africaRemoteFriendly: false,
-		relocationOffered: 'unclear',
-		relocationRequired: false,
-		experienceLevel: 'unclear',
-		minYearsExperience: null,
-		maxYearsExperience: null,
-		salaryMin: null,
-		salaryMax: null,
-		salaryCurrency: null,
-		salaryPeriod: null
-	};
-}

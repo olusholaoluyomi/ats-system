@@ -1,18 +1,16 @@
-// shared LLM-provider-chain caller, hoisted out of api/analyze/+server.ts so
-// the job-board ingestion script (scripts/ingest-jobs.mjs, via
-// job-board/classify.ts) can reuse the same battle-tested
-// fallback/timeout/429-quota/messy-JSON handling that resume scoring already
-// has, instead of drifting from it with a thinner reimplementation.
+// shared LLM-provider-chain caller, hoisted out of api/analyze/+server.ts and
+// unit-tested in isolation (tests/unit/server/llm-call.test.ts) instead of
+// only being exercised indirectly through the route handler.
 //
 // both functions already took `env`/`promptFor` as plain parameters with no
 // route-specific closure state, so this is a near-verbatim move - the
 // analyze route now just imports from here.
 //
 // imports below are relative with explicit .ts extensions rather than the
-// usual $lib alias: this module needs to run both under Vite/SvelteKit AND
-// directly via `node` (from scripts/ingest-jobs.mjs, through classify.ts) -
-// Node's native type-stripping only understands plain Node module
-// resolution, not Vite's alias config.
+// usual $lib alias: this module was originally shared with a plain-`node`
+// job-board ingestion script (since removed - see the job-board classify.ts
+// deletion) and the relative-import style was never reverted since it works
+// identically under Vite/SvelteKit.
 import { buildProviders } from '../../routes/api/analyze/providers.ts';
 import {
 	isProviderExhausted,

@@ -37,15 +37,22 @@ the fallback meaningful.
 
 :::caution[Claude has no free tier]
 Every other provider here (Gemini, Groq) has a free tier that simply blocks at its
-limit - you cannot accidentally incur costs. Anthropic is different: every call that
-falls through to the Claude leg is billed against your API key, whether that's a
-single resume scan or, on the job-board ingestion side, hundreds of classification
-calls in one run.
+limit - you cannot accidentally incur costs. Anthropic is different: every resume
+scan that falls through to the Claude leg is billed against your API key. (Job-board
+ingestion doesn't use this chain at all - see the note below.)
 
 Leave `CLAUDE_API_KEY` unset to run on Gemini + Groq only, at no cost. Set it if you
 want a paid fallback that isn't subject to Groq's free-tier rate limits - Haiku 4.5
 is the fast/cheap tier, not Sonnet or Opus, to keep that cost reasonable. Get a key at
 [console.anthropic.com](https://console.anthropic.com/settings/keys).
+:::
+
+:::note[Job board postings are not LLM-classified]
+An earlier version tagged every job-board posting (relocation support, remote-from-
+Africa friendliness, experience level) with an LLM pass during ingestion. It was
+removed - too many free-tier-constrained calls for too little reliability. The board
+now shows postings as fetched; filtering is a real `remote` flag from each ATS's own
+API plus free-text keyword search, not an AI-derived tag.
 :::
 
 If a provider fails (timeout, rate limit, malformed response), the system automatically tries the next one. Because each provider uses a separate credential, their quotas are completely independent. Self-hosters who want a fully offline scanner should set only `OLLAMA_BASE_URL` and leave the cloud keys unset.

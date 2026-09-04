@@ -16,25 +16,11 @@ export interface JobListing {
 	applyUrl: string;
 	whyThisCompany: string | null;
 	firstSeenAt: string; // ISO string
-	classification: {
-		africaRemoteFriendly: boolean;
-		relocationOffered: boolean | 'unclear';
-		relocationRequired: boolean;
-		experienceLevel: string;
-		minYearsExperience: number | null;
-		maxYearsExperience: number | null;
-		salaryMin: number | null;
-		salaryMax: number | null;
-		salaryCurrency: string | null;
-		salaryPeriod: string | null;
-	} | null;
 }
 
 export interface JobsFilters {
 	remote: boolean;
-	relocation: boolean;
-	experienceLevel: string | null;
-	query: string | null; // trimmed, non-empty keyword search over title/company
+	query: string | null; // trimmed, non-empty keyword search over title/company/department
 }
 
 // hard cutoff: a posting older than this never appears on the board, full
@@ -64,8 +50,7 @@ export function mapJobDoc(id: string, data: Record<string, unknown>): JobListing
 		remote: data.remote === true,
 		applyUrl: typeof data.applyUrl === 'string' ? data.applyUrl : '',
 		whyThisCompany: typeof data.whyThisCompany === 'string' ? data.whyThisCompany : null,
-		firstSeenAt: toIsoString(data.firstSeenAt),
-		classification: (data.classification as JobListing['classification']) ?? null
+		firstSeenAt: toIsoString(data.firstSeenAt)
 	};
 }
 
@@ -83,12 +68,7 @@ export function timeAgo(iso: string): string {
 }
 
 export function hasActiveFilters(filters: JobsFilters): boolean {
-	return (
-		filters.remote ||
-		filters.relocation ||
-		Boolean(filters.experienceLevel) ||
-		Boolean(filters.query)
-	);
+	return filters.remote || Boolean(filters.query);
 }
 
 // a filter narrows what's shown to the TOP of the list, it never hides
@@ -96,10 +76,6 @@ export function hasActiveFilters(filters: JobsFilters): boolean {
 // sees the rest of the board rather than a dead end.
 export function matchesFilters(job: JobListing, filters: JobsFilters): boolean {
 	if (filters.remote && !job.remote) return false;
-	if (filters.relocation && job.classification?.relocationOffered !== true) return false;
-	if (filters.experienceLevel && job.classification?.experienceLevel !== filters.experienceLevel) {
-		return false;
-	}
 	if (filters.query) {
 		const q = filters.query.toLowerCase();
 		const haystack = `${job.title} ${job.companyName} ${job.department ?? ''}`.toLowerCase();

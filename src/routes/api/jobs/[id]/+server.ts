@@ -1,7 +1,7 @@
 // minimal public read of one job posting, used by the scanner's "Check my CV
 // Score" hand-off (?jobId=... -> this endpoint -> scoresStore.setJobDescription).
 // deliberately returns only the fields the scanner needs, not the full
-// jobs/{id} doc (classification/source metadata stay server-side).
+// jobs/{id} doc (source/ATS metadata stays server-side).
 import { json, error } from '@sveltejs/kit';
 import { env as privateEnv } from '$env/dynamic/private';
 import { logger } from '$lib/log';

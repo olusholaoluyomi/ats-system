@@ -1,6 +1,5 @@
 <script lang="ts">
 	import SeoHead from '$components/seo/SeoHead.svelte';
-	import { currencySymbol } from '$lib/currency';
 	import { authStore } from '$stores/auth.svelte';
 	import { applicationsStore, type ApplicationStatus } from '$stores/applications.svelte';
 	import type { PageData } from './$types';
@@ -37,18 +36,6 @@
 			saving = false;
 		}
 	}
-
-	const salaryText = $derived.by(() => {
-		const c = job.classification;
-		if (!c || (c.salaryMin == null && c.salaryMax == null)) return null;
-		const symbol = c.salaryCurrency ? currencySymbol(c.salaryCurrency) : '';
-		const period = c.salaryPeriod ? `/${c.salaryPeriod}` : '';
-		if (c.salaryMin != null && c.salaryMax != null && c.salaryMin !== c.salaryMax) {
-			return `${symbol}${c.salaryMin.toLocaleString()}–${symbol}${c.salaryMax.toLocaleString()}${period}`;
-		}
-		const single = c.salaryMin ?? c.salaryMax;
-		return `${symbol}${single?.toLocaleString()}${period}`;
-	});
 </script>
 
 <SeoHead
@@ -76,20 +63,6 @@
 		<div class="job-chips">
 			{#if job.remote}
 				<span class="meta-chip">Remote</span>
-			{/if}
-			{#if job.classification?.africaRemoteFriendly}
-				<span class="meta-chip chip-accent">Africa remote-friendly</span>
-			{/if}
-			{#if job.classification?.relocationOffered === true}
-				<span class="meta-chip chip-accent">Relocation offered</span>
-			{:else if job.classification?.relocationRequired}
-				<span class="meta-chip">Relocation required</span>
-			{/if}
-			{#if job.classification?.experienceLevel && job.classification.experienceLevel !== 'unclear'}
-				<span class="meta-chip">{job.classification.experienceLevel}</span>
-			{/if}
-			{#if salaryText}
-				<span class="meta-chip chip-salary">{salaryText}</span>
 			{/if}
 		</div>
 
@@ -201,18 +174,6 @@
 		border: 1px solid var(--glass-border);
 		font-size: var(--text-xs);
 		color: var(--text-secondary);
-	}
-
-	.chip-accent {
-		background: var(--accent-tint);
-		border-color: var(--accent-border);
-		color: var(--accent-text);
-	}
-
-	.chip-salary {
-		background: rgba(0, 230, 118, 0.09);
-		border-color: rgba(0, 230, 118, 0.28);
-		color: var(--accent-green);
 	}
 
 	.job-why {

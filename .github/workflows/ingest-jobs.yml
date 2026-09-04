@@ -3,16 +3,13 @@ name: ingest-jobs
 on:
   schedule:
     # hourly: the job board's 48h freshness window means "fresh" only means
-    # something if a new posting shows up soon after it goes live. this is
-    # safe cost-wise - LLM classification only ever runs on genuinely NEW
-    # external IDs (see dedupe-and-write.ts), so polling more often doesn't
-    # multiply classification spend, just how quickly new postings surface.
+    # something if a new posting shows up soon after it goes live.
     - cron: '0 * * * *'
   workflow_dispatch: {}
 
 concurrency:
   group: ingest-jobs
-  cancel-in-progress: false # queue, don't cancel - a cancelled mid-write run could leave classification half-applied
+  cancel-in-progress: false # queue, don't cancel - a cancelled mid-write run could leave a company partially written
 
 permissions:
   contents: read
@@ -38,12 +35,4 @@ jobs:
       - name: ingest job board postings
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
-          # deliberately no CLAUDE_API_KEY here - job-board classification is
-          # Gemini/Groq only. Claude has no free tier and this script can fire
-          # hundreds of classification calls per run, so it's excluded from the
-          # provider chain in scripts/ingest-jobs.mjs regardless of whether a
-          # CLAUDE_API_KEY secret exists; not passing it through here is belt and
-          # braces, not the actual gate.
         run: node scripts/ingest-jobs.mjs

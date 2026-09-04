@@ -1,7 +1,6 @@
 // callLLM/extractJSON had zero direct unit coverage before being hoisted out
-// of api/analyze/+server.ts into $lib/server/llm-call.ts for reuse by the
-// job-board ingestion script - this file adds it now that extraction made
-// the pieces easily testable in isolation.
+// of api/analyze/+server.ts into $lib/server/llm-call.ts - this file adds it
+// now that extraction made the pieces easily testable in isolation.
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { callLLM, extractJSON } from '../../../src/lib/server/llm-call';
 

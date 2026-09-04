@@ -19,8 +19,6 @@ export const load: PageServerLoad = async ({ url }) => {
 	const rawQuery = url.searchParams.get('q')?.trim() ?? '';
 	const filters: JobsFilters = {
 		remote: url.searchParams.get('remote') === 'true',
-		relocation: url.searchParams.get('relocation') === 'true',
-		experienceLevel: url.searchParams.get('experienceLevel'),
 		query: rawQuery.length > 0 ? rawQuery.slice(0, 100) : null
 	};
 
@@ -30,9 +28,9 @@ export const load: PageServerLoad = async ({ url }) => {
 		if (!db) return { jobs: [] as JobListing[], filters, matchCount: 0 };
 
 		const cutoff = new Date(Date.now() - MAX_POSTING_AGE_MS);
-		// no equality filters here (remote/relocation/experienceLevel are a
-		// soft sort preference below, not a hard query gate) - filters must
-		// never make the board come back empty when other roles exist.
+		// no equality filters here (remote/query are a soft sort preference
+		// below, not a hard query gate) - filters must never make the board
+		// come back empty when other roles exist.
 		const snapshot = await db
 			.collection('jobs')
 			.where('active', '==', true)

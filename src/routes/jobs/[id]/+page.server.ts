@@ -41,7 +41,6 @@ export const load: PageServerLoad = async ({ params }) => {
 		applyUrl: typeof data.applyUrl === 'string' ? data.applyUrl : '',
 		whyThisCompany: typeof data.whyThisCompany === 'string' ? data.whyThisCompany : null,
 		firstSeenAt: toIsoString(data.firstSeenAt),
-		classification: data.classification ?? null,
 		descriptionText: typeof data.descriptionText === 'string' ? data.descriptionText : '',
 		active: data.active !== false
 	};

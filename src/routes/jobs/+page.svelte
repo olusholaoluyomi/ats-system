@@ -1,50 +1,23 @@
 <script lang="ts">
 	import SeoHead from '$components/seo/SeoHead.svelte';
-	import { currencySymbol } from '$lib/currency';
 	import { timeAgo } from './shared';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
-
-	const EXPERIENCE_LEVELS = [
-		{ value: '', label: 'Any experience' },
-		{ value: 'intern', label: 'Intern' },
-		{ value: 'entry', label: 'Entry-level' },
-		{ value: 'mid', label: 'Mid-level' },
-		{ value: 'senior', label: 'Senior' },
-		{ value: 'lead', label: 'Lead / Staff' }
-	];
-
-	function formatSalary(job: (typeof data.jobs)[number]): string | null {
-		const c = job.classification;
-		if (!c || (c.salaryMin == null && c.salaryMax == null)) return null;
-		const symbol = c.salaryCurrency ? currencySymbol(c.salaryCurrency) : '';
-		const period = c.salaryPeriod ? `/${c.salaryPeriod}` : '';
-		if (c.salaryMin != null && c.salaryMax != null && c.salaryMin !== c.salaryMax) {
-			return `${symbol}${c.salaryMin.toLocaleString()}–${symbol}${c.salaryMax.toLocaleString()}${period}`;
-		}
-		const single = c.salaryMin ?? c.salaryMax;
-		return `${symbol}${single?.toLocaleString()}${period}`;
-	}
 
 	// filters narrow what's shown to the TOP of the list, they never hide
 	// results outright - matchCount (from +page.server.ts) tells us where the
 	// "matches your filters" group ends and the "other roles" group begins,
 	// so someone whose filters happen to match nothing still sees the rest of
 	// the board instead of a dead end.
-	const hasActiveFilters = $derived(
-		data.filters.remote ||
-			data.filters.relocation ||
-			Boolean(data.filters.experienceLevel) ||
-			Boolean(data.filters.query)
-	);
+	const hasActiveFilters = $derived(data.filters.remote || Boolean(data.filters.query));
 	const matchedJobs = $derived(hasActiveFilters ? data.jobs.slice(0, data.matchCount) : data.jobs);
 	const otherJobs = $derived(hasActiveFilters ? data.jobs.slice(data.matchCount) : []);
 </script>
 
 <SeoHead
 	title="Job Board | ATS Screener"
-	description="Remote-friendly roles from real, verified companies - refreshed hourly. Filter by experience, relocation support, and salary, then check your ATS score before you apply."
+	description="Remote-friendly roles from real companies - refreshed hourly. Search by role, filter by remote, then check your ATS score before you apply."
 />
 
 <main class="jobs-page">
@@ -52,8 +25,7 @@
 		<div class="page-badge">Job Board</div>
 		<h1 class="jobs-title">Roles posted in the last 48 hours</h1>
 		<p class="jobs-subtitle">
-			Pulled directly from real companies' own hiring pipelines - not a stale aggregator. Every
-			listing is checked for remote-from-Africa friendliness and relocation support.
+			Pulled directly from real companies' own hiring pipelines - not a stale aggregator.
 		</p>
 	</header>
 
@@ -71,17 +43,6 @@
 			<input type="checkbox" name="remote" value="true" checked={data.filters.remote} />
 			Remote-friendly
 		</label>
-		<label class="filter-checkbox">
-			<input type="checkbox" name="relocation" value="true" checked={data.filters.relocation} />
-			Offers relocation
-		</label>
-		<select name="experienceLevel" class="filter-select">
-			{#each EXPERIENCE_LEVELS as level (level.value)}
-				<option value={level.value} selected={data.filters.experienceLevel === level.value}>
-					{level.label}
-				</option>
-			{/each}
-		</select>
 		<button type="submit" class="filter-apply">Filter</button>
 	</form>
 
@@ -96,18 +57,6 @@
 			<div class="job-chips">
 				{#if job.remote}
 					<span class="meta-chip">Remote</span>
-				{/if}
-				{#if job.classification?.africaRemoteFriendly}
-					<span class="meta-chip chip-accent">Africa remote-friendly</span>
-				{/if}
-				{#if job.classification?.relocationOffered === true}
-					<span class="meta-chip chip-accent">Relocation offered</span>
-				{/if}
-				{#if job.classification?.experienceLevel && job.classification.experienceLevel !== 'unclear'}
-					<span class="meta-chip">{job.classification.experienceLevel}</span>
-				{/if}
-				{#if formatSalary(job)}
-					<span class="meta-chip chip-salary">{formatSalary(job)}</span>
 				{/if}
 			</div>
 			{#if job.whyThisCompany}
@@ -223,15 +172,6 @@
 		cursor: pointer;
 	}
 
-	.filter-select {
-		padding: var(--space-2) var(--space-3);
-		border-radius: var(--radius-md);
-		background: var(--glass-bg-hover);
-		border: 1px solid var(--glass-border);
-		color: var(--text-primary);
-		font-size: var(--text-sm);
-	}
-
 	.filter-apply {
 		margin-left: auto;
 		padding: var(--space-2) var(--space-5);
@@ -333,18 +273,6 @@
 		border: 1px solid var(--glass-border);
 		font-size: var(--text-xs);
 		color: var(--text-secondary);
-	}
-
-	.chip-accent {
-		background: var(--accent-tint);
-		border-color: var(--accent-border);
-		color: var(--accent-text);
-	}
-
-	.chip-salary {
-		background: rgba(0, 230, 118, 0.09);
-		border-color: rgba(0, 230, 118, 0.28);
-		color: var(--accent-green);
 	}
 
 	.job-why {

@@ -19,8 +19,11 @@
 //
 // this starter list is a starting point for curation, not a verified claim
 // that any of these companies specifically hire Africans/Nigerians remotely
-// or offer relocation - that per-posting claim comes from classify.ts's LLM
-// pass over each actual posting, not from being on this list.
+// or offer relocation - the board no longer makes per-posting claims like
+// that at all (an earlier LLM-classification pass over each posting did,
+// but it burned too many tokens for too little reliability and was
+// removed; see the commit history around 2026-09-04). `whyThisCompany`
+// below is a hand-written curation note, not an extracted fact.
 export interface SeedCompany {
 	slug: string;
 	name: string;

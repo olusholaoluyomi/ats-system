@@ -3,15 +3,23 @@
  * SEED_COMPANIES (hand-curated) plus discovered-companies.json (found by
  * scripts/discover-companies.mjs, only ever added via a reviewed PR - see
  * .github/workflows/discover-companies.yml) via their public
- * Greenhouse/Lever/Ashby board, upserts postings into Firestore `jobs/`,
- * and LLM-classifies newly-inserted postings for Africa/remote/relocation/
- * salary signals. run on a schedule via .github/workflows/ingest-jobs.yml
- * (or `workflow_dispatch`/a direct local run with FIREBASE_SERVICE_ACCOUNT
- * and provider keys in the environment).
+ * Greenhouse/Lever/Ashby board, and upserts postings into Firestore `jobs/`.
+ * run on a schedule via .github/workflows/ingest-jobs.yml (or
+ * `workflow_dispatch`/a direct local run with FIREBASE_SERVICE_ACCOUNT in
+ * the environment).
  *
- * one company's fetch/write/classify failure is caught and logged - it never
- * aborts the run. only exits non-zero if every enabled company failed (a
- * total outage), not for one flaky vendor.
+ * no LLM classification step - postings are shown as-is, filtered/searched
+ * by the board's own remote flag (native to each ATS's API, not inferred)
+ * and free-text keyword search over title/company/department. an earlier
+ * version LLM-tagged every posting for relocation/Africa-friendliness/
+ * experience level, but that meant hundreds of classification calls per
+ * run against free-tier providers that couldn't reliably keep up (see the
+ * commit history around 2026-09-04) - not worth the token cost or the
+ * unclassified backlog it left behind.
+ *
+ * one company's fetch/write failure is caught and logged - it never aborts
+ * the run. only exits non-zero if every enabled company failed (a total
+ * outage), not for one flaky vendor.
  *
  * usage: node scripts/ingest-jobs.mjs   (needs node 22.18+ or 24 for type stripping)
  */
@@ -21,7 +29,6 @@ import { dirname, join } from 'node:path';
 import { cert, getApp, initializeApp } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import { parseServiceAccount } from '../src/lib/server/service-account.ts';
-import { PROVIDER_ENV_KEYS } from '../src/routes/api/analyze/providers.ts';
 import { SEED_COMPANIES } from '../src/lib/server/job-board/seed-companies.ts';
 import { fetchGreenhouseJobs } from '../src/lib/server/job-board/ats-clients/greenhouse.ts';
 import { fetchLeverJobs } from '../src/lib/server/job-board/ats-clients/lever.ts';
@@ -30,7 +37,6 @@ import {
 	upsertCompanyPostings,
 	sweepInactiveJobs
 } from '../src/lib/server/job-board/dedupe-and-write.ts';
-import { classifyPosting } from '../src/lib/server/job-board/classify.ts';
 
 // discovered-companies.json only ever gains entries via a reviewed, merged
 // PR (see discover-companies.mjs / .github/workflows/discover-companies.yml)
@@ -58,16 +64,6 @@ initializeApp({ credential: cert(creds), projectId: creds.projectId });
 // client SDK addresses explicitly), so the admin handle must specify it too.
 const db = getFirestore(getApp(), 'default');
 
-const keys = Object.fromEntries(PROVIDER_ENV_KEYS.map((k) => [k, process.env[k] ?? '']));
-// job-board classification is Gemini/Groq only - Claude has no free tier, and this
-// script can fire hundreds of classification calls in a single run, which would
-// turn "the fallback leg is opt-in" into "the fallback leg gets hit hard on any
-// Gemini/Groq hiccup during a bulk run." forced empty here regardless of whether
-// CLAUDE_API_KEY happens to be set in the environment (e.g. reused from a local
-// .env also used for `pnpm dev`), so this is a real gate, not just "don't set the
-// GitHub secret" convention.
-keys.CLAUDE_API_KEY = '';
-
 const FETCHERS = {
 	greenhouse: fetchGreenhouseJobs,
 	lever: fetchLeverJobs,
@@ -86,7 +82,6 @@ const enabledCompanies = ALL_COMPANIES.filter((c) => c.enabled);
 const touchedJobIds = new Set();
 let newCount = 0;
 let updatedCount = 0;
-let classifiedCount = 0;
 let failedCompanies = 0;
 
 for (const company of enabledCompanies) {
@@ -100,28 +95,6 @@ for (const company of enabledCompanies) {
 		newCount += newResults.length;
 		updatedCount += results.length - newResults.length;
 
-		// classify new postings, plus any existing posting that was never
-		// successfully classified (every LLM provider failed on some prior run) -
-		// an already-classified posting keeps its existing tags even if its
-		// description changed since (documented v1 cost-control tradeoff, see the
-		// job-board plan).
-		const toClassify = results.filter((r) => r.needsClassification);
-		for (const r of toClassify) {
-			const posting = postings.find((p) => `${company.atsType}:${p.externalId}` === r.jobId);
-			if (!posting) continue;
-			try {
-				const classification = await classifyPosting(posting, keys);
-				if (classification) {
-					await db
-						.doc(`jobs/${r.jobId}`)
-						.set({ classification, classifiedAt: new Date() }, { merge: true });
-					classifiedCount++;
-				}
-			} catch (err) {
-				console.error(`  classify failed for ${r.jobId}: ${err.message}`);
-			}
-		}
-
 		console.log(
 			`${company.name} (${company.atsType}): fetched ${postings.length}, new ${newResults.length}, updated ${results.length - newResults.length}`
 		);
@@ -134,7 +107,7 @@ for (const company of enabledCompanies) {
 const sweptCount = await sweepInactiveJobs(db, touchedJobIds, STALE_AFTER_MS);
 
 console.log(
-	`\ndone: ${newCount} new, ${updatedCount} updated, ${classifiedCount} classified, ${sweptCount} swept inactive, ${failedCompanies}/${enabledCompanies.length} companies failed`
+	`\ndone: ${newCount} new, ${updatedCount} updated, ${sweptCount} swept inactive, ${failedCompanies}/${enabledCompanies.length} companies failed`
 );
 
 if (enabledCompanies.length > 0 && failedCompanies === enabledCompanies.length) {
