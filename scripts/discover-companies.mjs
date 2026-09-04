@@ -1,8 +1,8 @@
 /**
- * daily company discovery from TWO independent candidate sources, so the
+ * daily company discovery from THREE independent candidate sources, so the
  * board isn't Y-Combinator-only (an earlier version only pulled from YC,
  * which skews small/early-stage/engineering-heavy and under-represents
- * non-SWE roles like product/ops/network-infra):
+ * non-SWE roles like product/ops/network-infra) and isn't US/Europe-only:
  *
  *  1. Y Combinator's public company dataset (https://github.com/yc-oss/api -
  *     not an official YC API, but a well-maintained static mirror; verified
@@ -10,11 +10,17 @@
  *  2. KNOWN_COMPANIES_POOL (known-companies-pool.ts) - a hand-compiled list
  *     of established, non-YC companies across industries, picked for role
  *     diversity (several specifically for network/infra-heavy teams).
+ *  3. AFRICA_COMPANIES_POOL (africa-companies-pool.ts) - a hand-compiled
+ *     list of African fintech/healthtech/logistics/e-commerce/agritech
+ *     startups, since neither of the other two sources had any deliberate
+ *     geographic representation. expected to have a lower hit rate than the
+ *     other two (many run hiring on ATS platforms this board doesn't
+ *     integrate with) - that's fine, same "a wrong guess just 404s" model.
  *
- * both sources go through the identical live-verification step: try the
- * candidate's slug as a board token against Greenhouse/Lever/Ashby, keep
- * only what actually resolves. neither source touches seed-companies.ts
- * (the hand-curated list) directly, and neither auto-enables anything live -
+ * all three sources go through the identical live-verification step: try
+ * the candidate's slug as a board token against Greenhouse/Lever/Ashby,
+ * keep only what actually resolves. none of them touch seed-companies.ts
+ * (the hand-curated list) directly, and none auto-enable anything live -
  * see .github/workflows/discover-companies.yml, which opens a PR for a
  * human to review before a discovered company's jobs can appear on the
  * board.
@@ -25,8 +31,8 @@
  * direct-push in the workflow, which can be blocked by branch protection
  * and is allowed to fail without breaking the run). discovery-state.json is
  * a skip-list optimization on top of that rotation, not the only thing
- * standing between "checked" and "not checked" - shared across both pools
- * since board tokens are globally unique regardless of source.
+ * standing between "checked" and "not checked" - shared across all three
+ * pools since board tokens are globally unique regardless of source.
  *
  * usage: node scripts/discover-companies.mjs   (needs node 22.18+ or 24 for type stripping)
  */
@@ -35,6 +41,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { SEED_COMPANIES } from '../src/lib/server/job-board/seed-companies.ts';
 import { KNOWN_COMPANIES_POOL } from '../src/lib/server/job-board/known-companies-pool.ts';
+import { AFRICA_COMPANIES_POOL } from '../src/lib/server/job-board/africa-companies-pool.ts';
 import { fetchGreenhouseJobs } from '../src/lib/server/job-board/ats-clients/greenhouse.ts';
 import { fetchLeverJobs } from '../src/lib/server/job-board/ats-clients/lever.ts';
 import { fetchAshbyJobs } from '../src/lib/server/job-board/ats-clients/ashby.ts';
@@ -45,12 +52,12 @@ const DISCOVERED_PATH = join(JOB_BOARD_DIR, 'discovered-companies.json');
 const STATE_PATH = join(JOB_BOARD_DIR, 'discovery-state.json');
 
 const YC_COMPANIES_URL = 'https://yc-oss.github.io/api/companies/all.json';
-// polite batch size per source: 150 YC candidates + up to the full ~110-entry
-// known-companies pool (small enough to not need its own rotation window),
-// each x up to 3 ATS checks = a few hundred requests to free, unauthenticated
-// public APIs per run, once daily.
+// polite batch size per source: 150 YC candidates + up to 60 each from the
+// known-companies and Africa pools, each x up to 3 ATS checks = a few
+// hundred requests to free, unauthenticated public APIs per run, once daily.
 const DAILY_BATCH_SIZE = 150;
 const KNOWN_POOL_BATCH_SIZE = 60;
+const AFRICA_POOL_BATCH_SIZE = 60;
 
 function readJson(path, fallback) {
 	try {
@@ -115,6 +122,17 @@ const knownPool = KNOWN_COMPANIES_POOL.filter(
 	whyThisCompany: 'Established company, discovered via automated board check.'
 }));
 
+// Africa-led companies pool - see africa-companies-pool.ts's own comment
+// for why this exists (neither other source had any geographic
+// representation).
+const africaPool = AFRICA_COMPANIES_POOL.filter(
+	(c) => !knownBoardTokens.has(c.slug.toLowerCase())
+).map((c) => ({
+	slug: c.slug,
+	name: c.name,
+	whyThisCompany: 'Africa-led tech company, discovered via automated board check.'
+}));
+
 // rotate each pool independently by day-of-year so full coverage of either
 // set doesn't depend on state persisting between runs.
 function rotateWindow(pool, batchSize) {
@@ -127,15 +145,18 @@ const ycWindow = rotateWindow(ycPool, DAILY_BATCH_SIZE).filter((c) => !triedSlug
 const knownWindow = rotateWindow(knownPool, KNOWN_POOL_BATCH_SIZE).filter(
 	(c) => !triedSlugs.has(c.slug)
 );
-const candidates = [...ycWindow, ...knownWindow];
+const africaWindow = rotateWindow(africaPool, AFRICA_POOL_BATCH_SIZE).filter(
+	(c) => !triedSlugs.has(c.slug)
+);
+const candidates = [...ycWindow, ...knownWindow, ...africaWindow];
 
 if (candidates.length === 0) {
-	console.log('no eligible candidates from either source this window (all known or tried)');
+	console.log('no eligible candidates from any source this window (all known or tried)');
 	process.exit(0);
 }
 
 console.log(
-	`checking ${candidates.length} candidates (${ycWindow.length} from YC pool of ${ycPool.length}, ${knownWindow.length} from known-companies pool of ${knownPool.length}, ${triedSlugs.size} previously tried)`
+	`checking ${candidates.length} candidates (${ycWindow.length} from YC pool of ${ycPool.length}, ${knownWindow.length} from known-companies pool of ${knownPool.length}, ${africaWindow.length} from Africa pool of ${africaPool.length}, ${triedSlugs.size} previously tried)`
 );
 
 const ATS_CHECKS = [
