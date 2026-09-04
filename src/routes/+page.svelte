@@ -45,34 +45,11 @@
 	<Features />
 	<HowItWorks />
 	<CallToAction />
-
-	<footer class="credit">
-		<p>
-			A biggg shout out to <strong>Sunny Patel</strong>, the guy who put this whole code together —
-			thank you for the open-source material that made this possible.
-		</p>
-	</footer>
 </main>
 
 <style>
 	.landing {
 		/* no extra padding needed, each section handles its own spacing */
 		min-height: 100dvh;
-	}
-
-	.credit {
-		padding: 1.5rem 2rem 2.5rem;
-		text-align: center;
-	}
-
-	.credit p {
-		margin: 0;
-		font-size: 0.8rem;
-		color: var(--text-tertiary);
-	}
-
-	.credit strong {
-		color: var(--text-secondary);
-		font-weight: 600;
 	}
 </style>

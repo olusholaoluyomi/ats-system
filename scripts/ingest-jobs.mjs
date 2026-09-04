@@ -59,6 +59,14 @@ initializeApp({ credential: cert(creds), projectId: creds.projectId });
 const db = getFirestore(getApp(), 'default');
 
 const keys = Object.fromEntries(PROVIDER_ENV_KEYS.map((k) => [k, process.env[k] ?? '']));
+// job-board classification is Gemini/Groq only - Claude has no free tier, and this
+// script can fire hundreds of classification calls in a single run, which would
+// turn "the fallback leg is opt-in" into "the fallback leg gets hit hard on any
+// Gemini/Groq hiccup during a bulk run." forced empty here regardless of whether
+// CLAUDE_API_KEY happens to be set in the environment (e.g. reused from a local
+// .env also used for `pnpm dev`), so this is a real gate, not just "don't set the
+// GitHub secret" convention.
+keys.CLAUDE_API_KEY = '';
 
 const FETCHERS = {
 	greenhouse: fetchGreenhouseJobs,

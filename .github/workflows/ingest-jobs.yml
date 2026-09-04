@@ -39,9 +39,11 @@ jobs:
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          # Anthropic has no free tier - unlike Gemini/Groq, every classification
-          # call that falls through to this leg is billed. leave the CLAUDE_API_KEY
-          # secret unset to keep this run Gemini/Groq-only at no cost.
-          CLAUDE_API_KEY: ${{ secrets.CLAUDE_API_KEY }}
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          # deliberately no CLAUDE_API_KEY here - job-board classification is
+          # Gemini/Groq only. Claude has no free tier and this script can fire
+          # hundreds of classification calls per run, so it's excluded from the
+          # provider chain in scripts/ingest-jobs.mjs regardless of whether a
+          # CLAUDE_API_KEY secret exists; not passing it through here is belt and
+          # braces, not the actual gate.
         run: node scripts/ingest-jobs.mjs
