@@ -1,12 +1,16 @@
 /**
- * job board ingestion: pulls open postings from every company in
- * SEED_COMPANIES (hand-curated) plus discovered-companies.json (found by
- * scripts/discover-companies.mjs, only ever added via a reviewed PR - see
- * .github/workflows/discover-companies.yml) via their public
- * Greenhouse/Lever/Ashby board, and upserts postings into Firestore `jobs/`.
- * run on a schedule via .github/workflows/ingest-jobs.yml (or
- * `workflow_dispatch`/a direct local run with FIREBASE_SERVICE_ACCOUNT in
- * the environment).
+ * job board ingestion: pulls open postings from every company across THREE
+ * sources - SEED_COMPANIES (hand-curated, PR-reviewed), discovered-
+ * companies.json (found by scripts/discover-companies.mjs, also PR-
+ * reviewed - see .github/workflows/discover-companies.yml), and the
+ * job_board_companies Firestore collection (added via the token-gated
+ * /api/admin/companies routes, self-serve rather than PR-reviewed - see
+ * that route's own comment for why this is a deliberate, contained
+ * exception to "curated data is never client/admin-writable" elsewhere in
+ * this app) - via their public Greenhouse/Lever/Ashby board, and upserts
+ * postings into Firestore `jobs/`. run on a schedule via
+ * .github/workflows/ingest-jobs.yml (or `workflow_dispatch`/a direct local
+ * run with FIREBASE_SERVICE_ACCOUNT in the environment).
  *
  * no LLM classification step - postings are shown as-is, filtered/searched
  * by the board's own remote flag (native to each ATS's API, not inferred)
@@ -51,7 +55,6 @@ try {
 } catch {
 	// missing/malformed file just means no discovered companies yet
 }
-const ALL_COMPANIES = [...SEED_COMPANIES, ...discoveredCompanies];
 
 const creds = parseServiceAccount(process.env.FIREBASE_SERVICE_ACCOUNT);
 if (!creds) {
@@ -63,6 +66,21 @@ initializeApp({ credential: cert(creds), projectId: creds.projectId });
 // the app's firestore is a custom-named 'default' database (the same one the
 // client SDK addresses explicitly), so the admin handle must specify it too.
 const db = getFirestore(getApp(), 'default');
+
+// third source: admin-added companies, added via /api/admin/companies
+// (self-serve, not PR-reviewed) - fetched here since it needs the admin
+// Firestore handle that just got initialized above. a failure here is
+// non-fatal (falls back to seed+discovered only) since this collection may
+// simply be empty on a fresh deploy.
+let adminCompanies = [];
+try {
+	const snapshot = await db.collection('job_board_companies').get();
+	adminCompanies = snapshot.docs.map((doc) => doc.data()).filter((c) => c.enabled !== false);
+} catch (err) {
+	console.error(`failed to read job_board_companies: ${err.message}`);
+}
+
+const ALL_COMPANIES = [...SEED_COMPANIES, ...discoveredCompanies, ...adminCompanies];
 
 const FETCHERS = {
 	greenhouse: fetchGreenhouseJobs,

@@ -7,6 +7,7 @@ Allow: /
 Disallow: /api/
 Disallow: /history
 Disallow: /login
+Disallow: /admin
 
 Sitemap: ${url.origin}/sitemap.xml
 Sitemap: ${url.origin}/docs/sitemap-index.xml

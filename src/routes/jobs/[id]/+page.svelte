@@ -2,6 +2,7 @@
 	import SeoHead from '$components/seo/SeoHead.svelte';
 	import { authStore } from '$stores/auth.svelte';
 	import { applicationsStore, type ApplicationStatus } from '$stores/applications.svelte';
+	import { incrementApplyClick } from '$lib/job-analytics';
 	import { timeAgo, formatPostedDate } from '../shared';
 	import type { PageData } from './$types';
 
@@ -75,7 +76,13 @@
 		{/if}
 
 		<div class="job-actions">
-			<a class="btn-primary" href={job.applyUrl} target="_blank" rel="noopener noreferrer">
+			<a
+				class="btn-primary"
+				href={job.applyUrl}
+				target="_blank"
+				rel="noopener noreferrer"
+				onclick={() => incrementApplyClick(job.id)}
+			>
 				Apply on {job.companyName}'s site
 			</a>
 			<a class="btn-secondary" href="/scanner?jobId={job.id}">Check my CV Score first</a>

@@ -54,5 +54,30 @@ service cloud.firestore {
       allow read: if true;
       allow write: if false;
     }
+
+    // apply-click counters, one doc per job. public write (not just
+    // authenticated, unlike insights/global) because the job board itself
+    // has no auth gate - an anonymous visitor can click Apply without ever
+    // signing in. low-stakes counter, same reasoning as insights/global for
+    // why an inflated count is not a meaningful attack surface. read is
+    // admin-only in practice (no UI reads this directly - see
+    // /api/admin/job-analytics) but left public to match every other
+    // low-stakes counter in this file rather than adding a one-off
+    // asymmetric rule.
+    match /job_analytics/{jobId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // admin-curated job-board companies, added via the token-gated
+    // /api/admin/companies routes (see $lib/server/admin-auth) rather than
+    // PR review like seed-companies.ts/discovered-companies.json - but
+    // still never client-writable directly. mirrors jobs/{jobId}'s
+    // write:false precedent; the admin routes write through the admin SDK,
+    // which bypasses these rules entirely.
+    match /job_board_companies/{companyId} {
+      allow read: if true;
+      allow write: if false;
+    }
   }
 }
