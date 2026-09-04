@@ -9,6 +9,12 @@ import type { SeedCompany } from './seed-companies.ts';
 export interface UpsertResult {
 	jobId: string;
 	isNew: boolean;
+	// true for a brand-new posting, OR an existing one that was never
+	// successfully classified (e.g. every LLM provider failed on a prior
+	// run). isNew alone under-covers this: a posting that exists but still
+	// has classification:null would otherwise never be retried by any
+	// future run, since only "new" postings trigger classification.
+	needsClassification: boolean;
 }
 
 // doc ID is deterministic per external posting (`${atsType}:${externalId}`)
@@ -28,7 +34,7 @@ export async function upsertCompanyPostings(
 		const id = jobId(company.atsType, posting.externalId);
 		const ref = db.doc(`jobs/${id}`);
 
-		const isNew = await db.runTransaction(async (tx) => {
+		const { isNew, needsClassification } = await db.runTransaction(async (tx) => {
 			const snap = await tx.get(ref);
 			const now = new Date();
 
@@ -58,13 +64,15 @@ export async function upsertCompanyPostings(
 					createdAt: now,
 					updatedAt: now
 				});
-				return true;
+				return { isNew: true, needsClassification: true };
 			}
 
 			// existing posting: refresh everything except firstSeenAt (preserved)
-			// and classification/classifiedAt (only classify.ts writes those, and
-			// only for newly-inserted jobIds - see the cost-control note in the
-			// job-board plan).
+			// and classification/classifiedAt (only classify.ts writes those - see
+			// the cost-control note in the job-board plan). classification is
+			// re-attempted on every run until it actually succeeds once, so a
+			// posting that exists but was never successfully classified (every LLM
+			// provider failed on some prior run) isn't stuck unclassified forever.
 			const existing = snap.data() ?? {};
 			tx.set(ref, {
 				...existing,
@@ -79,10 +87,10 @@ export async function upsertCompanyPostings(
 				active: true,
 				updatedAt: now
 			});
-			return false;
+			return { isNew: false, needsClassification: existing.classification == null };
 		});
 
-		results.push({ jobId: id, isNew });
+		results.push({ jobId: id, isNew, needsClassification });
 	}
 
 	return results;

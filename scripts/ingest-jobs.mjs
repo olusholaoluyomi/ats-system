@@ -92,10 +92,13 @@ for (const company of enabledCompanies) {
 		newCount += newResults.length;
 		updatedCount += results.length - newResults.length;
 
-		// classify only newly-inserted postings - an already-seen posting keeps
-		// its existing tags even if its description changed (documented v1
-		// cost-control tradeoff, see the job-board plan).
-		for (const r of newResults) {
+		// classify new postings, plus any existing posting that was never
+		// successfully classified (every LLM provider failed on some prior run) -
+		// an already-classified posting keeps its existing tags even if its
+		// description changed since (documented v1 cost-control tradeoff, see the
+		// job-board plan).
+		const toClassify = results.filter((r) => r.needsClassification);
+		for (const r of toClassify) {
 			const posting = postings.find((p) => `${company.atsType}:${p.externalId}` === r.jobId);
 			if (!posting) continue;
 			try {

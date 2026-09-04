@@ -95,7 +95,7 @@ describe('upsertCompanyPostings', () => {
 		const db = createFakeDb();
 		const results = await upsertCompanyPostings(db as never, COMPANY, [posting()]);
 
-		expect(results).toEqual([{ jobId: 'greenhouse:1', isNew: true }]);
+		expect(results).toEqual([{ jobId: 'greenhouse:1', isNew: true, needsClassification: true }]);
 		const doc = db.store.get('jobs/greenhouse:1');
 		expect(doc?.firstSeenAt).toBeInstanceOf(Date);
 		expect(doc?.active).toBe(true);
@@ -114,7 +114,7 @@ describe('upsertCompanyPostings', () => {
 			[posting({ title: 'Senior Engineer' })] // description/title changed on re-fetch
 		);
 
-		expect(results).toEqual([{ jobId: 'greenhouse:1', isNew: false }]);
+		expect(results).toEqual([{ jobId: 'greenhouse:1', isNew: false, needsClassification: true }]);
 		const doc = db.store.get('jobs/greenhouse:1');
 		expect(doc?.title).toBe('Senior Engineer'); // refreshed
 		expect(doc?.firstSeenAt).toBe(firstSeenAt); // preserved, not reset
@@ -129,10 +129,24 @@ describe('upsertCompanyPostings', () => {
 			classifiedAt: new Date()
 		});
 
-		await upsertCompanyPostings(db as never, COMPANY, [posting()]);
+		const results = await upsertCompanyPostings(db as never, COMPANY, [posting()]);
 
 		const doc = db.store.get('jobs/greenhouse:1');
 		expect(doc?.classification).toEqual({ africaRemoteFriendly: true });
+		expect(results).toEqual([{ jobId: 'greenhouse:1', isNew: false, needsClassification: false }]);
+	});
+
+	it('flags an existing-but-never-classified posting for re-classification', async () => {
+		// simulates the real incident this guards against: a posting written
+		// during a run where every LLM provider failed, leaving
+		// classification:null with no way back in under the old isNew-only logic.
+		const db = createFakeDb();
+		await upsertCompanyPostings(db as never, COMPANY, [posting()]);
+		expect(db.store.get('jobs/greenhouse:1')?.classification).toBeNull();
+
+		const results = await upsertCompanyPostings(db as never, COMPANY, [posting()]);
+
+		expect(results).toEqual([{ jobId: 'greenhouse:1', isNew: false, needsClassification: true }]);
 	});
 });
 
