@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
 	import { enhance } from '$app/forms';
 	import { authStore } from '$stores/auth.svelte';
@@ -23,6 +24,64 @@
 	let resetSent = $state(false);
 	let signupDone = $state(false);
 	let submitting = $state(false);
+
+	// password-reset "confirm" step: reached either by clicking the emailed
+	// link (mode=resetPassword&oobCode=... in the URL, handled below) or by
+	// pasting the code in manually via manualCode - both paths verify the
+	// same way and land on the same "set new password" form. entirely in-app;
+	// see auth.svelte.ts's sendPasswordReset for why (handleCodeInApp: true).
+	let resetStep = $state<'request' | 'confirm' | 'done'>('request');
+	let showManualCode = $state(false);
+	let manualCode = $state('');
+	let resetCode = $state('');
+	let resetCodeEmail = $state<string | null>(null);
+	let verifyingCode = $state(false);
+	let newPassword = $state('');
+	let confirmNewPassword = $state('');
+	let passwordMismatch = $derived(
+		confirmNewPassword.length > 0 && newPassword !== confirmNewPassword
+	);
+
+	// a link clicked straight from the reset email lands here with these
+	// params already attached (see sendPasswordReset's handleCodeInApp) -
+	// jump straight to the confirm step instead of the request form.
+	$effect(() => {
+		const oobCode = page.url.searchParams.get('oobCode');
+		const urlMode = page.url.searchParams.get('mode');
+		if (urlMode === 'resetPassword' && oobCode) {
+			void beginCodeVerification(oobCode);
+		}
+	});
+
+	async function beginCodeVerification(code: string) {
+		showReset = true;
+		resetStep = 'confirm';
+		verifyingCode = true;
+		authStore.clearError();
+		try {
+			resetCodeEmail = await authStore.verifyPasswordResetCode(code);
+			resetCode = code;
+		} catch {
+			// error is set in authStore; resetCodeEmail stays null so the
+			// confirm form below knows to show the error instead of the form
+		} finally {
+			verifyingCode = false;
+		}
+	}
+
+	async function handleConfirmReset(e: Event) {
+		e.preventDefault();
+		if (passwordMismatch) return;
+		submitting = true;
+		try {
+			await authStore.confirmPasswordReset(resetCode, newPassword);
+			resetStep = 'done';
+		} catch {
+			// error is set in authStore
+		} finally {
+			submitting = false;
+		}
+	}
 
 	// redirect if already logged in OR if auth is disabled (self-host:
 	// firebase not configured, so there's no sign-in to do). either way the
@@ -91,6 +150,29 @@
 		} finally {
 			submitting = false;
 		}
+	}
+
+	// fallback for "I have the code but the link isn't working" - paste the
+	// oobCode value straight out of the emailed link (everything after
+	// oobCode= in the URL, up to the next & if any) instead of clicking it.
+	async function handleManualCode(e: Event) {
+		e.preventDefault();
+		const trimmed = manualCode.trim();
+		if (!trimmed) return;
+		await beginCodeVerification(trimmed);
+	}
+
+	function backToSignIn() {
+		showReset = false;
+		resetSent = false;
+		showManualCode = false;
+		manualCode = '';
+		resetStep = 'request';
+		resetCode = '';
+		resetCodeEmail = null;
+		newPassword = '';
+		confirmNewPassword = '';
+		authStore.clearError();
 	}
 </script>
 
@@ -161,7 +243,11 @@
 			<div class="card-header">
 				<h1 class="card-title">
 					{#if showReset}
-						Reset Password
+						{resetStep === 'confirm'
+							? 'Set New Password'
+							: resetStep === 'done'
+								? 'All Set!'
+								: 'Reset Password'}
 					{:else if signupDone}
 						You're In!
 					{:else if mode === 'signin'}
@@ -172,7 +258,15 @@
 				</h1>
 				<p class="card-subtitle">
 					{#if showReset}
-						Enter your email to receive a password reset link.
+						{#if resetStep === 'confirm'}
+							{resetCodeEmail
+								? `Choose a new password for ${resetCodeEmail}.`
+								: 'Verifying your reset code...'}
+						{:else if resetStep === 'done'}
+							Your password has been updated.
+						{:else}
+							Enter your email and we'll send you a reset code.
+						{/if}
 					{:else if signupDone}
 						Check your email to verify your account.
 					{:else if mode === 'signin'}
@@ -188,21 +282,94 @@
 			{/if}
 
 			{#if showReset}
-				<!-- password reset form -->
+				<!-- password reset: request code -> confirm new password -> done.
+				     entirely in-app - see auth.svelte.ts's sendPasswordReset for
+				     why (handleCodeInApp keeps the emailed link pointed at /login
+				     instead of Firebase's own hosted reset page). -->
 				<div class="form-body">
-					{#if resetSent}
-						<div class="success-banner">Password reset email sent! Check your inbox.</div>
+					{#if resetStep === 'done'}
+						<div class="success-banner">Password updated! You can now sign in with it.</div>
+						<button class="submit-btn" onclick={backToSignIn}>Back to sign in</button>
+					{:else if resetStep === 'confirm'}
+						{#if verifyingCode}
+							<p class="spam-hint">Verifying your reset code...</p>
+						{:else if resetCodeEmail}
+							<form onsubmit={handleConfirmReset}>
+								<label class="field">
+									<span class="field-label">New password</span>
+									<input
+										type="password"
+										bind:value={newPassword}
+										placeholder="Choose a new password"
+										required
+										minlength={6}
+										autocomplete="new-password"
+										class="field-input"
+									/>
+								</label>
+								<label class="field">
+									<span class="field-label">Confirm new password</span>
+									<input
+										type="password"
+										bind:value={confirmNewPassword}
+										placeholder="Type it again"
+										required
+										minlength={6}
+										autocomplete="new-password"
+										class="field-input"
+									/>
+									{#if passwordMismatch}
+										<span class="field-error">Passwords don't match.</span>
+									{/if}
+								</label>
+								<button type="submit" class="submit-btn" disabled={submitting || passwordMismatch}>
+									{#if submitting}
+										<span class="spinner"></span>
+									{/if}
+									Update Password
+								</button>
+							</form>
+						{:else}
+							<!-- verifyPasswordResetCode failed - authStore.error already
+							     explains why (expired/invalid/already used) -->
+							<button class="submit-btn" onclick={() => (resetStep = 'request')}>
+								Request a new code
+							</button>
+						{/if}
+						<button class="link-btn" onclick={backToSignIn}>Back to sign in</button>
+					{:else if resetSent}
+						<div class="success-banner">Reset email sent! Check your inbox.</div>
 						<p class="spam-hint">Don't see it? Check your spam or junk folder.</p>
-						<button
-							class="link-btn"
-							onclick={() => {
-								showReset = false;
-								resetSent = false;
-								authStore.clearError();
-							}}
-						>
-							Back to sign in
-						</button>
+						{#if showManualCode}
+							<form onsubmit={handleManualCode}>
+								<label class="field">
+									<span class="field-label">Reset code</span>
+									<input
+										type="text"
+										bind:value={manualCode}
+										placeholder="Paste the code from the email link"
+										required
+										autocomplete="off"
+										class="field-input"
+									/>
+								</label>
+								<p class="spam-hint">
+									It's the part of the link after <code>oobCode=</code> (and before any
+									<code>&amp;</code> that follows it).
+								</p>
+								<button type="submit" class="submit-btn" disabled={verifyingCode}>
+									{#if verifyingCode}
+										<span class="spinner"></span>
+									{/if}
+									Verify Code
+								</button>
+							</form>
+						{:else}
+							<button class="link-btn" onclick={() => (showManualCode = true)}>
+								Link not working? Enter the code manually
+							</button>
+						{/if}
+						<button class="link-btn" onclick={backToSignIn}>Back to sign in</button>
 					{:else}
 						<form
 							onsubmit={(e) => {
@@ -221,18 +388,10 @@
 								/>
 							</label>
 							<button type="submit" class="submit-btn" disabled={submitting}>
-								Send Reset Link
+								Send Reset Code
 							</button>
 						</form>
-						<button
-							class="link-btn"
-							onclick={() => {
-								showReset = false;
-								authStore.clearError();
-							}}
-						>
-							Back to sign in
-						</button>
+						<button class="link-btn" onclick={backToSignIn}> Back to sign in </button>
 					{/if}
 				</div>
 			{:else if signupDone}
@@ -341,6 +500,7 @@
 							class="forgot-btn"
 							onclick={() => {
 								showReset = true;
+								resetStep = 'request';
 								resetEmail = email;
 								authStore.clearError();
 							}}
@@ -520,6 +680,11 @@
 	.field-input::placeholder {
 		color: var(--text-tertiary);
 		opacity: 0.6;
+	}
+
+	.field-error {
+		font-size: 0.78rem;
+		color: #ef4444;
 	}
 
 	/* full-saturation cyan border plus a soft glow on focus. matches the

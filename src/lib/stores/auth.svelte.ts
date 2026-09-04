@@ -274,15 +274,62 @@ class AuthStore {
 		try {
 			const { auth } = await getFirebase();
 			const { sendPasswordResetEmail } = await import('firebase/auth');
-			// without this, Firebase's reset email links to its own generic
-			// firebaseapp.com action page with no way back to the app. pointing
-			// continueUrl at our own /login gives the "Continue" link on that
-			// page (shown after the password is successfully reset) somewhere
-			// useful. the origin is read live from the browser rather than
-			// hardcoded so this keeps working on localhost, the custom domain,
-			// and Firebase's own *.web.app/*.firebaseapp.com hosts - every host
-			// already on the Authorized domains list in Firebase Console.
-			await sendPasswordResetEmail(auth, email, { url: `${location.origin}/login` });
+			// handleCodeInApp: true is what actually keeps the reset flow inside
+			// our own UI. without it, Firebase still appends the oobCode to `url`,
+			// but the email link routes through Firebase's own generic
+			// firebaseapp.com action page FIRST - the user sets their new
+			// password on that unbranded page, then gets a "Continue" link back
+			// here, having never really used our UI at all. with it set, the
+			// link points straight at `url` with mode=resetPassword&oobCode=...
+			// attached, and /login's own onMount picks that up to render the
+			// in-app "set new password" form (see verifyPasswordResetCode /
+			// confirmPasswordReset below). the origin is read live from the
+			// browser rather than hardcoded so this keeps working on localhost,
+			// the custom domain, and Firebase's own *.web.app/*.firebaseapp.com
+			// hosts - every host already on the Authorized domains list in
+			// Firebase Console.
+			await sendPasswordResetEmail(auth, email, {
+				url: `${location.origin}/login`,
+				handleCodeInApp: true
+			});
+		} catch (err) {
+			this.error = this.getErrorMessage(err);
+			throw err;
+		}
+	}
+
+	// resolves the email tied to a password-reset oobCode (from the emailed
+	// link, or pasted in manually) and confirms the code is still valid -
+	// call this before showing the "set new password" form so an expired/
+	// reused code fails fast with a clear message instead of at the very end.
+	async verifyPasswordResetCode(code: string): Promise<string> {
+		this.error = null;
+		try {
+			const { auth } = await getFirebase();
+			const { verifyPasswordResetCode } = await import('firebase/auth');
+			return await verifyPasswordResetCode(auth, code);
+		} catch (err) {
+			this.error = this.getErrorMessage(err);
+			throw err;
+		}
+	}
+
+	// completes an in-app password reset: same client-side password-policy
+	// pre-check as signUpWithEmail (see there for why), then hands the oobCode
+	// + new password to Firebase. the oobCode is single-use and Firebase
+	// invalidates it itself after this succeeds, so no separate cleanup needed.
+	async confirmPasswordReset(code: string, newPassword: string) {
+		this.error = null;
+		try {
+			const { auth } = await getFirebase();
+			const { confirmPasswordReset, validatePassword } = await import('firebase/auth');
+			const validation = await validatePassword(auth, newPassword);
+			if (!validation.isValid) {
+				const message = this.describePasswordRequirements(validation);
+				this.error = message;
+				throw Object.assign(new Error(message), { code: 'auth/weak-password' });
+			}
+			await confirmPasswordReset(auth, code, newPassword);
 		} catch (err) {
 			this.error = this.getErrorMessage(err);
 			throw err;
@@ -390,6 +437,12 @@ class AuthStore {
 				return 'Network error. Check your connection and try again.';
 			case 'auth/missing-email':
 				return 'Please enter your email address.';
+			case 'auth/expired-action-code':
+				return 'This reset code has expired. Please request a new one.';
+			case 'auth/invalid-action-code':
+				return 'This reset code is invalid or has already been used. Please request a new one.';
+			case 'auth/user-disabled':
+				return 'This account has been disabled.';
 			default:
 				logger.error('auth.unhandled_error', {
 					code: code || 'unknown',
