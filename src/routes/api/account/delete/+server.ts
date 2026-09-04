@@ -36,15 +36,18 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
 		}
 
 		// delete user-scoped docs but keep payments/* ledger for audit.
-		// `users/{uid}/scans` is a collection (submitted resumes/scores live at
-		// users/{uid}/scans/{scanId}), not a document - db.doc() on an odd
-		// number of path segments throws synchronously, and even a valid doc
-		// ref wouldn't cascade-delete the scan documents underneath it.
-		// recursiveDelete is a bulk operation and can't run inside
-		// runTransaction, so it's a separate step from the billing tombstone.
+		// `users/{uid}/scans` and `users/{uid}/applications` are collections
+		// (docs live at .../scans/{scanId} and .../applications/{id}), not
+		// documents - db.doc() on an odd number of path segments throws
+		// synchronously, and even a valid doc ref wouldn't cascade-delete the
+		// documents underneath it. recursiveDelete is a bulk operation and
+		// can't run inside runTransaction, so these are separate steps from
+		// the billing tombstone.
 		const billingRef = db.doc(`users/${identity.uid}/billing/state`);
 		const scansRef = db.collection(`users/${identity.uid}/scans`);
+		const applicationsRef = db.collection(`users/${identity.uid}/applications`);
 		await db.recursiveDelete(scansRef);
+		await db.recursiveDelete(applicationsRef);
 		await db.runTransaction(async (tx) => {
 			tx.set(billingRef, { deleted: true });
 		});

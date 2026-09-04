@@ -1,10 +1,42 @@
 <script lang="ts">
 	import SeoHead from '$components/seo/SeoHead.svelte';
 	import { currencySymbol } from '$lib/currency';
+	import { authStore } from '$stores/auth.svelte';
+	import { applicationsStore, type ApplicationStatus } from '$stores/applications.svelte';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
 	const job = $derived(data.job);
+
+	const STATUSES: { value: ApplicationStatus; label: string }[] = [
+		{ value: 'saved', label: 'Saved' },
+		{ value: 'applied', label: 'Applied' },
+		{ value: 'interviewing', label: 'Interviewing' },
+		{ value: 'offer', label: 'Offer' },
+		{ value: 'rejected', label: 'Rejected' },
+		{ value: 'withdrawn', label: 'Withdrawn' }
+	];
+
+	// applicationsStore.list is empty until loaded; load once so "already
+	// tracked?" resolves correctly on a fresh page visit (a user landing here
+	// straight from a search result, not via /tracker).
+	$effect(() => {
+		if (authStore.disabled || authStore.isAuthenticated) {
+			applicationsStore.load();
+		}
+	});
+
+	const trackedEntry = $derived(applicationsStore.list.find((a) => a.id === job.id));
+	let saving = $state(false);
+
+	async function handleSave() {
+		saving = true;
+		try {
+			await applicationsStore.addFromBoard(job);
+		} finally {
+			saving = false;
+		}
+	}
 
 	const salaryText = $derived.by(() => {
 		const c = job.classification;
@@ -70,6 +102,30 @@
 				Apply on {job.companyName}'s site
 			</a>
 			<a class="btn-secondary" href="/scanner?jobId={job.id}">Check my CV Score first</a>
+			{#if authStore.disabled || authStore.isAuthenticated}
+				{#if trackedEntry}
+					<select
+						class="tracker-select"
+						value={trackedEntry.status}
+						onchange={(e) =>
+							applicationsStore.updateStatus(
+								trackedEntry.id,
+								e.currentTarget.value as ApplicationStatus
+							)}
+						aria-label="Tracker status for this job"
+					>
+						{#each STATUSES as s (s.value)}
+							<option value={s.value}>{s.label}</option>
+						{/each}
+					</select>
+				{:else}
+					<button class="btn-secondary" onclick={handleSave} disabled={saving}>
+						{saving ? 'Saving...' : 'Save to Tracker'}
+					</button>
+				{/if}
+			{:else}
+				<a class="btn-secondary" href="/login">Sign in to track this job</a>
+			{/if}
 		</div>
 	</header>
 
@@ -192,6 +248,22 @@
 		background: var(--glass-bg);
 		border: 1px solid var(--glass-border);
 		color: var(--text-primary);
+	}
+
+	.btn-secondary:disabled {
+		opacity: 0.6;
+		cursor: not-allowed;
+	}
+
+	.tracker-select {
+		padding: var(--space-3) var(--space-5);
+		border-radius: var(--radius-full);
+		background: var(--glass-bg);
+		border: 1px solid var(--glass-border);
+		color: var(--text-primary);
+		font-weight: 600;
+		font-size: var(--text-sm);
+		font-family: inherit;
 	}
 
 	.job-description h2 {

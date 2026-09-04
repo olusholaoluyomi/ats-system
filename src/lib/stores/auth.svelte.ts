@@ -369,12 +369,14 @@ class AuthStore {
 	// scores the moment they land on /scanner. dynamic import avoids a static
 	// circular dependency (scores.svelte.ts imports authStore from this file).
 	private async clearSessionScopedStores() {
-		const [{ scoresStore }, { resumeStore }] = await Promise.all([
+		const [{ scoresStore }, { resumeStore }, { applicationsStore }] = await Promise.all([
 			import('./scores.svelte'),
-			import('./resume.svelte')
+			import('./resume.svelte'),
+			import('./applications.svelte')
 		]);
 		scoresStore.resetForSignOut();
 		resumeStore.reset();
+		applicationsStore.resetForSignOut();
 	}
 
 	clearError() {
