@@ -854,5 +854,589 @@
 		"boardToken": "comena",
 		"whyThisCompany": "YC company (Summer 2025): AI agents for distributors and manufacturers to automate order entry.",
 		"enabled": true
+	},
+	{
+		"slug": "confido",
+		"name": "Confido",
+		"atsType": "ashby",
+		"boardToken": "confido",
+		"whyThisCompany": "YC company (Summer 2021): AI-enabled financial automation and intelligence for CPG Brands",
+		"enabled": true
+	},
+	{
+		"slug": "parallel-bio",
+		"name": "Parallel Bio",
+		"atsType": "ashby",
+		"boardToken": "parallel-bio",
+		"whyThisCompany": "YC company (Summer 2021): Using the immune system to cure disease",
+		"enabled": true
+	},
+	{
+		"slug": "lago",
+		"name": "Lago",
+		"atsType": "ashby",
+		"boardToken": "lago",
+		"whyThisCompany": "YC company (Summer 2021): The AI Native Billing Platform",
+		"enabled": true
+	},
+	{
+		"slug": "tavus",
+		"name": "Tavus",
+		"atsType": "ashby",
+		"boardToken": "tavus",
+		"whyThisCompany": "YC company (Summer 2021): Building the human layer of AI",
+		"enabled": true
+	},
+	{
+		"slug": "kodex",
+		"name": "Kodex",
+		"atsType": "ashby",
+		"boardToken": "kodex",
+		"whyThisCompany": "YC company (Summer 2021): Easiest way for companies to process data requests from governments",
+		"enabled": true
+	},
+	{
+		"slug": "bree",
+		"name": "Bree",
+		"atsType": "ashby",
+		"boardToken": "bree",
+		"whyThisCompany": "YC company (Summer 2021): Chime for Canada, starting with cash advances",
+		"enabled": true
+	},
+	{
+		"slug": "formance",
+		"name": "Formance",
+		"atsType": "ashby",
+		"boardToken": "formance",
+		"whyThisCompany": "YC company (Summer 2021): Open Source Infrastructure for the Financial Internet",
+		"enabled": true
+	},
+	{
+		"slug": "oneschema",
+		"name": "OneSchema",
+		"atsType": "ashby",
+		"boardToken": "oneschema",
+		"whyThisCompany": "YC company (Summer 2021): AI Agents for Data Operations",
+		"enabled": true
+	},
+	{
+		"slug": "aleph",
+		"name": "Aleph",
+		"atsType": "lever",
+		"boardToken": "aleph",
+		"whyThisCompany": "YC company (Summer 2021): One source of truth for financial data.",
+		"enabled": true
+	},
+	{
+		"slug": "adaptyv",
+		"name": "Adaptyv",
+		"atsType": "ashby",
+		"boardToken": "adaptyv",
+		"whyThisCompany": "YC company (Summer 2021): We're building fully automated labs for protein engineering",
+		"enabled": true
+	},
+	{
+		"slug": "meticulous",
+		"name": "Meticulous",
+		"atsType": "ashby",
+		"boardToken": "meticulous",
+		"whyThisCompany": "YC company (Summer 2021): Automated e2e screenshot testing without writing or maintaining tests",
+		"enabled": true
+	},
+	{
+		"slug": "coast",
+		"name": "Coast",
+		"atsType": "greenhouse",
+		"boardToken": "coast",
+		"whyThisCompany": "YC company (Summer 2021): Demo Platform for API-First Companies",
+		"enabled": true
+	},
+	{
+		"slug": "bolster",
+		"name": "Bolster",
+		"atsType": "greenhouse",
+		"boardToken": "bolster",
+		"whyThisCompany": "YC company (Summer 2021): The platform for buying, selling and managing residential construction",
+		"enabled": true
+	},
+	{
+		"slug": "mach9",
+		"name": "Mach9",
+		"atsType": "ashby",
+		"boardToken": "mach9",
+		"whyThisCompany": "YC company (Summer 2021): AI CAD Software for Civil Engineering",
+		"enabled": true
+	},
+	{
+		"slug": "output",
+		"name": "Output Biosciences",
+		"atsType": "ashby",
+		"boardToken": "output",
+		"whyThisCompany": "YC company (Summer 2021): The foundation for the next era of biology",
+		"enabled": true
+	},
+	{
+		"slug": "atlas",
+		"name": "Atlas",
+		"atsType": "ashby",
+		"boardToken": "atlas",
+		"whyThisCompany": "YC company (Summer 2021): Operating system for restaurants, focusing on Southeast Asia",
+		"enabled": true
+	},
+	{
+		"slug": "stepful",
+		"name": "Stepful",
+		"atsType": "ashby",
+		"boardToken": "stepful",
+		"whyThisCompany": "YC company (Summer 2021): Online Training for Healthcare Jobs",
+		"enabled": true
+	},
+	{
+		"slug": "turion-space",
+		"name": "Turion Space",
+		"atsType": "ashby",
+		"boardToken": "turion-space",
+		"whyThisCompany": "YC company (Summer 2021): Moving Things Around in Space, Imaging Space Objects When We're Not",
+		"enabled": true
+	},
+	{
+		"slug": "charge-robotics",
+		"name": "Charge Robotics",
+		"atsType": "ashby",
+		"boardToken": "charge-robotics",
+		"whyThisCompany": "YC company (Summer 2021): Robots that build solar farms",
+		"enabled": true
+	},
+	{
+		"slug": "nash",
+		"name": "Nash",
+		"atsType": "ashby",
+		"boardToken": "nash",
+		"whyThisCompany": "YC company (Summer 2021): Nash is the digital logistics infrastructure for commerce",
+		"enabled": true
+	},
+	{
+		"slug": "agave",
+		"name": "Agave",
+		"atsType": "ashby",
+		"boardToken": "agave",
+		"whyThisCompany": "YC company (Winter 2022): AI Financial Operations for Construction",
+		"enabled": true
+	},
+	{
+		"slug": "sieve",
+		"name": "Sieve",
+		"atsType": "ashby",
+		"boardToken": "sieve",
+		"whyThisCompany": "YC company (Winter 2022): The multimodal data lab",
+		"enabled": true
+	},
+	{
+		"slug": "invert",
+		"name": "Invert",
+		"atsType": "ashby",
+		"boardToken": "invert",
+		"whyThisCompany": "YC company (Winter 2022): Data analytics software for biomanufacturing.",
+		"enabled": true
+	},
+	{
+		"slug": "happl",
+		"name": "Happl",
+		"atsType": "ashby",
+		"boardToken": "happl",
+		"whyThisCompany": "YC company (Winter 2022): Your personalised benefits and engagement platform for global teams",
+		"enabled": true
+	},
+	{
+		"slug": "beam",
+		"name": "Beam",
+		"atsType": "greenhouse",
+		"boardToken": "beam",
+		"whyThisCompany": "YC company (Winter 2022): AI-Native Cloud Platform",
+		"enabled": true
+	},
+	{
+		"slug": "sphere",
+		"name": "Sphere",
+		"atsType": "ashby",
+		"boardToken": "sphere",
+		"whyThisCompany": "YC company (Winter 2022): AI-powered sales tax, VAT and GST compliance",
+		"enabled": true
+	},
+	{
+		"slug": "mintlify",
+		"name": "Mintlify",
+		"atsType": "ashby",
+		"boardToken": "mintlify",
+		"whyThisCompany": "YC company (Winter 2022): The intelligent knowledge platform",
+		"enabled": true
+	},
+	{
+		"slug": "permitflow",
+		"name": "PermitFlow",
+		"atsType": "ashby",
+		"boardToken": "permitflow",
+		"whyThisCompany": "YC company (Winter 2022): Construction's AI Platform",
+		"enabled": true
+	},
+	{
+		"slug": "complete",
+		"name": "Complete",
+		"atsType": "ashby",
+		"boardToken": "complete",
+		"whyThisCompany": "YC company (Winter 2022): The complete way to do compensation",
+		"enabled": true
+	},
+	{
+		"slug": "voize",
+		"name": "voize",
+		"atsType": "ashby",
+		"boardToken": "voize",
+		"whyThisCompany": "YC company (Winter 2022): We build the AI companion for nurses, to create time for care.",
+		"enabled": true
+	},
+	{
+		"slug": "agency",
+		"name": "Agency",
+		"atsType": "greenhouse",
+		"boardToken": "agency",
+		"whyThisCompany": "YC company (Winter 2022): Agency replaces traditional security and compliance headcount with AI.",
+		"enabled": true
+	},
+	{
+		"slug": "attain",
+		"name": "Attain",
+		"atsType": "greenhouse",
+		"boardToken": "attain",
+		"whyThisCompany": "YC company (Winter 2022): One-Stop Shop for Convenience Store Inventory",
+		"enabled": true
+	},
+	{
+		"slug": "spade",
+		"name": "Spade",
+		"atsType": "greenhouse",
+		"boardToken": "spade",
+		"whyThisCompany": "YC company (Winter 2022): Spade is the data and AI platform for modern finance.",
+		"enabled": true
+	},
+	{
+		"slug": "fleek",
+		"name": "Fleek",
+		"atsType": "ashby",
+		"boardToken": "fleek",
+		"whyThisCompany": "YC company (Winter 2022): A B2B marketplace for wholesale second hand fashion",
+		"enabled": true
+	},
+	{
+		"slug": "reddit",
+		"name": "Reddit",
+		"atsType": "greenhouse",
+		"boardToken": "reddit",
+		"whyThisCompany": "Established company, discovered via automated board check.",
+		"enabled": true
+	},
+	{
+		"slug": "discord",
+		"name": "Discord",
+		"atsType": "greenhouse",
+		"boardToken": "discord",
+		"whyThisCompany": "Established company, discovered via automated board check.",
+		"enabled": true
+	},
+	{
+		"slug": "pinterest",
+		"name": "Pinterest",
+		"atsType": "greenhouse",
+		"boardToken": "pinterest",
+		"whyThisCompany": "Established company, discovered via automated board check.",
+		"enabled": true
+	},
+	{
+		"slug": "lyft",
+		"name": "Lyft",
+		"atsType": "greenhouse",
+		"boardToken": "lyft",
+		"whyThisCompany": "Established company, discovered via automated board check.",
+		"enabled": true
+	},
+	{
+		"slug": "duolingo",
+		"name": "Duolingo",
+		"atsType": "greenhouse",
+		"boardToken": "duolingo",
+		"whyThisCompany": "Established company, discovered via automated board check.",
+		"enabled": true
+	},
+	{
+		"slug": "coursera",
+		"name": "Coursera",
+		"atsType": "greenhouse",
+		"boardToken": "coursera",
+		"whyThisCompany": "Established company, discovered via automated board check.",
+		"enabled": true
+	},
+	{
+		"slug": "udemy",
+		"name": "Udemy",
+		"atsType": "greenhouse",
+		"boardToken": "udemy",
+		"whyThisCompany": "Established company, discovered via automated board check.",
+		"enabled": true
+	},
+	{
+		"slug": "calendly",
+		"name": "Calendly",
+		"atsType": "greenhouse",
+		"boardToken": "calendly",
+		"whyThisCompany": "Established company, discovered via automated board check.",
+		"enabled": true
+	},
+	{
+		"slug": "loom",
+		"name": "Loom",
+		"atsType": "ashby",
+		"boardToken": "loom",
+		"whyThisCompany": "Established company, discovered via automated board check.",
+		"enabled": true
+	},
+	{
+		"slug": "miro",
+		"name": "Miro",
+		"atsType": "ashby",
+		"boardToken": "miro",
+		"whyThisCompany": "Established company, discovered via automated board check.",
+		"enabled": true
+	},
+	{
+		"slug": "webflow",
+		"name": "Webflow",
+		"atsType": "greenhouse",
+		"boardToken": "webflow",
+		"whyThisCompany": "Established company, discovered via automated board check.",
+		"enabled": true
+	},
+	{
+		"slug": "typeform",
+		"name": "Typeform",
+		"atsType": "greenhouse",
+		"boardToken": "typeform",
+		"whyThisCompany": "Established company, discovered via automated board check.",
+		"enabled": true
+	},
+	{
+		"slug": "notion",
+		"name": "Notion",
+		"atsType": "ashby",
+		"boardToken": "notion",
+		"whyThisCompany": "Established company, discovered via automated board check.",
+		"enabled": true
+	},
+	{
+		"slug": "airtable",
+		"name": "Airtable",
+		"atsType": "greenhouse",
+		"boardToken": "airtable",
+		"whyThisCompany": "Established company, discovered via automated board check.",
+		"enabled": true
+	},
+	{
+		"slug": "asana",
+		"name": "Asana",
+		"atsType": "greenhouse",
+		"boardToken": "asana",
+		"whyThisCompany": "Established company, discovered via automated board check.",
+		"enabled": true
+	},
+	{
+		"slug": "intercom",
+		"name": "Intercom",
+		"atsType": "greenhouse",
+		"boardToken": "intercom",
+		"whyThisCompany": "Established company, discovered via automated board check.",
+		"enabled": true
+	},
+	{
+		"slug": "amplitude",
+		"name": "Amplitude",
+		"atsType": "greenhouse",
+		"boardToken": "amplitude",
+		"whyThisCompany": "Established company, discovered via automated board check.",
+		"enabled": true
+	},
+	{
+		"slug": "mixpanel",
+		"name": "Mixpanel",
+		"atsType": "greenhouse",
+		"boardToken": "mixpanel",
+		"whyThisCompany": "Established company, discovered via automated board check.",
+		"enabled": true
+	},
+	{
+		"slug": "cultureamp",
+		"name": "Culture Amp",
+		"atsType": "greenhouse",
+		"boardToken": "cultureamp",
+		"whyThisCompany": "Established company, discovered via automated board check.",
+		"enabled": true
+	},
+	{
+		"slug": "lattice",
+		"name": "Lattice",
+		"atsType": "greenhouse",
+		"boardToken": "lattice",
+		"whyThisCompany": "Established company, discovered via automated board check.",
+		"enabled": true
+	},
+	{
+		"slug": "15five",
+		"name": "15Five",
+		"atsType": "lever",
+		"boardToken": "15five",
+		"whyThisCompany": "Established company, discovered via automated board check.",
+		"enabled": true
+	},
+	{
+		"slug": "figma",
+		"name": "Figma",
+		"atsType": "greenhouse",
+		"boardToken": "figma",
+		"whyThisCompany": "Established company, discovered via automated board check.",
+		"enabled": true
+	},
+	{
+		"slug": "supabase",
+		"name": "Supabase",
+		"atsType": "ashby",
+		"boardToken": "supabase",
+		"whyThisCompany": "Established company, discovered via automated board check.",
+		"enabled": true
+	},
+	{
+		"slug": "replit",
+		"name": "Replit",
+		"atsType": "ashby",
+		"boardToken": "replit",
+		"whyThisCompany": "Established company, discovered via automated board check.",
+		"enabled": true
+	},
+	{
+		"slug": "vercel",
+		"name": "Vercel",
+		"atsType": "greenhouse",
+		"boardToken": "vercel",
+		"whyThisCompany": "Established company, discovered via automated board check.",
+		"enabled": true
+	},
+	{
+		"slug": "scaleai",
+		"name": "Scale AI",
+		"atsType": "greenhouse",
+		"boardToken": "scaleai",
+		"whyThisCompany": "Established company, discovered via automated board check.",
+		"enabled": true
+	},
+	{
+		"slug": "perplexity",
+		"name": "Perplexity",
+		"atsType": "ashby",
+		"boardToken": "perplexity",
+		"whyThisCompany": "Established company, discovered via automated board check.",
+		"enabled": true
+	},
+	{
+		"slug": "cursor",
+		"name": "Cursor",
+		"atsType": "ashby",
+		"boardToken": "cursor",
+		"whyThisCompany": "Established company, discovered via automated board check.",
+		"enabled": true
+	},
+	{
+		"slug": "openai",
+		"name": "OpenAI",
+		"atsType": "ashby",
+		"boardToken": "openai",
+		"whyThisCompany": "Established company, discovered via automated board check.",
+		"enabled": true
+	},
+	{
+		"slug": "anthropic",
+		"name": "Anthropic",
+		"atsType": "greenhouse",
+		"boardToken": "anthropic",
+		"whyThisCompany": "Established company, discovered via automated board check.",
+		"enabled": true
+	},
+	{
+		"slug": "databricks",
+		"name": "Databricks",
+		"atsType": "greenhouse",
+		"boardToken": "databricks",
+		"whyThisCompany": "Established company, discovered via automated board check.",
+		"enabled": true
+	},
+	{
+		"slug": "stripe",
+		"name": "Stripe",
+		"atsType": "greenhouse",
+		"boardToken": "stripe",
+		"whyThisCompany": "Established company, discovered via automated board check.",
+		"enabled": true
+	},
+	{
+		"slug": "airbnb",
+		"name": "Airbnb",
+		"atsType": "greenhouse",
+		"boardToken": "airbnb",
+		"whyThisCompany": "Established company, discovered via automated board check.",
+		"enabled": true
+	},
+	{
+		"slug": "dropbox",
+		"name": "Dropbox",
+		"atsType": "greenhouse",
+		"boardToken": "dropbox",
+		"whyThisCompany": "Established company, discovered via automated board check.",
+		"enabled": true
+	},
+	{
+		"slug": "cloudflare",
+		"name": "Cloudflare",
+		"atsType": "greenhouse",
+		"boardToken": "cloudflare",
+		"whyThisCompany": "Established company, discovered via automated board check.",
+		"enabled": true
+	},
+	{
+		"slug": "fastly",
+		"name": "Fastly",
+		"atsType": "greenhouse",
+		"boardToken": "fastly",
+		"whyThisCompany": "Established company, discovered via automated board check.",
+		"enabled": true
+	},
+	{
+		"slug": "vultr",
+		"name": "Vultr",
+		"atsType": "ashby",
+		"boardToken": "vultr",
+		"whyThisCompany": "Established company, discovered via automated board check.",
+		"enabled": true
+	},
+	{
+		"slug": "backblaze",
+		"name": "Backblaze",
+		"atsType": "greenhouse",
+		"boardToken": "backblaze",
+		"whyThisCompany": "Established company, discovered via automated board check.",
+		"enabled": true
+	},
+	{
+		"slug": "wasabi",
+		"name": "Wasabi Technologies",
+		"atsType": "greenhouse",
+		"boardToken": "wasabi",
+		"whyThisCompany": "Established company, discovered via automated board check.",
+		"enabled": true
 	}
 ]

@@ -2,6 +2,7 @@
 	import SeoHead from '$components/seo/SeoHead.svelte';
 	import { authStore } from '$stores/auth.svelte';
 	import { applicationsStore, type ApplicationStatus } from '$stores/applications.svelte';
+	import { timeAgo, formatPostedDate } from '../shared';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -59,6 +60,9 @@
 		<span class="job-company">{job.companyName}</span>
 		<h1 class="job-title">{job.title}</h1>
 		<p class="job-location">{job.locationRaw || 'Location not specified'}</p>
+		<p class="job-posted-date">
+			Date posted: {formatPostedDate(job.firstSeenAt)} ({timeAgo(job.firstSeenAt)})
+		</p>
 
 		<div class="job-chips">
 			{#if job.remote}
@@ -155,6 +159,12 @@
 	}
 
 	.job-location {
+		color: var(--text-tertiary);
+		margin-bottom: var(--space-1);
+	}
+
+	.job-posted-date {
+		font-size: var(--text-sm);
 		color: var(--text-tertiary);
 		margin-bottom: var(--space-4);
 	}

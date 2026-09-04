@@ -1,21 +1,32 @@
 /**
- * daily company discovery: pulls Y Combinator's public company dataset
- * (https://github.com/yc-oss/api - not an official YC API, but a
- * well-maintained static mirror; verified live before building this),
- * tries each active + currently-hiring company's YC slug as a board token
- * against Greenhouse/Lever/Ashby, and writes ones that actually resolve
- * into discovered-companies.json. never touches seed-companies.ts (the
- * hand-curated list) directly, and never auto-enables anything live - see
- * .github/workflows/discover-companies.yml, which opens a PR for a human to
- * review before a discovered company's jobs can appear on the board.
+ * daily company discovery from TWO independent candidate sources, so the
+ * board isn't Y-Combinator-only (an earlier version only pulled from YC,
+ * which skews small/early-stage/engineering-heavy and under-represents
+ * non-SWE roles like product/ops/network-infra):
  *
- * candidate selection rotates through the ~1,500 active+hiring YC companies
- * by day-of-year rather than relying solely on persisted state, so full
- * pool coverage doesn't depend on every run's state-file write succeeding
- * (see the best-effort direct-push in the workflow, which can be blocked by
- * branch protection and is allowed to fail without breaking the run).
- * discovery-state.json is a skip-list optimization on top of that rotation,
- * not the only thing standing between "checked" and "not checked".
+ *  1. Y Combinator's public company dataset (https://github.com/yc-oss/api -
+ *     not an official YC API, but a well-maintained static mirror; verified
+ *     live before building this).
+ *  2. KNOWN_COMPANIES_POOL (known-companies-pool.ts) - a hand-compiled list
+ *     of established, non-YC companies across industries, picked for role
+ *     diversity (several specifically for network/infra-heavy teams).
+ *
+ * both sources go through the identical live-verification step: try the
+ * candidate's slug as a board token against Greenhouse/Lever/Ashby, keep
+ * only what actually resolves. neither source touches seed-companies.ts
+ * (the hand-curated list) directly, and neither auto-enables anything live -
+ * see .github/workflows/discover-companies.yml, which opens a PR for a
+ * human to review before a discovered company's jobs can appear on the
+ * board.
+ *
+ * candidate selection rotates through each pool by day-of-year rather than
+ * relying solely on persisted state, so full pool coverage doesn't depend
+ * on every run's state-file write succeeding (see the best-effort
+ * direct-push in the workflow, which can be blocked by branch protection
+ * and is allowed to fail without breaking the run). discovery-state.json is
+ * a skip-list optimization on top of that rotation, not the only thing
+ * standing between "checked" and "not checked" - shared across both pools
+ * since board tokens are globally unique regardless of source.
  *
  * usage: node scripts/discover-companies.mjs   (needs node 22.18+ or 24 for type stripping)
  */
@@ -23,6 +34,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { SEED_COMPANIES } from '../src/lib/server/job-board/seed-companies.ts';
+import { KNOWN_COMPANIES_POOL } from '../src/lib/server/job-board/known-companies-pool.ts';
 import { fetchGreenhouseJobs } from '../src/lib/server/job-board/ats-clients/greenhouse.ts';
 import { fetchLeverJobs } from '../src/lib/server/job-board/ats-clients/lever.ts';
 import { fetchAshbyJobs } from '../src/lib/server/job-board/ats-clients/ashby.ts';
@@ -33,9 +45,12 @@ const DISCOVERED_PATH = join(JOB_BOARD_DIR, 'discovered-companies.json');
 const STATE_PATH = join(JOB_BOARD_DIR, 'discovery-state.json');
 
 const YC_COMPANIES_URL = 'https://yc-oss.github.io/api/companies/all.json';
-// polite batch size: 150 candidates x up to 3 ATS checks each = at most 450
-// requests to free, unauthenticated public APIs per run, once daily.
+// polite batch size per source: 150 YC candidates + up to the full ~110-entry
+// known-companies pool (small enough to not need its own rotation window),
+// each x up to 3 ATS checks = a few hundred requests to free, unauthenticated
+// public APIs per run, once daily.
 const DAILY_BATCH_SIZE = 150;
+const KNOWN_POOL_BATCH_SIZE = 60;
 
 function readJson(path, fallback) {
 	try {
@@ -67,32 +82,60 @@ if (!response.ok) {
 }
 const ycCompanies = await response.json();
 
-// eligible pool: active, currently hiring, not already known (seeded or
-// previously discovered) - triedSlugs is deliberately NOT excluded from the
-// pool here, only used to skip individual entries within the rotated
-// window below, so a slug that failed once can still resurface (e.g. a
-// company that adds a board later).
-const pool = ycCompanies.filter(
-	(c) =>
-		c.status === 'Active' &&
-		c.isHiring === true &&
-		c.slug &&
-		!knownBoardTokens.has(c.slug.toLowerCase())
-);
+// eligible YC pool: active, currently hiring, not already known (seeded or
+// previously discovered) - triedSlugs is deliberately NOT excluded from
+// either pool here, only used to skip individual entries within the
+// rotated windows below, so a slug that failed once can still resurface
+// (e.g. a company that adds a board later). normalized to {slug, name,
+// whyThisCompany} so both sources share one testing loop below.
+const ycPool = ycCompanies
+	.filter(
+		(c) =>
+			c.status === 'Active' &&
+			c.isHiring === true &&
+			c.slug &&
+			!knownBoardTokens.has(c.slug.toLowerCase())
+	)
+	.map((c) => ({
+		slug: c.slug,
+		name: c.name,
+		whyThisCompany: c.one_liner
+			? `YC company (${c.batch ?? 'alum'}): ${c.one_liner}`
+			: `Y Combinator company (${c.batch ?? 'alum'}).`
+	}));
 
-if (pool.length === 0) {
-	console.log('no eligible YC candidates (all known or none currently hiring)');
+// known-companies pool: established, non-YC companies - see
+// known-companies-pool.ts's own comment for why this exists (the board was
+// skewing YC-only with only one discovery source).
+const knownPool = KNOWN_COMPANIES_POOL.filter(
+	(c) => !knownBoardTokens.has(c.slug.toLowerCase())
+).map((c) => ({
+	slug: c.slug,
+	name: c.name,
+	whyThisCompany: 'Established company, discovered via automated board check.'
+}));
+
+// rotate each pool independently by day-of-year so full coverage of either
+// set doesn't depend on state persisting between runs.
+function rotateWindow(pool, batchSize) {
+	if (pool.length === 0) return [];
+	const start = (dayOfYear() * batchSize) % pool.length;
+	return [...pool.slice(start), ...pool.slice(0, start)].slice(0, batchSize);
+}
+
+const ycWindow = rotateWindow(ycPool, DAILY_BATCH_SIZE).filter((c) => !triedSlugs.has(c.slug));
+const knownWindow = rotateWindow(knownPool, KNOWN_POOL_BATCH_SIZE).filter(
+	(c) => !triedSlugs.has(c.slug)
+);
+const candidates = [...ycWindow, ...knownWindow];
+
+if (candidates.length === 0) {
+	console.log('no eligible candidates from either source this window (all known or tried)');
 	process.exit(0);
 }
 
-// rotate through the pool by day-of-year so the whole ~1,500-company set
-// gets covered over time regardless of whether state persists between runs.
-const start = (dayOfYear() * DAILY_BATCH_SIZE) % pool.length;
-const window = [...pool.slice(start), ...pool.slice(0, start)].slice(0, DAILY_BATCH_SIZE);
-const candidates = window.filter((c) => !triedSlugs.has(c.slug));
-
 console.log(
-	`checking ${candidates.length} candidates (pool ${pool.length}, ${ycCompanies.length} total YC companies, ${triedSlugs.size} previously tried)`
+	`checking ${candidates.length} candidates (${ycWindow.length} from YC pool of ${ycPool.length}, ${knownWindow.length} from known-companies pool of ${knownPool.length}, ${triedSlugs.size} previously tried)`
 );
 
 const ATS_CHECKS = [
@@ -113,9 +156,7 @@ for (const company of candidates) {
 				name: company.name,
 				atsType,
 				boardToken: company.slug,
-				whyThisCompany: company.one_liner
-					? `YC company (${company.batch ?? 'alum'}): ${company.one_liner}`
-					: `Y Combinator company (${company.batch ?? 'alum'}).`,
+				whyThisCompany: company.whyThisCompany,
 				enabled: true
 			});
 			console.log(`  found: ${company.name} on ${atsType} (${postings.length} current postings)`);

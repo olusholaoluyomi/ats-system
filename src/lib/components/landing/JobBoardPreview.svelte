@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { timeAgo } from '../../../routes/jobs/shared';
+	import { timeAgo, formatPostedDate } from '../../../routes/jobs/shared';
 	import type { JobListing } from '../../../routes/jobs/shared';
 
 	let { jobs }: { jobs: JobListing[] } = $props();
@@ -40,7 +40,9 @@
 				<a class="job-preview-card" href="/jobs/{job.id}">
 					<div class="job-preview-top">
 						<span class="job-preview-company">{job.companyName}</span>
-						<span class="job-preview-posted">{timeAgo(job.firstSeenAt)}</span>
+						<span class="job-preview-posted" title={timeAgo(job.firstSeenAt)}>
+							{formatPostedDate(job.firstSeenAt)}
+						</span>
 					</div>
 					<h3 class="job-preview-title">{job.title}</h3>
 					<p class="job-preview-location">{job.locationRaw || 'Location not specified'}</p>

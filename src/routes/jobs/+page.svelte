@@ -1,6 +1,6 @@
 <script lang="ts">
 	import SeoHead from '$components/seo/SeoHead.svelte';
-	import { timeAgo } from './shared';
+	import { timeAgo, formatPostedDate } from './shared';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -50,7 +50,9 @@
 		<a class="job-card" href="/jobs/{job.id}">
 			<div class="job-card-header">
 				<span class="job-company">{job.companyName}</span>
-				<span class="job-posted">{timeAgo(job.firstSeenAt)}</span>
+				<span class="job-posted" title={timeAgo(job.firstSeenAt)}>
+					{formatPostedDate(job.firstSeenAt)}
+				</span>
 			</div>
 			<h2 class="job-title">{job.title}</h2>
 			<p class="job-location">{job.locationRaw || 'Location not specified'}</p>

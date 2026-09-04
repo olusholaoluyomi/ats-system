@@ -57,7 +57,9 @@ export function mapJobDoc(id: string, data: Record<string, unknown>): JobListing
 // "posted 2 hours ago" style relative label, shared by the full job board
 // and the landing-page preview. caps at "yesterday"/"2 days ago" - nothing
 // on the board is ever older than MAX_POSTING_AGE_MS (48h) in the first
-// place.
+// place. kept alongside formatPostedDate below (the absolute date) rather
+// than replaced by it - relative time is what's actually scannable at a
+// glance in a dense card grid, the absolute date is what's unambiguous.
 export function timeAgo(iso: string): string {
 	const hours = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 3_600_000));
 	if (hours < 1) return 'just now';
@@ -65,6 +67,18 @@ export function timeAgo(iso: string): string {
 	if (hours < 24) return `${hours} hours ago`;
 	if (hours < 48) return 'yesterday';
 	return '2 days ago';
+}
+
+// absolute "date posted" - e.g. "Sep 4, 2026". a relative-only label like
+// "2 hours ago" tells you nothing once you've looked away and come back, or
+// when comparing two postings from different browsing sessions - this is
+// the unambiguous version shown alongside it.
+export function formatPostedDate(iso: string): string {
+	return new Date(iso).toLocaleDateString('en-US', {
+		month: 'short',
+		day: 'numeric',
+		year: 'numeric'
+	});
 }
 
 export function hasActiveFilters(filters: JobsFilters): boolean {
