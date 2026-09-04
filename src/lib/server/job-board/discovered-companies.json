@@ -638,5 +638,221 @@
 		"boardToken": "stable",
 		"whyThisCompany": "YC company (Winter 2020): A virtual address + mailbox for business",
 		"enabled": true
+	},
+	{
+		"slug": "salespatriot",
+		"name": "SalesPatriot",
+		"atsType": "ashby",
+		"boardToken": "salespatriot",
+		"whyThisCompany": "YC company (Winter 2025): AI powered operating system for distributors and OEMs",
+		"enabled": true
+	},
+	{
+		"slug": "mosaic-2",
+		"name": "Mosaic",
+		"atsType": "lever",
+		"boardToken": "mosaic-2",
+		"whyThisCompany": "YC company (Winter 2025): Frontier Video Agents",
+		"enabled": true
+	},
+	{
+		"slug": "osmosis",
+		"name": "Osmosis",
+		"atsType": "greenhouse",
+		"boardToken": "osmosis",
+		"whyThisCompany": "YC company (Winter 2025): Reinforcement Learning (RL) for AI Agents",
+		"enabled": true
+	},
+	{
+		"slug": "hud",
+		"name": "HUD",
+		"atsType": "ashby",
+		"boardToken": "hud",
+		"whyThisCompany": "YC company (Winter 2025): Platform for building RL environments and evals ",
+		"enabled": true
+	},
+	{
+		"slug": "pave-robotics",
+		"name": "Pave Robotics",
+		"atsType": "ashby",
+		"boardToken": "pave-robotics",
+		"whyThisCompany": "YC company (Winter 2025): Robots that repair roads",
+		"enabled": true
+	},
+	{
+		"slug": "solidroad",
+		"name": "Solidroad",
+		"atsType": "ashby",
+		"boardToken": "solidroad",
+		"whyThisCompany": "YC company (Winter 2025): AI agents for CX teams, starting with training and QA.",
+		"enabled": true
+	},
+	{
+		"slug": "afterquery",
+		"name": "AfterQuery",
+		"atsType": "ashby",
+		"boardToken": "afterquery",
+		"whyThisCompany": "YC company (Winter 2025): Applied research lab curating data solutions for foundation model…",
+		"enabled": true
+	},
+	{
+		"slug": "mercura",
+		"name": "Mercura",
+		"atsType": "ashby",
+		"boardToken": "mercura",
+		"whyThisCompany": "YC company (Winter 2025): AI Quote and Order Automation for Distributors & Manufacturers",
+		"enabled": true
+	},
+	{
+		"slug": "ambral",
+		"name": "Ambral",
+		"atsType": "ashby",
+		"boardToken": "ambral",
+		"whyThisCompany": "YC company (Summer 2025): AI for account management and customer success",
+		"enabled": true
+	},
+	{
+		"slug": "blaxel",
+		"name": "Blaxel",
+		"atsType": "ashby",
+		"boardToken": "blaxel",
+		"whyThisCompany": "YC company (Spring 2025): The perpetual sandbox platform",
+		"enabled": true
+	},
+	{
+		"slug": "chestnut",
+		"name": "Chestnut",
+		"atsType": "ashby",
+		"boardToken": "chestnut",
+		"whyThisCompany": "YC company (Spring 2025): The first AI mortgage lender",
+		"enabled": true
+	},
+	{
+		"slug": "minerva",
+		"name": "Minerva",
+		"atsType": "ashby",
+		"boardToken": "minerva",
+		"whyThisCompany": "YC company (Spring 2025): AI native accounting firm",
+		"enabled": true
+	},
+	{
+		"slug": "auctor",
+		"name": "Auctor",
+		"atsType": "ashby",
+		"boardToken": "auctor",
+		"whyThisCompany": "YC company (Spring 2025): The agentic operating system for modern system integrators.",
+		"enabled": true
+	},
+	{
+		"slug": "claim-health",
+		"name": "Claim Health",
+		"atsType": "ashby",
+		"boardToken": "claim-health",
+		"whyThisCompany": "YC company (Spring 2025): AI Revenue Platform for Post-Acute Care",
+		"enabled": true
+	},
+	{
+		"slug": "sim",
+		"name": "Sim",
+		"atsType": "ashby",
+		"boardToken": "sim",
+		"whyThisCompany": "YC company (Spring 2025): The AI Workspace for Building and Managing AI Agents.",
+		"enabled": true
+	},
+	{
+		"slug": "casco",
+		"name": "Casco",
+		"atsType": "ashby",
+		"boardToken": "casco",
+		"whyThisCompany": "YC company (Spring 2025): Autonomous security testing for web apps, APIs, cloud, and AI systems",
+		"enabled": true
+	},
+	{
+		"slug": "lucis",
+		"name": "Lucis",
+		"atsType": "ashby",
+		"boardToken": "lucis",
+		"whyThisCompany": "YC company (Spring 2025): Function Health for Europe ",
+		"enabled": true
+	},
+	{
+		"slug": "sygaldry-technologies",
+		"name": "Sygaldry Technologies",
+		"atsType": "ashby",
+		"boardToken": "sygaldry-technologies",
+		"whyThisCompany": "YC company (Spring 2025): quantum-accelerated AI servers",
+		"enabled": true
+	},
+	{
+		"slug": "dedalus-labs",
+		"name": "Dedalus Labs",
+		"atsType": "ashby",
+		"boardToken": "dedalus-labs",
+		"whyThisCompany": "YC company (Summer 2025): Compute substrate for AI agents",
+		"enabled": true
+	},
+	{
+		"slug": "mangodesk",
+		"name": "MangoDesk",
+		"atsType": "ashby",
+		"boardToken": "mangodesk",
+		"whyThisCompany": "YC company (Summer 2025): Long-horizon RL environments",
+		"enabled": true
+	},
+	{
+		"slug": "halluminate",
+		"name": "Halluminate",
+		"atsType": "ashby",
+		"boardToken": "halluminate",
+		"whyThisCompany": "YC company (Summer 2025): Data and RL environments to automate knowledge work",
+		"enabled": true
+	},
+	{
+		"slug": "agentmail",
+		"name": "AgentMail",
+		"atsType": "ashby",
+		"boardToken": "agentmail",
+		"whyThisCompany": "YC company (Summer 2025): Email Inboxes for AI Agents",
+		"enabled": true
+	},
+	{
+		"slug": "careswift",
+		"name": "CareSwift",
+		"atsType": "ashby",
+		"boardToken": "careswift",
+		"whyThisCompany": "YC company (Summer 2025): AI scribe for Ambulance Reports",
+		"enabled": true
+	},
+	{
+		"slug": "bootloop",
+		"name": "BootLoop",
+		"atsType": "ashby",
+		"boardToken": "bootloop",
+		"whyThisCompany": "YC company (Summer 2025): Firmware in minutes, not months - rigorously tested on real hardware",
+		"enabled": true
+	},
+	{
+		"slug": "conviction",
+		"name": "Conviction",
+		"atsType": "lever",
+		"boardToken": "conviction",
+		"whyThisCompany": "YC company (Summer 2025): Anyone Can Trade",
+		"enabled": true
+	},
+	{
+		"slug": "flai",
+		"name": "Flai",
+		"atsType": "ashby",
+		"boardToken": "flai",
+		"whyThisCompany": "YC company (Summer 2025): We Bring Customers to Your Dealership",
+		"enabled": true
+	},
+	{
+		"slug": "comena",
+		"name": "Comena",
+		"atsType": "ashby",
+		"boardToken": "comena",
+		"whyThisCompany": "YC company (Summer 2025): AI agents for distributors and manufacturers to automate order entry.",
+		"enabled": true
 	}
 ]
