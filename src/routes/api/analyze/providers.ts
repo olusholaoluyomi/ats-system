@@ -1,10 +1,14 @@
 // LLM provider abstraction for /api/analyze.
 //
-// cloud chain is Gemini 3.5 Flash Lite (Google) -> Llama 3.3 70B (Groq): one model
+// cloud chain is Gemini 3.5 Flash Lite (Google) -> GPT-OSS 120B (Groq): one model
 // per vendor, because a second model on the same key shares that key's quota and adds
 // no real redundancy. crossing vendors is what keeps one provider's limits from
-// cascading. both models were measured against the real full-scoring prompt rather
-// than picked from published limits - see buildProviders.
+// cascading. the Google leg was measured against the real full-scoring prompt; the
+// Groq/Cerebras token budgets below are carried over unverified from the prior
+// llama-3.3-70b-versatile legs (see buildProviders) after Groq deprecated that model
+// on 2026-06-17 and Cerebras never carried it on its shared/pay-as-you-go tier -
+// re-measure against gpt-oss-120b's real free-tier ceilings once there's traffic to
+// observe.
 //
 // self-hosters can prepend Ollama by setting OLLAMA_BASE_URL (and optionally
 // OLLAMA_MODEL, plus OLLAMA_API_KEY for proxied / auth-gated daemons); the
@@ -105,12 +109,14 @@ export function buildGoogleProvider(
 
 // Groq reserves (input + max_tokens) against its per-minute ceiling BEFORE running
 // the model, so an oversized max_tokens alone can exceed the whole TPM budget and
-// every request 413s regardless of input size. free-tier llama TPM is 12,000 and the
-// real prompt measures ~5,950 in / ~2,020 out at ~290 tok/s.
+// every request 413s regardless of input size. this budget was tuned against the
+// now-deprecated llama-3.3-70b-versatile's 12,000 TPM free-tier ceiling; gpt-oss-120b
+// (its replacement, per Groq's deprecation notice) has not been re-measured, so this
+// is carried over as a conservative starting point rather than a verified figure.
 //
-// 3072 serves two masters: it keeps 5,950 + 3,072 = 9,022 under the 12k TPM ceiling
-// (leaving room for a second request in the same minute), and 3072 / 290 tok/s = 10.6s
-// stays under the 15s timeout so a full-budget response is never cut off.
+// 3072 serves two masters: it keeps a ~6k-char input plus 3,072 output comfortably
+// under a 12k TPM ceiling, and stays reachable inside the 15s timeout at a
+// pessimistic floor of ~290 tok/s.
 const GROQ_MAX_TOKENS = 3072;
 
 export function buildGroqProvider(
@@ -155,10 +161,11 @@ export function buildGroqProvider(
 	};
 }
 
-// Cerebras is the replacement cross-vendor leg for Groq, which loses its only model
-// that fits this prompt on 2026-08-16. same OpenAI-shaped contract, and it serves the
-// same llama-3.3-70b this prompt was already tuned against, so output size carries over.
-// inert until CEREBRAS_API_KEY is set, exactly like the Ollama leg.
+// Cerebras is a second cross-vendor leg alongside Groq, both now on gpt-oss-120b
+// (Cerebras's shared/pay-as-you-go tier never carried a Llama 3.3 70B model; Groq
+// deprecated its own llama-3.3-70b-versatile on 2026-06-17 in favor of the same
+// model). same OpenAI-shaped contract as Groq. inert until CEREBRAS_API_KEY is set,
+// exactly like the Ollama leg.
 const CEREBRAS_MAX_TOKENS = 3072;
 
 export function buildCerebrasProvider(
@@ -290,14 +297,16 @@ export function buildProviders(env: Record<string, string>): LLMProvider[] {
 		providers.push(buildGoogleProvider('gemini-3.5-flash-lite', 'gemini-3.5-flash-lite'));
 	}
 
-	// 2. Groq (cross-vendor fallback for Google outages)
+	// 2. Groq (cross-vendor fallback for Google outages). llama-3.3-70b-versatile was
+	// deprecated 2026-06-17; openai/gpt-oss-120b is Groq's own recommended replacement.
 	if (env.GROQ_API_KEY) {
-		providers.push(buildGroqProvider('groq-llama-3.3-70b', 'llama-3.3-70b-versatile'));
+		providers.push(buildGroqProvider('groq-gpt-oss-120b', 'openai/gpt-oss-120b'));
 	}
 
-	// 3. Cerebras (replacement for Groq when it shuts down 2026-08-16)
+	// 3. Cerebras (second cross-vendor leg). gpt-oss-120b is the model this prompt's
+	// shape actually needs that Cerebras carries on its shared/pay-as-you-go tier.
 	if (env.CEREBRAS_API_KEY) {
-		providers.push(buildCerebrasProvider('cerebras-llama-3.3-70b', 'llama-3.3-70b'));
+		providers.push(buildCerebrasProvider('cerebras-gpt-oss-120b', 'gpt-oss-120b'));
 	}
 
 	// 4. Ollama (last — self-hosted local daemon, only if explicitly configured)

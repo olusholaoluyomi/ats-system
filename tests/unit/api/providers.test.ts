@@ -20,7 +20,7 @@ describe('buildProviders: chain composition', () => {
 			GEMINI_API_KEY: 'fake-gemini',
 			GROQ_API_KEY: 'fake-groq'
 		});
-		expect(chain.map((p) => p.name)).toEqual(['gemini-3.5-flash-lite', 'groq-llama-3.3-70b']);
+		expect(chain.map((p) => p.name)).toEqual(['gemini-3.5-flash-lite', 'groq-gpt-oss-120b']);
 	});
 
 	it('never puts two models from the same vendor in the chain', () => {
@@ -58,7 +58,7 @@ describe('buildProviders: chain composition', () => {
 		});
 		expect(chain.map((p) => p.name)).toEqual([
 			'gemini-3.5-flash-lite',
-			'groq-llama-3.3-70b',
+			'groq-gpt-oss-120b',
 			'ollama-llama3.2'
 		]);
 	});
@@ -302,7 +302,7 @@ describe('buildProviders: cerebras leg', () => {
 	// inert until the key is set, exactly like the ollama leg
 	it('is absent when CEREBRAS_API_KEY is unset', () => {
 		const chain = buildProviders({ GEMINI_API_KEY: 'k', GROQ_API_KEY: 'k' });
-		expect(chain.map((p) => p.name)).toEqual(['gemini-3.5-flash-lite', 'groq-llama-3.3-70b']);
+		expect(chain.map((p) => p.name)).toEqual(['gemini-3.5-flash-lite', 'groq-gpt-oss-120b']);
 	});
 
 	it('appends after groq so the current chain order is unchanged', () => {
@@ -313,16 +313,16 @@ describe('buildProviders: cerebras leg', () => {
 		});
 		expect(chain.map((p) => p.name)).toEqual([
 			'gemini-3.5-flash-lite',
-			'groq-llama-3.3-70b',
-			'cerebras-llama-3.3-70b'
+			'groq-gpt-oss-120b',
+			'cerebras-gpt-oss-120b'
 		]);
 	});
 
-	// groq loses its only viable model on 2026-08-16, so cerebras alone must still
-	// give a cross-vendor fallback next to google
+	// even without groq configured, cerebras alone must still give a cross-vendor
+	// fallback next to google
 	it('still pairs with google once groq is dropped', () => {
 		const chain = buildProviders({ GEMINI_API_KEY: 'k', CEREBRAS_API_KEY: 'k' });
-		expect(chain.map((p) => p.name)).toEqual(['gemini-3.5-flash-lite', 'cerebras-llama-3.3-70b']);
+		expect(chain.map((p) => p.name)).toEqual(['gemini-3.5-flash-lite', 'cerebras-gpt-oss-120b']);
 	});
 });
 
@@ -354,8 +354,8 @@ describe('PROVIDER_ENV_KEYS covers every leg', () => {
 	it('builds one leg per vendor from a fully populated env', () => {
 		expect(buildProviders(EVERY_PROVIDER_ENV).map((p) => p.name)).toEqual([
 			'gemini-3.5-flash-lite',
-			'groq-llama-3.3-70b',
-			'cerebras-llama-3.3-70b',
+			'groq-gpt-oss-120b',
+			'cerebras-gpt-oss-120b',
 			'ollama-llama3.2'
 		]);
 	});
