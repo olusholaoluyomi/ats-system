@@ -1,9 +1,38 @@
 <script lang="ts">
+	import { goto } from '$app/navigation';
+	import { page } from '$app/state';
 	import SeoHead from '$components/seo/SeoHead.svelte';
+	import { authStore } from '$stores/auth.svelte';
+	import { profileStore } from '$stores/profile.svelte';
 	import { timeAgo, formatPostedDate } from './shared';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
+
+	// convenience default, not a hard override: a signed-in visitor who lands
+	// on the board with no search of their own yet gets it pre-filled from
+	// their saved profile preferences. only fires once per visit (prefilled
+	// guard) and only when the URL carries no query params at all - the
+	// moment someone filters manually, their own params always win.
+	let prefilled = $state(false);
+	$effect(() => {
+		if (prefilled) return;
+		if (page.url.search) {
+			prefilled = true;
+			return;
+		}
+		if (!(authStore.disabled || authStore.isAuthenticated)) return;
+		profileStore.load().then(() => {
+			if (prefilled || page.url.search) return;
+			prefilled = true;
+			const { preferredKeywords, preferredRemoteOnly } = profileStore.profile;
+			if (!preferredKeywords && !preferredRemoteOnly) return;
+			const parts: string[] = [];
+			if (preferredKeywords) parts.push(`q=${encodeURIComponent(preferredKeywords)}`);
+			if (preferredRemoteOnly) parts.push('remote=true');
+			goto(`/jobs?${parts.join('&')}`, { replaceState: true, keepFocus: true, noScroll: true });
+		});
+	});
 
 	// filters narrow what's shown to the TOP of the list, they never hide
 	// results outright - matchCount (from +page.server.ts) tells us where the

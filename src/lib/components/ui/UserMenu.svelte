@@ -32,6 +32,11 @@
 		goto('/tracker');
 	}
 
+	function goToProfile() {
+		open = false;
+		goto('/profile');
+	}
+
 	function goToTransactions() {
 		open = false;
 		goto('/transactions');
@@ -160,6 +165,27 @@
 					<path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
 				</svg>
 				Application Tracker
+			</a>
+			<a
+				class="dropdown-item"
+				onclick={(event) => {
+					event.preventDefault();
+					goToProfile();
+				}}
+				href="/profile"
+			>
+				<svg
+					width="14"
+					height="14"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+				>
+					<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+					<circle cx="12" cy="7" r="4" />
+				</svg>
+				Profile
 			</a>
 			<a
 				class="dropdown-item"
