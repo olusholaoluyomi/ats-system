@@ -14,12 +14,25 @@
  *
  * no LLM classification step - postings are shown as-is, filtered/searched
  * by the board's own remote flag (native to each ATS's API, not inferred)
- * and free-text keyword search over title/company/department. an earlier
- * version LLM-tagged every posting for relocation/Africa-friendliness/
- * experience level, but that meant hundreds of classification calls per
- * run against free-tier providers that couldn't reliably keep up (see the
- * commit history around 2026-09-04) - not worth the token cost or the
+ * and a real Firestore keyword query over title/company/department (see
+ * jobs/+page.server.ts). an earlier version LLM-tagged every posting for
+ * relocation/Africa-friendliness/experience level, but that meant hundreds
+ * of classification calls per run against free-tier providers that
+ * couldn't reliably keep up - not worth the token cost or the
  * unclassified backlog it left behind.
+ *
+ * QUOTA BUDGET (Firestore free tier: 50k reads / 20k writes / 20k deletes
+ * per day): this script is deliberately shaped around that ceiling.
+ *  - dedupe-and-write.ts's upsertCompanyPostings does exactly ONE Firestore
+ *    read per company (that company's existing docs), not one per posting,
+ *    and writes only postings that are new/changed/reactivated/
+ *    deactivated - an unchanged posting costs zero writes on re-ingestion.
+ *  - MAX_POSTINGS_PER_COMPANY below caps how many of one company's
+ *    postings get ingested at all, so a single large employer can't both
+ *    dominate the board's content AND eat a disproportionate share of the
+ *    daily read/write budget on its own.
+ *  - the ingestion cron (.github/workflows/ingest-jobs.yml) runs every 4
+ *    hours, not hourly, for the same reason - see that file's comment.
  *
  * one company's fetch/write failure is caught and logged - it never aborts
  * the run. only exits non-zero if every enabled company failed (a total
@@ -39,8 +52,28 @@ import { fetchLeverJobs } from '../src/lib/server/job-board/ats-clients/lever.ts
 import { fetchAshbyJobs } from '../src/lib/server/job-board/ats-clients/ashby.ts';
 import {
 	upsertCompanyPostings,
-	sweepInactiveJobs
+	deleteStalePostings
 } from '../src/lib/server/job-board/dedupe-and-write.ts';
+
+// one company (Databricks, OpenAI, Stripe, etc. have all shown 500-900+
+// live postings at once) can otherwise dwarf every other company on the
+// board and burn a huge share of the daily read/write budget by itself -
+// this keeps the board diverse across companies and keeps quota usage
+// roughly proportional to company count, not to any one company's total
+// headcount. sorted by postedAtSource (newest first, nulls last) before
+// slicing so the cap keeps the most current roles, not an arbitrary prefix
+// of whatever order the ATS API happened to return.
+const MAX_POSTINGS_PER_COMPANY = 40;
+
+function capPostings(postings) {
+	if (postings.length <= MAX_POSTINGS_PER_COMPANY) return postings;
+	const sorted = [...postings].sort((a, b) => {
+		const at = a.postedAtSource ? new Date(a.postedAtSource).getTime() : 0;
+		const bt = b.postedAtSource ? new Date(b.postedAtSource).getTime() : 0;
+		return bt - at;
+	});
+	return sorted.slice(0, MAX_POSTINGS_PER_COMPANY);
+}
 
 // discovered-companies.json only ever gains entries via a reviewed, merged
 // PR (see discover-companies.mjs / .github/workflows/discover-companies.yml)
@@ -88,33 +121,27 @@ const FETCHERS = {
 	ashby: fetchAshbyJobs
 };
 
-// how stale (unseen) an active posting must be before the sweep marks it
-// inactive: ~3 missed runs at the hourly cron interval, so a single flaky
-// ingestion run never flickers a posting active/inactive. this catches a
-// posting pulled down by its source EARLY (before the board's own 48h
-// window would have aged it out anyway - see MAX_POSTING_AGE_MS in
-// routes/jobs/+page.server.ts, which is the hard display-side cutoff).
-const STALE_AFTER_MS = 3 * 60 * 60 * 1000;
-
 const enabledCompanies = ALL_COMPANIES.filter((c) => c.enabled);
-const touchedJobIds = new Set();
 let newCount = 0;
-let updatedCount = 0;
+let changedCount = 0;
+let skippedCount = 0;
 let failedCompanies = 0;
 
 for (const company of enabledCompanies) {
 	try {
 		const fetcher = FETCHERS[company.atsType];
-		const postings = await fetcher(company.boardToken);
+		const postings = capPostings(await fetcher(company.boardToken));
 		const results = await upsertCompanyPostings(db, company, postings);
 
-		for (const r of results) touchedJobIds.add(r.jobId);
 		const newResults = results.filter((r) => r.isNew);
+		const changedResults = results.filter((r) => !r.isNew && r.written);
+		const skippedResults = results.filter((r) => !r.written);
 		newCount += newResults.length;
-		updatedCount += results.length - newResults.length;
+		changedCount += changedResults.length;
+		skippedCount += skippedResults.length;
 
 		console.log(
-			`${company.name} (${company.atsType}): fetched ${postings.length}, new ${newResults.length}, updated ${results.length - newResults.length}`
+			`${company.name} (${company.atsType}): fetched ${postings.length}, new ${newResults.length}, changed ${changedResults.length}, unchanged (no write) ${skippedResults.length}`
 		);
 	} catch (err) {
 		failedCompanies++;
@@ -122,10 +149,14 @@ for (const company of enabledCompanies) {
 	}
 }
 
-const sweptCount = await sweepInactiveJobs(db, touchedJobIds, STALE_AFTER_MS);
+// storage cleanup: hard-delete postings that have been inactive for a while
+// (well past the 48h display window) - see deleteStalePostings's own
+// comment. bounded per run, cheap against the delete quota either way.
+const STALE_DELETE_AFTER_MS = 14 * 24 * 60 * 60 * 1000; // 14 days
+const deletedCount = await deleteStalePostings(db, STALE_DELETE_AFTER_MS);
 
 console.log(
-	`\ndone: ${newCount} new, ${updatedCount} updated, ${sweptCount} swept inactive, ${failedCompanies}/${enabledCompanies.length} companies failed`
+	`\ndone: ${newCount} new, ${changedCount} changed, ${skippedCount} unchanged (no write), ${deletedCount} stale postings deleted, ${failedCompanies}/${enabledCompanies.length} companies failed`
 );
 
 if (enabledCompanies.length > 0 && failedCompanies === enabledCompanies.length) {

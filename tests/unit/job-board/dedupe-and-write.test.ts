@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import {
 	upsertCompanyPostings,
-	sweepInactiveJobs,
+	deleteStalePostings,
 	jobId
 } from '../../../src/lib/server/job-board/dedupe-and-write';
 import type { SeedCompany } from '../../../src/lib/server/job-board/seed-companies';
 import type { RawJobPosting } from '../../../src/lib/server/job-board/types';
 
 // minimal in-memory fake standing in for firebase-admin's Firestore: just
-// enough surface (doc/collection/where/get/runTransaction) for
+// enough surface (doc/collection/where/limit/get/batch) for
 // dedupe-and-write.ts's actual usage, keyed by doc path.
 function createFakeDb() {
 	const store = new Map<string, Record<string, unknown>>();
@@ -16,14 +16,52 @@ function createFakeDb() {
 	function makeRef(path: string) {
 		return {
 			path,
+			id: path.split('/').pop(),
 			get: async () => ({
 				exists: store.has(path),
 				id: path.split('/').pop(),
 				data: () => store.get(path)
+			})
+		};
+	}
+
+	function makeQuery(name: string, predicates: ((data: Record<string, unknown>) => boolean)[]) {
+		return {
+			where: (field: string, op: string, value: unknown) => {
+				const predicate = (data: Record<string, unknown>) => {
+					if (op === '==') return data[field] === value;
+					if (op === '<') {
+						const a = data[field];
+						return a instanceof Date && value instanceof Date && a.getTime() < value.getTime();
+					}
+					throw new Error(`unsupported op in fake db: ${op}`);
+				};
+				return makeQuery(name, [...predicates, predicate]);
+			},
+			limit: (n: number) => ({
+				get: async () => {
+					const docs = [...store.entries()]
+						.filter(
+							([path, data]) => path.startsWith(`${name}/`) && predicates.every((p) => p(data))
+						)
+						.slice(0, n)
+						.map(([path, data]) => ({
+							id: path.split('/').pop(),
+							ref: makeRef(path),
+							data: () => data
+						}));
+					return { docs, empty: docs.length === 0, size: docs.length };
+				}
 			}),
-			set: async (data: Record<string, unknown>, opts?: { merge?: boolean }) => {
-				const existing = opts?.merge ? (store.get(path) ?? {}) : {};
-				store.set(path, { ...existing, ...data });
+			get: async () => {
+				const docs = [...store.entries()]
+					.filter(([path, data]) => path.startsWith(`${name}/`) && predicates.every((p) => p(data)))
+					.map(([path, data]) => ({
+						id: path.split('/').pop(),
+						ref: makeRef(path),
+						data: () => data
+					}));
+				return { docs, empty: docs.length === 0, size: docs.length };
 			}
 		};
 	}
@@ -31,33 +69,31 @@ function createFakeDb() {
 	return {
 		store,
 		doc: (path: string) => makeRef(path),
-		collection: (name: string) => ({
-			where: (field: string, _op: string, value: unknown) => ({
-				get: async () => {
-					const docs = [...store.entries()]
-						.filter(([path, data]) => path.startsWith(`${name}/`) && data[field] === value)
-						.map(([path, data]) => ({
-							id: path.split('/').pop(),
-							ref: makeRef(path),
-							data: () => data
-						}));
-					return { docs };
-				}
-			})
-		}),
-		runTransaction: async (
-			fn: (tx: {
-				get: (ref: ReturnType<typeof makeRef>) => Promise<unknown>;
-				set: (ref: ReturnType<typeof makeRef>, data: Record<string, unknown>) => void;
-			}) => Promise<unknown>
-		) => {
-			const tx = {
-				get: (ref: ReturnType<typeof makeRef>) => ref.get(),
+		collection: (name: string) => makeQuery(name, []),
+		batch: () => {
+			const ops: {
+				type: 'set' | 'delete';
+				ref: ReturnType<typeof makeRef>;
+				data?: Record<string, unknown>;
+			}[] = [];
+			return {
 				set: (ref: ReturnType<typeof makeRef>, data: Record<string, unknown>) => {
-					store.set(ref.path, data);
+					ops.push({ type: 'set', ref, data });
+				},
+				delete: (ref: ReturnType<typeof makeRef>) => {
+					ops.push({ type: 'delete', ref });
+				},
+				commit: async () => {
+					for (const op of ops) {
+						if (op.type === 'delete') {
+							store.delete(op.ref.path);
+						} else {
+							const existing = store.get(op.ref.path) ?? {};
+							store.set(op.ref.path, { ...existing, ...op.data });
+						}
+					}
 				}
 			};
-			return fn(tx);
 		}
 	};
 }
@@ -95,14 +131,15 @@ describe('upsertCompanyPostings', () => {
 		const db = createFakeDb();
 		const results = await upsertCompanyPostings(db as never, COMPANY, [posting()]);
 
-		expect(results).toEqual([{ jobId: 'greenhouse:1', isNew: true }]);
+		expect(results).toEqual([{ jobId: 'greenhouse:1', isNew: true, written: true }]);
 		const doc = db.store.get('jobs/greenhouse:1');
 		expect(doc?.firstSeenAt).toBeInstanceOf(Date);
 		expect(doc?.active).toBe(true);
 		expect(doc?.companyName).toBe('Acme');
+		expect(doc?.searchKeywords).toEqual(expect.arrayContaining(['engineer', 'acme']));
 	});
 
-	it('marks a re-ingested posting as not new and preserves firstSeenAt', async () => {
+	it('marks a re-ingested posting with changed content as written, preserves firstSeenAt', async () => {
 		const db = createFakeDb();
 		await upsertCompanyPostings(db as never, COMPANY, [posting()]);
 		const firstSeenAt = db.store.get('jobs/greenhouse:1')?.firstSeenAt;
@@ -110,13 +147,70 @@ describe('upsertCompanyPostings', () => {
 		const results = await upsertCompanyPostings(
 			db as never,
 			COMPANY,
-			[posting({ title: 'Senior Engineer' })] // description/title changed on re-fetch
+			[posting({ title: 'Senior Engineer' })] // title changed on re-fetch
 		);
 
-		expect(results).toEqual([{ jobId: 'greenhouse:1', isNew: false }]);
+		expect(results).toEqual([{ jobId: 'greenhouse:1', isNew: false, written: true }]);
 		const doc = db.store.get('jobs/greenhouse:1');
 		expect(doc?.title).toBe('Senior Engineer'); // refreshed
 		expect(doc?.firstSeenAt).toBe(firstSeenAt); // preserved, not reset
+	});
+
+	it('skips the write entirely for a re-ingested posting with identical content (quota-critical)', async () => {
+		const db = createFakeDb();
+		await upsertCompanyPostings(db as never, COMPANY, [posting()]);
+		const before = db.store.get('jobs/greenhouse:1');
+
+		const results = await upsertCompanyPostings(db as never, COMPANY, [posting()]);
+
+		expect(results).toEqual([{ jobId: 'greenhouse:1', isNew: false, written: false }]);
+		expect(db.store.get('jobs/greenhouse:1')).toEqual(before); // byte-for-byte untouched, including updatedAt
+	});
+
+	it('reactivates a previously-deactivated posting that reappears', async () => {
+		const db = createFakeDb();
+		await upsertCompanyPostings(db as never, COMPANY, [posting()]);
+		db.store.set('jobs/greenhouse:1', {
+			...db.store.get('jobs/greenhouse:1'),
+			active: false
+		});
+
+		const results = await upsertCompanyPostings(db as never, COMPANY, [posting()]);
+
+		expect(results).toEqual([{ jobId: 'greenhouse:1', isNew: false, written: true }]);
+		expect(db.store.get('jobs/greenhouse:1')?.active).toBe(true);
+	});
+
+	it('deactivates a previously-active posting that this run did not fetch, using only the one company-scoped read', async () => {
+		const db = createFakeDb();
+		await upsertCompanyPostings(db as never, COMPANY, [
+			posting({ externalId: '1' }),
+			posting({ externalId: '2' })
+		]);
+
+		const results = await upsertCompanyPostings(db as never, COMPANY, [
+			posting({ externalId: '1' })
+		]);
+
+		// posting 2 wasn't in this run's fetch and isn't in the returned
+		// results at all (results only cover THIS run's fetched postings) -
+		// but its doc should now be inactive.
+		expect(results).toEqual([{ jobId: 'greenhouse:1', isNew: false, written: false }]);
+		expect(db.store.get('jobs/greenhouse:2')?.active).toBe(false);
+	});
+
+	it('does not re-deactivate (write) a posting that is already inactive', async () => {
+		const db = createFakeDb();
+		await upsertCompanyPostings(db as never, COMPANY, [
+			posting({ externalId: '1' }),
+			posting({ externalId: '2' })
+		]);
+		await upsertCompanyPostings(db as never, COMPANY, [posting({ externalId: '1' })]);
+		const afterFirstSweep = db.store.get('jobs/greenhouse:2');
+
+		await upsertCompanyPostings(db as never, COMPANY, [posting({ externalId: '1' })]);
+
+		expect(db.store.get('jobs/greenhouse:2')).toEqual(afterFirstSweep); // untouched, no re-write
 	});
 
 	it('extracts years-of-experience from descriptionText via the non-AI heuristic', async () => {
@@ -142,47 +236,43 @@ describe('upsertCompanyPostings', () => {
 	});
 });
 
-describe('sweepInactiveJobs', () => {
-	it('marks an untouched, stale active job inactive', async () => {
+describe('deleteStalePostings', () => {
+	it('deletes an inactive posting past the age cutoff', async () => {
 		const db = createFakeDb();
 		db.store.set('jobs/greenhouse:99', {
-			active: true,
-			lastSeenAt: new Date(Date.now() - 24 * 60 * 60 * 1000) // 24h ago
+			active: false,
+			updatedAt: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000) // 20 days ago
 		});
 
-		const swept = await sweepInactiveJobs(db as never, new Set(), 12 * 60 * 60 * 1000);
+		const deleted = await deleteStalePostings(db as never, 14 * 24 * 60 * 60 * 1000);
 
-		expect(swept).toBe(1);
-		expect(db.store.get('jobs/greenhouse:99')?.active).toBe(false);
+		expect(deleted).toBe(1);
+		expect(db.store.has('jobs/greenhouse:99')).toBe(false);
 	});
 
-	it('does not sweep a job that was touched this run', async () => {
+	it('leaves an active posting alone regardless of age', async () => {
 		const db = createFakeDb();
 		db.store.set('jobs/greenhouse:1', {
 			active: true,
-			lastSeenAt: new Date(Date.now() - 24 * 60 * 60 * 1000)
+			updatedAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
 		});
 
-		const swept = await sweepInactiveJobs(
-			db as never,
-			new Set(['greenhouse:1']),
-			12 * 60 * 60 * 1000
-		);
+		const deleted = await deleteStalePostings(db as never, 14 * 24 * 60 * 60 * 1000);
 
-		expect(swept).toBe(0);
-		expect(db.store.get('jobs/greenhouse:1')?.active).toBe(true);
+		expect(deleted).toBe(0);
+		expect(db.store.has('jobs/greenhouse:1')).toBe(true);
 	});
 
-	it('does not sweep a job that is not stale yet', async () => {
+	it('leaves a recently-deactivated posting alone', async () => {
 		const db = createFakeDb();
 		db.store.set('jobs/greenhouse:1', {
-			active: true,
-			lastSeenAt: new Date() // just seen
+			active: false,
+			updatedAt: new Date() // just deactivated
 		});
 
-		const swept = await sweepInactiveJobs(db as never, new Set(), 12 * 60 * 60 * 1000);
+		const deleted = await deleteStalePostings(db as never, 14 * 24 * 60 * 60 * 1000);
 
-		expect(swept).toBe(0);
-		expect(db.store.get('jobs/greenhouse:1')?.active).toBe(true);
+		expect(deleted).toBe(0);
+		expect(db.store.has('jobs/greenhouse:1')).toBe(true);
 	});
 });

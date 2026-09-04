@@ -9,6 +9,42 @@
 			]
 		},
 		{
+			"collectionGroup": "jobs",
+			"queryScope": "COLLECTION",
+			"fields": [
+				{ "fieldPath": "active", "order": "ASCENDING" },
+				{ "fieldPath": "remote", "order": "ASCENDING" },
+				{ "fieldPath": "firstSeenAt", "order": "DESCENDING" }
+			]
+		},
+		{
+			"collectionGroup": "jobs",
+			"queryScope": "COLLECTION",
+			"fields": [
+				{ "fieldPath": "active", "order": "ASCENDING" },
+				{ "fieldPath": "searchKeywords", "arrayConfig": "CONTAINS" },
+				{ "fieldPath": "firstSeenAt", "order": "DESCENDING" }
+			]
+		},
+		{
+			"collectionGroup": "jobs",
+			"queryScope": "COLLECTION",
+			"fields": [
+				{ "fieldPath": "active", "order": "ASCENDING" },
+				{ "fieldPath": "remote", "order": "ASCENDING" },
+				{ "fieldPath": "searchKeywords", "arrayConfig": "CONTAINS" },
+				{ "fieldPath": "firstSeenAt", "order": "DESCENDING" }
+			]
+		},
+		{
+			"collectionGroup": "jobs",
+			"queryScope": "COLLECTION",
+			"fields": [
+				{ "fieldPath": "active", "order": "ASCENDING" },
+				{ "fieldPath": "updatedAt", "order": "ASCENDING" }
+			]
+		},
+		{
 			"collectionGroup": "profile",
 			"queryScope": "COLLECTION_GROUP",
 			"fields": [{ "fieldPath": "notifyOnMatch", "order": "ASCENDING" }]

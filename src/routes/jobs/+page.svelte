@@ -34,19 +34,31 @@
 		});
 	});
 
-	// filters narrow what's shown to the TOP of the list, they never hide
-	// results outright - matchCount (from +page.server.ts) tells us where the
-	// "matches your filters" group ends and the "other roles" group begins,
-	// so someone whose filters happen to match nothing still sees the rest of
-	// the board instead of a dead end.
 	const hasActiveFilters = $derived(
 		data.filters.remote ||
 			Boolean(data.filters.query) ||
 			data.filters.experienceMin !== null ||
 			data.filters.experienceMax !== null
 	);
-	const matchedJobs = $derived(hasActiveFilters ? data.jobs.slice(0, data.matchCount) : data.jobs);
-	const otherJobs = $derived(hasActiveFilters ? data.jobs.slice(data.matchCount) : []);
+
+	// pagination is real cursor-based Firestore pagination (see
+	// +page.server.ts) - these links carry the current search/filter params
+	// forward alongside the cursor, so paging never drops what was searched
+	// for. rebuilt from data.filters rather than parsing page.url.search, so
+	// there's no mutable URLSearchParams instance to manage.
+	function pageLink(direction: 'next' | 'prev'): string {
+		const parts: string[] = [];
+		if (data.filters.query) parts.push(`q=${encodeURIComponent(data.filters.query)}`);
+		if (data.filters.remote) parts.push('remote=true');
+		if (data.filters.experienceMin !== null)
+			parts.push(`experienceMin=${data.filters.experienceMin}`);
+		if (data.filters.experienceMax !== null)
+			parts.push(`experienceMax=${data.filters.experienceMax}`);
+		const cursor = direction === 'next' ? data.nextCursor : data.prevCursor;
+		if (cursor)
+			parts.push(`${direction === 'next' ? 'after' : 'before'}=${encodeURIComponent(cursor)}`);
+		return `/jobs?${parts.join('&')}`;
+	}
 
 	function experienceLabel(job: (typeof data.jobs)[number]): string | null {
 		const { minYearsExperience: min, maxYearsExperience: max } = job;
@@ -59,7 +71,7 @@
 
 <SeoHead
 	title="Job Board | ATS Screener"
-	description="Remote-friendly roles from real companies - refreshed hourly. Search by role, filter by remote, then check your ATS score before you apply."
+	description="Remote-friendly roles from real companies, refreshed every few hours. Search by role, filter by remote, then check your ATS score before you apply."
 />
 
 <main class="jobs-page">
@@ -107,7 +119,7 @@
 				class="filter-years-input"
 			/>
 		</label>
-		<button type="submit" class="filter-apply">Filter</button>
+		<button type="submit" class="filter-apply">Search</button>
 	</form>
 
 	{#snippet jobCard(job: (typeof data.jobs)[number])}
@@ -136,34 +148,31 @@
 
 	{#if data.jobs.length === 0}
 		<p class="jobs-empty">
-			No roles match right now - check back soon, the board refreshes every hour.
+			{hasActiveFilters
+				? 'No roles match that search right now - try different keywords, or clear the filters to browse everything.'
+				: 'No roles match right now - check back soon, the board refreshes every few hours.'}
 		</p>
 	{:else}
-		{#if hasActiveFilters && matchedJobs.length === 0}
-			<p class="jobs-empty jobs-empty-inline">
-				Nothing matches those filters right now - here's everything else currently on the board.
-			</p>
-		{/if}
+		<div class="jobs-list">
+			{#each data.jobs as job (job.id)}
+				{@render jobCard(job)}
+			{/each}
+		</div>
+	{/if}
 
-		{#if hasActiveFilters && matchedJobs.length > 0}
-			<h2 class="jobs-section-heading">Matching your filters</h2>
-		{/if}
-		{#if matchedJobs.length > 0}
-			<div class="jobs-list">
-				{#each matchedJobs as job (job.id)}
-					{@render jobCard(job)}
-				{/each}
-			</div>
-		{/if}
-
-		{#if hasActiveFilters && otherJobs.length > 0}
-			<h2 class="jobs-section-heading">Other roles</h2>
-			<div class="jobs-list">
-				{#each otherJobs as job (job.id)}
-					{@render jobCard(job)}
-				{/each}
-			</div>
-		{/if}
+	{#if data.hasPrev || data.hasNext}
+		<nav class="jobs-pagination" aria-label="Job board pages">
+			{#if data.hasPrev}
+				<a class="page-link" href={pageLink('prev')}>← Previous</a>
+			{:else}
+				<span class="page-link disabled">← Previous</span>
+			{/if}
+			{#if data.hasNext}
+				<a class="page-link" href={pageLink('next')}>Next →</a>
+			{:else}
+				<span class="page-link disabled">Next →</span>
+			{/if}
+		</nav>
 	{/if}
 </main>
 
@@ -196,6 +205,13 @@
 	}
 
 	.jobs-title {
+		/* a global h1 reset caps max-inline-size at ~400px, which shrinks this
+		   h1's own box well below .jobs-header's width - text-align:center
+		   then only centers the text WITHIN that narrow box, not the box
+		   itself, so the title visibly sits left-shifted next to the
+		   (full-width) badge and subtitle above/below it. overriding it back
+		   to the full available width is what actually centers it. */
+		max-width: none;
 		font-size: var(--text-3xl);
 		font-weight: 800;
 		color: var(--text-primary);
@@ -281,21 +297,33 @@
 		padding: var(--space-16) 0;
 	}
 
-	.jobs-empty-inline {
-		padding: var(--space-4) 0 var(--space-6);
+	.jobs-pagination {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		gap: var(--space-4);
+		margin-top: var(--space-10);
 	}
 
-	.jobs-section-heading {
+	.page-link {
+		padding: var(--space-2) var(--space-5);
+		border-radius: var(--radius-full);
+		background: var(--glass-bg);
+		border: 1px solid var(--glass-border);
+		color: var(--text-primary);
+		font-weight: 600;
 		font-size: var(--text-sm);
-		font-weight: 700;
-		text-transform: uppercase;
-		letter-spacing: 0.06em;
-		color: var(--text-tertiary);
-		margin: var(--space-8) 0 var(--space-4);
+		text-decoration: none;
 	}
 
-	.jobs-section-heading:first-of-type {
-		margin-top: 0;
+	.page-link:hover {
+		border-color: var(--accent-border-hover);
+	}
+
+	.page-link.disabled {
+		color: var(--text-tertiary);
+		opacity: 0.5;
+		pointer-events: none;
 	}
 
 	.jobs-list {

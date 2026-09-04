@@ -1,15 +1,33 @@
-// upserts one company's fetched postings into jobs/{jobId}, and sweeps
-// postings that have disappeared from a source into active:false. mirrors
-// billing.ts's idempotency-inside-transaction shape: tx.get() before
-// tx.set(), decide new-vs-existing from what's actually in the doc right now.
-import type { Firestore } from 'firebase-admin/firestore';
+// upserts one company's fetched postings into jobs/{jobId}, and deactivates
+// postings that have disappeared from that company's source - all from a
+// SINGLE read of that company's existing docs, and only the writes that are
+// actually new/changed/reactivated/deactivated, batched together.
+//
+// this replaced an earlier version that ran one Firestore transaction per
+// posting (1 read + 1 write, every posting, every run, even when nothing
+// about it had changed) plus a separate global sweep query reading every
+// active job across every company, every run. that was fine at a handful of
+// companies but blew straight through Firestore's free-tier daily quota
+// (50k reads / 20k writes) once the board grew past ~150 companies with
+// some posting 500-900+ roles each - see the ingest-jobs.mjs comment for
+// the actual budget math. this version does exactly one query per company
+// (bounded by that company's own doc count, not the whole collection) and
+// writes only what actually changed, which is the only way to stay under
+// quota at this scale without a real architecture change (a search index
+// service, sharded counters, etc.) that isn't worth it for a free-tier app.
+import type { Firestore, DocumentReference } from 'firebase-admin/firestore';
 import type { RawJobPosting } from './types.ts';
 import type { SeedCompany } from './seed-companies.ts';
 import { extractYearsOfExperience } from './experience-heuristic.ts';
+import { buildSearchKeywords } from './search-keywords.ts';
 
 export interface UpsertResult {
 	jobId: string;
 	isNew: boolean;
+	// false for a posting that was already active with identical content -
+	// no write was issued for it. lets the caller log real write volume
+	// instead of "one write per posting fetched".
+	written: boolean;
 }
 
 // doc ID is deterministic per external posting (`${atsType}:${externalId}`)
@@ -18,28 +36,96 @@ export function jobId(atsType: SeedCompany['atsType'], externalId: string): stri
 	return `${atsType}:${externalId}`;
 }
 
+// Firestore's hard cap is 500 writes per batch commit; leave headroom for
+// the rare company whose posting count sits right at the edge.
+const BATCH_LIMIT = 400;
+
+interface MutableFields {
+	title: string;
+	department: string | null;
+	locationRaw: string;
+	remote: boolean;
+	applyUrl: string;
+	descriptionText: string;
+	minYearsExperience: number | null;
+	maxYearsExperience: number | null;
+}
+
+// only the fields that matter for "did this posting actually change" -
+// postedAtSource is deliberately excluded (display/debug only, see
+// types.ts) so a source flip-flopping that field alone never forces a
+// write. active must already be true too, so a previously-deactivated
+// posting that reappears always gets rewritten (reactivated), never
+// silently treated as "unchanged".
+function isUnchanged(existing: Record<string, unknown>, next: MutableFields): boolean {
+	return (
+		existing.active === true &&
+		existing.title === next.title &&
+		(existing.department ?? null) === next.department &&
+		existing.locationRaw === next.locationRaw &&
+		existing.remote === next.remote &&
+		existing.applyUrl === next.applyUrl &&
+		existing.descriptionText === next.descriptionText &&
+		(existing.minYearsExperience ?? null) === next.minYearsExperience &&
+		(existing.maxYearsExperience ?? null) === next.maxYearsExperience
+	);
+}
+
+async function commitInChunks(
+	db: Firestore,
+	writes: { ref: DocumentReference; data: Record<string, unknown> }[]
+): Promise<void> {
+	for (let i = 0; i < writes.length; i += BATCH_LIMIT) {
+		const chunk = writes.slice(i, i + BATCH_LIMIT);
+		const batch = db.batch();
+		for (const { ref, data } of chunk) {
+			batch.set(ref, data, { merge: true });
+		}
+		await batch.commit();
+	}
+}
+
 export async function upsertCompanyPostings(
 	db: Firestore,
 	company: SeedCompany,
 	postings: RawJobPosting[]
 ): Promise<UpsertResult[]> {
 	const results: UpsertResult[] = [];
+	const pendingWrites: { ref: DocumentReference; data: Record<string, unknown> }[] = [];
+
+	// the ONE read for this whole company - every posting below is decided
+	// from this in-memory map, no per-posting reads.
+	const existingSnap = await db.collection('jobs').where('companySlug', '==', company.slug).get();
+	const existingByExternalId = new Map<
+		string,
+		{ ref: DocumentReference; data: Record<string, unknown> }
+	>();
+	for (const doc of existingSnap.docs) {
+		const data = doc.data();
+		if (typeof data.externalId === 'string') {
+			existingByExternalId.set(data.externalId, { ref: doc.ref, data });
+		}
+	}
+
+	const now = new Date();
+	const seenExternalIds = new Set<string>();
 
 	for (const posting of postings) {
+		seenExternalIds.add(posting.externalId);
 		const id = jobId(company.atsType, posting.externalId);
 		const ref = db.doc(`jobs/${id}`);
-
-		// non-AI, regex-based - see experience-heuristic.ts. re-derived on every
-		// upsert (cheap, deterministic) so a posting whose text changes on
-		// re-fetch gets a fresh extraction rather than a stale one.
 		const { minYears, maxYears } = extractYearsOfExperience(posting.descriptionText);
+		const searchKeywords = buildSearchKeywords(
+			posting.title,
+			company.name,
+			posting.department ?? null
+		);
+		const existing = existingByExternalId.get(posting.externalId);
 
-		const isNew = await db.runTransaction(async (tx) => {
-			const snap = await tx.get(ref);
-			const now = new Date();
-
-			if (!snap.exists) {
-				tx.set(ref, {
+		if (!existing) {
+			pendingWrites.push({
+				ref,
+				data: {
 					source: company.atsType,
 					externalId: posting.externalId,
 					companySlug: company.slug,
@@ -53,69 +139,94 @@ export async function upsertCompanyPostings(
 					postedAtSource: posting.postedAtSource,
 					minYearsExperience: minYears,
 					maxYearsExperience: maxYears,
+					searchKeywords,
 					// the authoritative "posted" signal for the 48h filter - set
-					// once, on first observation, never touched again. see
-					// types.ts's RawJobPosting.postedAtSource comment for why the
-					// source's own date is display-only instead.
+					// once, on first observation, never touched again.
 					firstSeenAt: now,
 					lastSeenAt: now,
 					whyThisCompany: company.whyThisCompany ?? null,
 					active: true,
 					createdAt: now,
 					updatedAt: now
-				});
-				return true;
-			}
+				}
+			});
+			results.push({ jobId: id, isNew: true, written: true });
+			continue;
+		}
 
-			// existing posting: refresh everything except firstSeenAt (preserved).
-			const existing = snap.data() ?? {};
-			tx.set(ref, {
-				...existing,
-				title: posting.title,
-				department: posting.department ?? null,
-				locationRaw: posting.locationRaw,
-				remote: posting.remote,
-				applyUrl: posting.applyUrl,
-				descriptionText: posting.descriptionText,
+		const nextFields: MutableFields = {
+			title: posting.title,
+			department: posting.department ?? null,
+			locationRaw: posting.locationRaw,
+			remote: posting.remote,
+			applyUrl: posting.applyUrl,
+			descriptionText: posting.descriptionText,
+			minYearsExperience: minYears,
+			maxYearsExperience: maxYears
+		};
+
+		if (isUnchanged(existing.data, nextFields)) {
+			// already active with identical content - no write needed just to
+			// prove it's still there. seenExternalIds (above) is what keeps it
+			// from being deactivated below.
+			results.push({ jobId: id, isNew: false, written: false });
+			continue;
+		}
+
+		pendingWrites.push({
+			ref: existing.ref,
+			data: {
+				...nextFields,
 				postedAtSource: posting.postedAtSource,
-				minYearsExperience: minYears,
-				maxYearsExperience: maxYears,
+				searchKeywords,
 				lastSeenAt: now,
 				active: true,
 				updatedAt: now
-			});
-			return false;
+				// firstSeenAt intentionally omitted - merge:true leaves it as
+				// whatever was already stored, never reset on refresh.
+			}
 		});
-
-		results.push({ jobId: id, isNew });
+		results.push({ jobId: id, isNew: false, written: true });
 	}
+
+	// anything previously known for this company that this run's fetch
+	// didn't return is gone from the source - deactivate it now, using data
+	// already in hand from the single read above (no extra reads, and this
+	// replaces the old global sweep query entirely).
+	for (const [externalId, { ref, data }] of existingByExternalId) {
+		if (seenExternalIds.has(externalId)) continue;
+		if (data.active === false) continue;
+		pendingWrites.push({ ref, data: { active: false, updatedAt: now } });
+	}
+
+	await commitInChunks(db, pendingWrites);
 
 	return results;
 }
 
-// marks postings inactive once they've gone missing from their source's
-// feed for long enough that it's not just a single flaky ingestion run.
-// `touchedJobIds` is every jobId successfully upserted THIS run, across all
-// companies; anything currently active but not touched, whose lastSeenAt is
-// older than `staleAfterMs`, gets flipped to active:false.
-export async function sweepInactiveJobs(
-	db: Firestore,
-	touchedJobIds: Set<string>,
-	staleAfterMs: number
-): Promise<number> {
-	const cutoff = new Date(Date.now() - staleAfterMs);
-	const snapshot = await db.collection('jobs').where('active', '==', true).get();
+// storage-footprint cleanup: postings deactivated long ago (well past the
+// 48h display window, see MAX_POSTING_AGE_MS in jobs/shared.ts) are hard-
+// deleted rather than kept forever as active:false rows, so the 1 GiB
+// free-tier storage cap doesn't creep up unbounded as companies churn
+// through postings over months. bounded to one page per call so a single
+// run's delete volume stays small and predictable against the 20k/day
+// delete quota - called once per ingestion run (see ingest-jobs.mjs), not
+// worth its own separate schedule.
+const STALE_DELETE_PAGE_SIZE = 400;
 
-	let sweptCount = 0;
-	for (const doc of snapshot.docs) {
-		if (touchedJobIds.has(doc.id)) continue;
-		const lastSeenAt = doc.data().lastSeenAt;
-		const lastSeenDate =
-			lastSeenAt && typeof lastSeenAt.toDate === 'function' ? lastSeenAt.toDate() : lastSeenAt;
-		if (lastSeenDate instanceof Date && lastSeenDate < cutoff) {
-			await doc.ref.set({ active: false, updatedAt: new Date() }, { merge: true });
-			sweptCount++;
-		}
-	}
-	return sweptCount;
+export async function deleteStalePostings(db: Firestore, olderThanMs: number): Promise<number> {
+	const cutoff = new Date(Date.now() - olderThanMs);
+	const snapshot = await db
+		.collection('jobs')
+		.where('active', '==', false)
+		.where('updatedAt', '<', cutoff)
+		.limit(STALE_DELETE_PAGE_SIZE)
+		.get();
+
+	if (snapshot.empty) return 0;
+
+	const batch = db.batch();
+	for (const doc of snapshot.docs) batch.delete(doc.ref);
+	await batch.commit();
+	return snapshot.size;
 }

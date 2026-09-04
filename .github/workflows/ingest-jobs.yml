@@ -2,9 +2,12 @@ name: ingest-jobs
 
 on:
   schedule:
-    # hourly: the job board's 48h freshness window means "fresh" only means
-    # something if a new posting shows up soon after it goes live.
-    - cron: '0 * * * *'
+    # every 4 hours (6 runs/day), not hourly - Firestore's free tier caps
+    # reads/writes at 50k/20k per day, and scripts/ingest-jobs.mjs's own
+    # comment has the budget math for why hourly (24 runs/day) doesn't fit
+    # once the board covers 150+ companies. 6 runs/day still keeps the
+    # board's 48h freshness window meaningfully fresh.
+    - cron: '0 */4 * * *'
   workflow_dispatch: {}
 
 concurrency:

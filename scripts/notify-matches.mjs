@@ -29,11 +29,11 @@ import { getFirestore, Timestamp } from 'firebase-admin/firestore';
 import { parseServiceAccount } from '../src/lib/server/service-account.ts';
 import { mapJobDoc, matchesFilters } from '../src/routes/jobs/shared.ts';
 
-// hourly cron (see ingest-jobs.yml) plus generous slack for a slow run -
-// wide enough that a run which takes longer than usual still catches every
-// posting first seen since the previous run, without needing to share exact
-// timing between the two scripts.
-const LOOKBACK_MS = 90 * 60 * 1000;
+// every-4-hours cron (see ingest-jobs.yml) plus generous slack for a slow
+// run - wide enough that a run which takes longer than usual still catches
+// every posting first seen since the previous run, without needing to share
+// exact timing between the two scripts.
+const LOOKBACK_MS = 5 * 60 * 60 * 1000;
 
 const creds = parseServiceAccount(process.env.FIREBASE_SERVICE_ACCOUNT);
 if (!creds) {
