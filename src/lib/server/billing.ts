@@ -1,5 +1,9 @@
 import type { Firestore, Transaction } from 'firebase-admin/firestore';
-import { SCANS_PER_PAYMENT, MONTHLY_SUBSCRIPTION_DAYS } from './billing-config';
+import {
+	SCANS_PER_PAYMENT,
+	MONTHLY_SUBSCRIPTION_DAYS,
+	FREE_SCANS_ON_SIGNUP
+} from './billing-config';
 
 export type SubscriptionType = 'free' | 'one-time' | 'monthly';
 
@@ -22,7 +26,7 @@ export interface NormalizedBilling {
 
 export const DEFAULT_BILLING: NormalizedBilling = {
 	freeUsed: true,
-	credits: 4,
+	credits: FREE_SCANS_ON_SIGNUP,
 	subscriptionType: 'free',
 	reviewsThisMonth: 0
 };
@@ -42,8 +46,8 @@ interface BillingLike {
 }
 
 export function evaluateBilling(billing: BillingLike | null | undefined): ReviewUsed | 'none' {
-	if (billing == null) return 'free'; // brand-new account, no doc yet → 4 gifted credits
-	// If credits field is missing/undefined, treat as new account with 4 gifted credits
+	if (billing == null) return 'free'; // brand-new account, no doc yet → FREE_SCANS_ON_SIGNUP gifted credits
+	// If credits field is missing/undefined, treat as new account with FREE_SCANS_ON_SIGNUP gifted credits
 	if (billing.credits === undefined) return 'free';
 	if (typeof billing.credits !== 'number') return 'none';
 

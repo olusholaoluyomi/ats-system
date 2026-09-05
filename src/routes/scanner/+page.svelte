@@ -160,7 +160,7 @@
 			return;
 		}
 
-		// the first 4 scans are free, every later one costs a paid credit. check the
+		// the first FREE_SCANS_ON_SIGNUP scans are free, every later one costs a paid credit. check the
 		// mirrored billing doc before firing the request so a dry account gets the
 		// paywall instantly instead of a wasted round-trip (and a flash of the
 		// scanning animation) that only ends in a 402. the server still enforces
