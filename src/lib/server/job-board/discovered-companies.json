@@ -1438,5 +1438,389 @@
 		"boardToken": "wasabi",
 		"whyThisCompany": "Established company, discovered via automated board check.",
 		"enabled": true
+	},
+	{
+		"slug": "doppler",
+		"name": "Doppler",
+		"atsType": "ashby",
+		"boardToken": "doppler",
+		"whyThisCompany": "YC company (Winter 2019): Secure secrets. Prevent breaches. Keep teams moving.",
+		"enabled": true
+	},
+	{
+		"slug": "caribou",
+		"name": "Caribou",
+		"atsType": "greenhouse",
+		"boardToken": "caribou",
+		"whyThisCompany": "YC company (Winter 2019): The autonomous tax firm",
+		"enabled": true
+	},
+	{
+		"slug": "alpaca",
+		"name": "Alpaca",
+		"atsType": "greenhouse",
+		"boardToken": "alpaca",
+		"whyThisCompany": "YC company (Winter 2019): API-first stock and crypto brokerage platform",
+		"enabled": true
+	},
+	{
+		"slug": "zippi",
+		"name": "Zippi",
+		"atsType": "lever",
+		"boardToken": "zippi",
+		"whyThisCompany": "YC company (Summer 2019): Payment Platform for LatAm Micro and Small Businesses",
+		"enabled": true
+	},
+	{
+		"slug": "beacons",
+		"name": "Beacons",
+		"atsType": "ashby",
+		"boardToken": "beacons",
+		"whyThisCompany": "YC company (Summer 2019): An AI-powered, all-in-one business platform for content creators",
+		"enabled": true
+	},
+	{
+		"slug": "verto",
+		"name": "Verto",
+		"atsType": "ashby",
+		"boardToken": "verto",
+		"whyThisCompany": "YC company (Winter 2019): Cross-Border Payments and FX Simplified",
+		"enabled": true
+	},
+	{
+		"slug": "dex",
+		"name": "Dex",
+		"atsType": "ashby",
+		"boardToken": "dex",
+		"whyThisCompany": "YC company (Summer 2019): Dex is a personal CRM that reminds you to keep in touch with the…",
+		"enabled": true
+	},
+	{
+		"slug": "odeko",
+		"name": "Odeko",
+		"atsType": "greenhouse",
+		"boardToken": "odeko",
+		"whyThisCompany": "YC company (Summer 2019): Our operations software makes it easier to run--and grow--your cafe",
+		"enabled": true
+	},
+	{
+		"slug": "elastic",
+		"name": "Elastic",
+		"atsType": "greenhouse",
+		"boardToken": "elastic",
+		"whyThisCompany": "Established company, discovered via automated board check.",
+		"enabled": true
+	},
+	{
+		"slug": "confluent",
+		"name": "Confluent",
+		"atsType": "ashby",
+		"boardToken": "confluent",
+		"whyThisCompany": "Established company, discovered via automated board check.",
+		"enabled": true
+	},
+	{
+		"slug": "mongodb",
+		"name": "MongoDB",
+		"atsType": "greenhouse",
+		"boardToken": "mongodb",
+		"whyThisCompany": "Established company, discovered via automated board check.",
+		"enabled": true
+	},
+	{
+		"slug": "datadog",
+		"name": "Datadog",
+		"atsType": "greenhouse",
+		"boardToken": "datadog",
+		"whyThisCompany": "Established company, discovered via automated board check.",
+		"enabled": true
+	},
+	{
+		"slug": "pagerduty",
+		"name": "PagerDuty",
+		"atsType": "greenhouse",
+		"boardToken": "pagerduty",
+		"whyThisCompany": "Established company, discovered via automated board check.",
+		"enabled": true
+	},
+	{
+		"slug": "circleci",
+		"name": "CircleCI",
+		"atsType": "greenhouse",
+		"boardToken": "circleci",
+		"whyThisCompany": "Established company, discovered via automated board check.",
+		"enabled": true
+	},
+	{
+		"slug": "launchdarkly",
+		"name": "LaunchDarkly",
+		"atsType": "greenhouse",
+		"boardToken": "launchdarkly",
+		"whyThisCompany": "Established company, discovered via automated board check.",
+		"enabled": true
+	},
+	{
+		"slug": "snyk",
+		"name": "Snyk",
+		"atsType": "ashby",
+		"boardToken": "snyk",
+		"whyThisCompany": "Established company, discovered via automated board check.",
+		"enabled": true
+	},
+	{
+		"slug": "sentry",
+		"name": "Sentry",
+		"atsType": "ashby",
+		"boardToken": "sentry",
+		"whyThisCompany": "Established company, discovered via automated board check.",
+		"enabled": true
+	},
+	{
+		"slug": "twilio",
+		"name": "Twilio",
+		"atsType": "greenhouse",
+		"boardToken": "twilio",
+		"whyThisCompany": "Established company, discovered via automated board check.",
+		"enabled": true
+	},
+	{
+		"slug": "okta",
+		"name": "Okta",
+		"atsType": "greenhouse",
+		"boardToken": "okta",
+		"whyThisCompany": "Established company, discovered via automated board check.",
+		"enabled": true
+	},
+	{
+		"slug": "1password",
+		"name": "1Password",
+		"atsType": "ashby",
+		"boardToken": "1password",
+		"whyThisCompany": "Established company, discovered via automated board check.",
+		"enabled": true
+	},
+	{
+		"slug": "cloudinary",
+		"name": "Cloudinary",
+		"atsType": "lever",
+		"boardToken": "cloudinary",
+		"whyThisCompany": "Established company, discovered via automated board check.",
+		"enabled": true
+	},
+	{
+		"slug": "newrelic",
+		"name": "New Relic",
+		"atsType": "greenhouse",
+		"boardToken": "newrelic",
+		"whyThisCompany": "Established company, discovered via automated board check.",
+		"enabled": true
+	},
+	{
+		"slug": "gitbook",
+		"name": "GitBook",
+		"atsType": "ashby",
+		"boardToken": "gitbook",
+		"whyThisCompany": "Established company, discovered via automated board check.",
+		"enabled": true
+	},
+	{
+		"slug": "postman",
+		"name": "Postman",
+		"atsType": "greenhouse",
+		"boardToken": "postman",
+		"whyThisCompany": "Established company, discovered via automated board check.",
+		"enabled": true
+	},
+	{
+		"slug": "chime",
+		"name": "Chime",
+		"atsType": "greenhouse",
+		"boardToken": "chime",
+		"whyThisCompany": "Established company, discovered via automated board check.",
+		"enabled": true
+	},
+	{
+		"slug": "sofi",
+		"name": "SoFi",
+		"atsType": "greenhouse",
+		"boardToken": "sofi",
+		"whyThisCompany": "Established company, discovered via automated board check.",
+		"enabled": true
+	},
+	{
+		"slug": "affirm",
+		"name": "Affirm",
+		"atsType": "greenhouse",
+		"boardToken": "affirm",
+		"whyThisCompany": "Established company, discovered via automated board check.",
+		"enabled": true
+	},
+	{
+		"slug": "wise",
+		"name": "Wise",
+		"atsType": "greenhouse",
+		"boardToken": "wise",
+		"whyThisCompany": "Established company, discovered via automated board check.",
+		"enabled": true
+	},
+	{
+		"slug": "brex",
+		"name": "Brex",
+		"atsType": "greenhouse",
+		"boardToken": "brex",
+		"whyThisCompany": "Established company, discovered via automated board check.",
+		"enabled": true
+	},
+	{
+		"slug": "mercury",
+		"name": "Mercury",
+		"atsType": "greenhouse",
+		"boardToken": "mercury",
+		"whyThisCompany": "Established company, discovered via automated board check.",
+		"enabled": true
+	},
+	{
+		"slug": "plaid",
+		"name": "Plaid",
+		"atsType": "ashby",
+		"boardToken": "plaid",
+		"whyThisCompany": "Established company, discovered via automated board check.",
+		"enabled": true
+	},
+	{
+		"slug": "robinhood",
+		"name": "Robinhood",
+		"atsType": "greenhouse",
+		"boardToken": "robinhood",
+		"whyThisCompany": "Established company, discovered via automated board check.",
+		"enabled": true
+	},
+	{
+		"slug": "carta",
+		"name": "Carta",
+		"atsType": "greenhouse",
+		"boardToken": "carta",
+		"whyThisCompany": "Established company, discovered via automated board check.",
+		"enabled": true
+	},
+	{
+		"slug": "gusto",
+		"name": "Gusto",
+		"atsType": "greenhouse",
+		"boardToken": "gusto",
+		"whyThisCompany": "Established company, discovered via automated board check.",
+		"enabled": true
+	},
+	{
+		"slug": "justworks",
+		"name": "Justworks",
+		"atsType": "greenhouse",
+		"boardToken": "justworks",
+		"whyThisCompany": "Established company, discovered via automated board check.",
+		"enabled": true
+	},
+	{
+		"slug": "instacart",
+		"name": "Instacart",
+		"atsType": "greenhouse",
+		"boardToken": "instacart",
+		"whyThisCompany": "Established company, discovered via automated board check.",
+		"enabled": true
+	},
+	{
+		"slug": "faire",
+		"name": "Faire",
+		"atsType": "greenhouse",
+		"boardToken": "faire",
+		"whyThisCompany": "Established company, discovered via automated board check.",
+		"enabled": true
+	},
+	{
+		"slug": "squarespace",
+		"name": "Squarespace",
+		"atsType": "greenhouse",
+		"boardToken": "squarespace",
+		"whyThisCompany": "Established company, discovered via automated board check.",
+		"enabled": true
+	},
+	{
+		"slug": "peloton",
+		"name": "Peloton",
+		"atsType": "greenhouse",
+		"boardToken": "peloton",
+		"whyThisCompany": "Established company, discovered via automated board check.",
+		"enabled": true
+	},
+	{
+		"slug": "bird",
+		"name": "Bird",
+		"atsType": "greenhouse",
+		"boardToken": "bird",
+		"whyThisCompany": "Established company, discovered via automated board check.",
+		"enabled": true
+	},
+	{
+		"slug": "moniepoint",
+		"name": "Moniepoint",
+		"atsType": "greenhouse",
+		"boardToken": "moniepoint",
+		"whyThisCompany": "Africa-led tech company, discovered via automated board check.",
+		"enabled": true
+	},
+	{
+		"slug": "carbon",
+		"name": "Carbon",
+		"atsType": "greenhouse",
+		"boardToken": "carbon",
+		"whyThisCompany": "Africa-led tech company, discovered via automated board check.",
+		"enabled": true
+	},
+	{
+		"slug": "grey",
+		"name": "Grey Finance",
+		"atsType": "greenhouse",
+		"boardToken": "grey",
+		"whyThisCompany": "Africa-led tech company, discovered via automated board check.",
+		"enabled": true
+	},
+	{
+		"slug": "tala",
+		"name": "Tala",
+		"atsType": "lever",
+		"boardToken": "tala",
+		"whyThisCompany": "Africa-led tech company, discovered via automated board check.",
+		"enabled": true
+	},
+	{
+		"slug": "ozow",
+		"name": "Ozow",
+		"atsType": "greenhouse",
+		"boardToken": "ozow",
+		"whyThisCompany": "Africa-led tech company, discovered via automated board check.",
+		"enabled": true
+	},
+	{
+		"slug": "jumia",
+		"name": "Jumia",
+		"atsType": "greenhouse",
+		"boardToken": "jumia",
+		"whyThisCompany": "Africa-led tech company, discovered via automated board check.",
+		"enabled": true
+	},
+	{
+		"slug": "andela",
+		"name": "Andela",
+		"atsType": "ashby",
+		"boardToken": "andela",
+		"whyThisCompany": "Africa-led tech company, discovered via automated board check.",
+		"enabled": true
+	},
+	{
+		"slug": "sabi",
+		"name": "Sabi",
+		"atsType": "ashby",
+		"boardToken": "sabi",
+		"whyThisCompany": "Africa-led tech company, discovered via automated board check.",
+		"enabled": true
 	}
 ]
