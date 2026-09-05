@@ -53,7 +53,16 @@ interface EmptyResult {
 	prevCursor: string | null;
 }
 
-export const load: PageServerLoad = async ({ url }) => {
+export const load: PageServerLoad = async ({ url, setHeaders }) => {
+	// this page has no per-visitor state (no auth check, same result for
+	// everyone hitting the same URL) and the underlying data only changes
+	// when ingestion runs (every 8h, see ingest-jobs.yml) - a short edge
+	// cache means repeat views of the same search/page don't re-hit
+	// Firestore at all, which matters now that every read is billed per
+	// document (see dedupe-and-write.ts's QUOTA BUDGET note) and page views
+	// are a real, ongoing share of the daily read budget, not just ingestion.
+	setHeaders({ 'Cache-Control': 'public, max-age=0, s-maxage=300, stale-while-revalidate=1800' });
+
 	const rawQuery = url.searchParams.get('q')?.trim() ?? '';
 	const filters: JobsFilters = {
 		remote: url.searchParams.get('remote') === 'true',

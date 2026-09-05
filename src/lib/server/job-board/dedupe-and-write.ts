@@ -1,7 +1,7 @@
 // upserts one company's fetched postings into jobs/{jobId}, and deactivates
 // postings that have disappeared from that company's source - all from a
-// SINGLE read of that company's existing docs, and only the writes that are
-// actually new/changed/reactivated/deactivated, batched together.
+// SINGLE query of that company's existing docs, and only the writes that
+// are actually new/changed/reactivated/deactivated, batched together.
 //
 // this replaced an earlier version that ran one Firestore transaction per
 // posting (1 read + 1 write, every posting, every run, even when nothing
@@ -9,12 +9,18 @@
 // active job across every company, every run. that was fine at a handful of
 // companies but blew straight through Firestore's free-tier daily quota
 // (50k reads / 20k writes) once the board grew past ~150 companies with
-// some posting 500-900+ roles each - see the ingest-jobs.mjs comment for
-// the actual budget math. this version does exactly one query per company
-// (bounded by that company's own doc count, not the whole collection) and
-// writes only what actually changed, which is the only way to stay under
-// quota at this scale without a real architecture change (a search index
-// service, sharded counters, etc.) that isn't worth it for a free-tier app.
+// some posting 500-900+ roles each.
+//
+// IMPORTANT: this version's single query per company still returns (and
+// therefore is billed for) up to `options.maxPostings` documents - Firestore
+// bills one read per document a query RETURNS, not one read per query call.
+// "one query per company" cut round-trips and eliminated the separate
+// global sweep, but the actual read volume is `companies × maxPostings`,
+// not `companies` - an earlier version of this comment conflated the two
+// and a single ingestion run exhausted the entire daily read quota in ~11
+// minutes as a result (2026-09-05). the real per-run read budget lives in
+// ingest-jobs.mjs's MAX_POSTINGS_PER_COMPANY and the cron interval in
+// ingest-jobs.yml - both were tightened alongside this fix.
 import type { Firestore, DocumentReference } from 'firebase-admin/firestore';
 import type { RawJobPosting } from './types.ts';
 import type { SeedCompany } from './seed-companies.ts';

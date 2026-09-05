@@ -2,12 +2,14 @@ name: ingest-jobs
 
 on:
   schedule:
-    # every 4 hours (6 runs/day), not hourly - Firestore's free tier caps
-    # reads/writes at 50k/20k per day, and scripts/ingest-jobs.mjs's own
-    # comment has the budget math for why hourly (24 runs/day) doesn't fit
-    # once the board covers 150+ companies. 6 runs/day still keeps the
-    # board's 48h freshness window meaningfully fresh.
-    - cron: '0 */4 * * *'
+    # every 8 hours (3 runs/day) - see scripts/ingest-jobs.mjs's QUOTA
+    # BUDGET comment: Firestore bills one read per document a query
+    # returns, not one read per query call, so each run's cost is
+    # `companies × MAX_POSTINGS_PER_COMPANY` reads, not `companies` reads.
+    # a 4-hour cadence (6 runs/day) with the old cap of 40 exhausted the
+    # entire 50k/day read quota in a SINGLE run (2026-09-05) - 8 hours with
+    # the lowered cap of 15 leaves real headroom for page-view reads too.
+    - cron: '0 */8 * * *'
   workflow_dispatch: {}
 
 concurrency:

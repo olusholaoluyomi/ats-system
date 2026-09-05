@@ -22,17 +22,30 @@
  * unclassified backlog it left behind.
  *
  * QUOTA BUDGET (Firestore free tier: 50k reads / 20k writes / 20k deletes
- * per day): this script is deliberately shaped around that ceiling.
- *  - dedupe-and-write.ts's upsertCompanyPostings does exactly ONE Firestore
- *    read per company (that company's existing docs), not one per posting,
- *    and writes only postings that are new/changed/reactivated/
- *    deactivated - an unchanged posting costs zero writes on re-ingestion.
- *  - MAX_POSTINGS_PER_COMPANY below caps how many of one company's
- *    postings get ingested at all, so a single large employer can't both
- *    dominate the board's content AND eat a disproportionate share of the
- *    daily read/write budget on its own.
- *  - the ingestion cron (.github/workflows/ingest-jobs.yml) runs every 4
- *    hours, not hourly, for the same reason - see that file's comment.
+ * per day): this script is deliberately shaped around that ceiling, and got
+ * this wrong once already (2026-09-05) - worth being precise this time.
+ *  - Firestore bills ONE READ PER DOCUMENT RETURNED, not one read per query
+ *    call. dedupe-and-write.ts's upsertCompanyPostings issues exactly one
+ *    QUERY per company (that company's existing docs), but that query still
+ *    returns up to MAX_POSTINGS_PER_COMPANY documents - the read cost is
+ *    `companies × cap`, not `companies`. an earlier version of this comment
+ *    said "one read per company" and treated the query-count reduction as
+ *    if it were a document-count reduction; it wasn't, and a single run
+ *    exhausted the entire daily read quota in ~11 minutes as a result. the
+ *    real reduction that DID land: eliminating the old separate global
+ *    sweep query that re-read every active job across every company, every
+ *    run, on top of the per-posting reads.
+ *  - it writes only postings that are new/changed/reactivated/deactivated -
+ *    an unchanged posting costs zero writes on re-ingestion. this part was
+ *    correct and is the main thing keeping writes (not reads) under budget.
+ *  - MAX_POSTINGS_PER_COMPANY below caps how many of one company's postings
+ *    get ingested AND how many of its existing docs get read back each
+ *    run - both scale directly with this number × company count, so it's
+ *    the single biggest lever on the read budget, not just a content-
+ *    diversity knob.
+ *  - the ingestion cron (.github/workflows/ingest-jobs.yml) runs every 8
+ *    hours (3x/day), not every 4 - see that file's comment for the budget
+ *    math with the current cap.
  *
  * one company's fetch/write failure is caught and logged - it never aborts
  * the run. only exits non-zero if every enabled company failed (a total
@@ -57,17 +70,21 @@ import {
 
 // one company (Databricks, OpenAI, Stripe, etc. have all shown 500-900+
 // live postings at once) can otherwise dwarf every other company on the
-// board and burn a huge share of the daily read/write budget by itself -
-// this keeps the board diverse across companies and keeps quota usage
-// roughly proportional to company count, not to any one company's total
-// headcount. passed through to upsertCompanyPostings as options.maxPostings
-// rather than slicing the fetched list here - that function needs the FULL
-// fetched list to correctly tell "genuinely gone from the source" apart
-// from "just over our own cap" when deciding what to deactivate (see its
-// own comment on UpsertOptions.maxPostings; an earlier version sliced the
-// list here, which silently deactivated a capped company's overflow
-// postings on every run instead of leaving them alone).
-const MAX_POSTINGS_PER_COMPANY = 40;
+// board - this keeps the board diverse across companies. but it's also,
+// more importantly now, the main lever on Firestore read cost: each run
+// reads back up to this many existing docs PER COMPANY (see the file
+// header's QUOTA BUDGET note) - at ~250+ companies, 40 was ~10,000 reads
+// per run, enough to exhaust the entire 50k/day quota in a single run.
+// 15 keeps that to ~3,750/run, leaving real headroom for page-view reads
+// even at 3 runs/day. passed through to upsertCompanyPostings as
+// options.maxPostings rather than slicing the fetched list here - that
+// function needs the FULL fetched list to correctly tell "genuinely gone
+// from the source" apart from "just over our own cap" when deciding what
+// to deactivate (see its own comment on UpsertOptions.maxPostings; an
+// earlier version sliced the list here, which silently deactivated a
+// capped company's overflow postings on every run instead of leaving them
+// alone).
+const MAX_POSTINGS_PER_COMPANY = 15;
 
 // discovered-companies.json only ever gains entries via a reviewed, merged
 // PR (see discover-companies.mjs / .github/workflows/discover-companies.yml)
