@@ -4,6 +4,22 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { callLLM, extractJSON } from '../../../src/lib/server/llm-call';
 
+// provider-quota is mocked (rather than exercised against its real module
+// state) so these tests can assert exactly what markProviderExhausted was
+// called with - the real bug this covers (2026-09-05) was that every 429 got
+// treated as a full-day outage regardless of what the provider actually
+// said, so the interesting assertion is "what retryAfterMs value reached
+// provider-quota", not provider-quota's own internal timing (see
+// provider-quota.test.ts for that).
+const { isProviderExhausted, markProviderExhausted } = vi.hoisted(() => ({
+	isProviderExhausted: vi.fn().mockReturnValue(false),
+	markProviderExhausted: vi.fn()
+}));
+vi.mock('../../../src/routes/api/analyze/provider-quota', () => ({
+	isProviderExhausted,
+	markProviderExhausted
+}));
+
 function geminiResponse(text: string) {
 	return {
 		ok: true,
@@ -12,10 +28,23 @@ function geminiResponse(text: string) {
 	};
 }
 
+function rateLimitedResponse(opts: { retryAfterHeader?: string; body?: string } = {}) {
+	return {
+		ok: false,
+		status: 429,
+		headers: {
+			get: (name: string) => (name === 'Retry-After' ? (opts.retryAfterHeader ?? null) : null)
+		},
+		text: async () => opts.body ?? ''
+	};
+}
+
 const ENV = { GEMINI_API_KEY: 'test-key' };
 
 afterEach(() => {
 	vi.unstubAllGlobals();
+	isProviderExhausted.mockClear().mockReturnValue(false);
+	markProviderExhausted.mockClear();
 });
 
 describe('extractJSON', () => {
@@ -70,5 +99,54 @@ describe('callLLM', () => {
 
 		await callLLM(promptFor, ENV);
 		expect(promptFor).toHaveBeenCalledWith(expect.any(Number));
+	});
+
+	it('skips a provider already marked exhausted instead of calling it', async () => {
+		isProviderExhausted.mockReturnValue(true);
+		const fetchSpy = vi.fn();
+		vi.stubGlobal('fetch', fetchSpy);
+
+		const result = await callLLM(() => 'prompt', ENV);
+		expect(result).toBeNull();
+		expect(fetchSpy).not.toHaveBeenCalled();
+	});
+
+	describe('429 handling (2026-09-05 regression: every 429 was treated as a full-day outage)', () => {
+		it('passes a numeric Retry-After header through as milliseconds', async () => {
+			vi.stubGlobal(
+				'fetch',
+				vi.fn().mockResolvedValue(rateLimitedResponse({ retryAfterHeader: '30' }))
+			);
+
+			await callLLM(() => 'prompt', ENV);
+			expect(markProviderExhausted).toHaveBeenCalledWith('gemini-3.5-flash-lite', 30_000);
+		});
+
+		it("parses Google's structured retryDelay from the error body when there is no header", async () => {
+			vi.stubGlobal(
+				'fetch',
+				vi.fn().mockResolvedValue(
+					rateLimitedResponse({
+						body: JSON.stringify({
+							error: {
+								details: [
+									{ '@type': 'type.googleapis.com/google.rpc.RetryInfo', retryDelay: '34s' }
+								]
+							}
+						})
+					})
+				)
+			);
+
+			await callLLM(() => 'prompt', ENV);
+			expect(markProviderExhausted).toHaveBeenCalledWith('gemini-3.5-flash-lite', 34_000);
+		});
+
+		it("falls back to undefined (provider-quota's own short default) when there is no hint at all - never silently assumes a full day", async () => {
+			vi.stubGlobal('fetch', vi.fn().mockResolvedValue(rateLimitedResponse()));
+
+			await callLLM(() => 'prompt', ENV);
+			expect(markProviderExhausted).toHaveBeenCalledWith('gemini-3.5-flash-lite', undefined);
+		});
 	});
 });

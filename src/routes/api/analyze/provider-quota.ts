@@ -1,8 +1,26 @@
-// Per-provider daily quota tracker.
+// Per-provider quota/rate-limit tracker.
 //
-// When a provider returns HTTP 429 the caller marks it exhausted here.
-// Subsequent requests skip that provider entirely until UTC midnight, at which
-// point all free-tier quotas reset and Gemini becomes primary again.
+// When a provider returns HTTP 429, the caller marks it exhausted here for a
+// bounded window so subsequent requests skip it immediately instead of
+// burning a full timeout retrying a provider that just rejected a call.
+//
+// IMPORTANT: HTTP 429 means "too many requests" - it does NOT by itself mean
+// "the whole day's quota is gone". It's the same status code for a genuine
+// daily/monthly quota exhaustion AND a transient per-minute rate limit (the
+// far more common case: a free-tier model with a low RPM ceiling hit by one
+// user submitting a couple of scans close together). An earlier version of
+// this module treated every 429 as the former and blocked the provider until
+// UTC midnight regardless - one user's transient rate limit on Gemini,
+// followed shortly by the same thing on the Groq fallback, was enough to
+// make EVERY user see "All LLM providers failed" for the rest of the day,
+// even though the underlying per-minute limits had already reset within
+// seconds (2026-09-05 incident). The fix: honor the provider's own
+// Retry-After when it sends one (that's the provider telling us exactly how
+// long to back off), and fall back to a short, conservative default instead
+// of a full day when it doesn't - a provider that's GENUINELY out for the
+// day will just get re-marked exhausted on the next attempt a few minutes
+// later, which is a far smaller cost than blocking everyone for hours on a
+// guess.
 //
 // Storage: plain in-memory Map. Same trade-off as rate-limiter.ts and cache.ts:
 // state is lost on a Vercel cold start, but within a warm instance (which
@@ -17,7 +35,15 @@ interface QuotaEntry {
 
 const quotaState = new Map<string, QuotaEntry>();
 
-// Returns the unix-ms timestamp of the next UTC midnight from now.
+// used when a 429 carries no Retry-After / retryDelay hint at all - long
+// enough to meaningfully back off, short enough that a real daily-quota
+// outage just gets re-marked a few times over the day instead of silently
+// blocking every user until midnight on one ambiguous response.
+const DEFAULT_BACKOFF_MS = 5 * 60 * 1000;
+
+// upper bound on any single exhaustion window, including an explicit
+// Retry-After - a provider sending a nonsensical multi-day value should
+// never lock out every user for longer than the natural daily quota reset.
 function nextUtcMidnightMs(): number {
 	const now = new Date();
 	const midnight = new Date(
@@ -42,15 +68,20 @@ export function isProviderExhausted(name: string): boolean {
 }
 
 /**
- * Marks a provider as exhausted until the next UTC midnight.
- * Call this when the provider returns HTTP 429 (daily quota hit).
- * Idempotent: calling it multiple times does not push the reset further.
+ * Marks a provider as exhausted after an HTTP 429. `retryAfterMs`, when the
+ * provider's response included one (a Retry-After header or a provider-
+ * specific retry hint), sets exactly how long to back off; omit it only when
+ * the response gave no hint at all, which backs off for DEFAULT_BACKOFF_MS
+ * rather than assuming a full-day outage. Either way the window is capped at
+ * the next UTC midnight. Idempotent: calling it again while already
+ * exhausted does not push the reset further out.
  */
-export function markProviderExhausted(name: string): void {
+export function markProviderExhausted(name: string, retryAfterMs?: number): void {
 	// Only set if not already exhausted, so the first 429 wins and subsequent
 	// calls from the same instance don't accidentally extend the window.
 	if (!isProviderExhausted(name)) {
-		quotaState.set(name, { exhaustedUntil: nextUtcMidnightMs() });
+		const requested = Date.now() + (retryAfterMs ?? DEFAULT_BACKOFF_MS);
+		quotaState.set(name, { exhaustedUntil: Math.min(requested, nextUtcMidnightMs()) });
 	}
 }
 

@@ -27,6 +27,35 @@ function logWarn(event: string, fields: Record<string, unknown>): void {
 	console.warn(JSON.stringify({ level: 'warn', event, ts: new Date().toISOString(), ...fields }));
 }
 
+// extracts how long a 429 response says to back off, in ms - checked in two
+// places since providers disagree on where they put this. Groq/OpenAI-
+// compatible APIs send a standard `Retry-After` header (seconds, or
+// occasionally an HTTP date). Google's Generative Language API instead
+// embeds it in the JSON error body as a RetryInfo detail, e.g.
+// `{"error":{"details":[{"@type":".../RetryInfo","retryDelay":"34s"}]}}`.
+// returns null (not a default) when neither is present, so the caller can
+// tell "provider told us nothing" apart from "provider said 0s".
+function parseRetryAfterMs(headerValue: string | null, errBody: string): number | null {
+	if (headerValue) {
+		const seconds = Number(headerValue);
+		if (Number.isFinite(seconds) && seconds >= 0) return seconds * 1000;
+		const asDate = Date.parse(headerValue);
+		if (!Number.isNaN(asDate)) return Math.max(0, asDate - Date.now());
+	}
+	try {
+		const parsed = JSON.parse(errBody) as {
+			error?: { details?: { '@type'?: string; retryDelay?: string }[] };
+		};
+		const retryInfo = parsed.error?.details?.find((d) => d.retryDelay);
+		const match = retryInfo?.retryDelay?.match(/^([\d.]+)s$/);
+		if (match) return Math.round(Number(match[1]) * 1000);
+	} catch {
+		// error body wasn't JSON, or didn't have the expected shape - fine,
+		// the caller falls back to the default backoff.
+	}
+	return null;
+}
+
 // tries each provider in sequence until one succeeds and returns valid JSON.
 // promptFor is called once per provider with that provider's own
 // contextBudget, so Gemini (huge context window) gets a near-complete
@@ -45,8 +74,9 @@ export async function callLLM(
 		const secret = env[provider.configKey] ?? '';
 		if (!secret) continue;
 
-		// Skip providers that have already exhausted their daily free-tier quota.
-		// They will be automatically re-enabled at the next UTC midnight.
+		// Skip providers currently backed off from a recent 429 - re-enabled
+		// as soon as their own Retry-After window passes (or a short default,
+		// or UTC midnight at the latest - see provider-quota.ts).
 		if (isProviderExhausted(provider.name)) {
 			logWarn('llm.provider_quota_exhausted', { provider: provider.name });
 			continue;
@@ -69,14 +99,18 @@ export async function callLLM(
 					status: response.status,
 					errorPreview: errBody.slice(0, 300)
 				});
-				// 429 = daily quota hit. Mark exhausted until UTC midnight so
-				// every subsequent request today skips this provider immediately
-				// instead of burning its full timeout retrying a depleted key.
+				// 429 = rate-limited or quota-exhausted, but the two look
+				// identical without a hint from the provider - honor its own
+				// Retry-After/retryDelay when it sends one, otherwise back off
+				// for a short default rather than assuming a full-day outage
+				// (see provider-quota.ts's own comment for why that distinction
+				// matters).
 				if (response.status === 429) {
-					markProviderExhausted(provider.name);
-					logWarn('llm.provider_daily_quota_hit', {
+					const retryAfterMs = parseRetryAfterMs(response.headers.get('Retry-After'), errBody);
+					markProviderExhausted(provider.name, retryAfterMs ?? undefined);
+					logWarn('llm.provider_rate_limited', {
 						provider: provider.name,
-						message: 'marked exhausted until UTC midnight'
+						retryAfterMs: retryAfterMs ?? 'unspecified (using default backoff)'
 					});
 				}
 				continue;
